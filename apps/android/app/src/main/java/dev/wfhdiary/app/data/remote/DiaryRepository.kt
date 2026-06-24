@@ -55,6 +55,10 @@ class DiaryRepository(
     suspend fun getLeavePeriods(): List<LeavePeriodDto> =
         client.get("${base()}v1/leave-periods").body()
 
+    suspend fun deleteLeave(id: String) {
+        client.delete("${base()}v1/leave-periods/$id")
+    }
+
     suspend fun getSettings(): UserSettingsDto =
         client.get("${base()}v1/settings").body()
 

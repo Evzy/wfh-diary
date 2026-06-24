@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,10 +25,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import dev.wfhdiary.app.util.FinancialYearHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,7 +42,6 @@ import dev.wfhdiary.app.ui.day.DayEditSheet
 import dev.wfhdiary.app.ui.leave.LeaveScheduleSheet
 import dev.wfhdiary.app.util.DayBadge
 import dev.wfhdiary.app.util.LeavePeriodHelper
-import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -61,22 +57,21 @@ fun MonthGridScreen(
     uiState: MonthGridUiState,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    onPreviousYear: () -> Unit,
+    onNextYear: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectDate: (String?) -> Unit,
     onSaveDay: (String, dev.wfhdiary.app.data.remote.UpsertDayEntryRequest) -> Unit,
     onOpenLeaveSheet: () -> Unit,
     onDismissLeaveSheet: () -> Unit,
     onScheduleLeave: (dev.wfhdiary.app.data.remote.CreateLeaveRequest) -> Unit,
-    onPreviousFy: () -> Unit,
-    onNextFy: () -> Unit,
-    onOpenFyPicker: () -> Unit,
-    onDismissFyPicker: () -> Unit,
-    onSelectFyYear: (Int) -> Unit,
+    onDeleteLeave: (String) -> Unit,
     onDeleteDay: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ym = uiState.yearMonth
-    val monthTitle = ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + ym.year
+    val displayYear = uiState.fyYear + 1
+    val monthName = ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
     val daysByDate = uiState.days.associateBy { it.date }
     val cells = buildMonthCells(ym, daysByDate, uiState.leavePeriods)
     val selectedEntry = uiState.selectedDate?.let { daysByDate[it] }
@@ -85,15 +80,21 @@ fun MonthGridScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(monthTitle) },
+                title = { Text(displayYear.toString()) },
                 navigationIcon = {
-                    IconButton(onClick = onPreviousMonth) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+                    IconButton(onClick = onPreviousYear) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = stringResource(R.string.year_previous),
+                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNextMonth) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                    IconButton(onClick = onNextYear) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = stringResource(R.string.year_next),
+                        )
                     }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_open_settings))
@@ -127,17 +128,18 @@ fun MonthGridScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onPreviousFy) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.fy_previous))
-                }
-                TextButton(onClick = onOpenFyPicker) {
-                    Text(
-                        stringResource(R.string.fy_selector_label, uiState.fyYear, uiState.fyYear + 1),
-                        style = MaterialTheme.typography.titleSmall,
+                IconButton(onClick = onPreviousMonth) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = stringResource(R.string.month_previous),
                     )
                 }
-                IconButton(onClick = onNextFy) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.fy_next))
+                Text(monthName, style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = onNextMonth) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.month_next),
+                    )
                 }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
@@ -196,37 +198,12 @@ fun MonthGridScreen(
         )
     }
 
-    if (uiState.showFyPicker) {
-        val currentFy = FinancialYearHelper.currentFyYear(LocalDate.now())
-        val options = (currentFy - 5..currentFy + 1).toList().reversed()
-        AlertDialog(
-            onDismissRequest = onDismissFyPicker,
-            title = { Text(stringResource(R.string.fy_picker_title)) },
-            text = {
-                Column {
-                    options.forEach { fy ->
-                        TextButton(
-                            onClick = { onSelectFyYear(fy) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(stringResource(R.string.fy_selector_label, fy, fy + 1))
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = onDismissFyPicker) {
-                    Text(stringResource(R.string.time_picker_cancel))
-                }
-            },
-        )
-    }
-
     if (uiState.showLeaveSheet) {
         LeaveScheduleSheet(
+            leavePeriods = uiState.leavePeriods,
             onDismiss = onDismissLeaveSheet,
             onSave = onScheduleLeave,
+            onDelete = onDeleteLeave,
         )
     }
 }

@@ -101,5 +101,12 @@ public static class DiaryEndpoints
             var periods = await svc.GetLeavePeriodsAsync(userId, ct);
             return Results.Ok(periods.Select(DiaryService.ToDto));
         });
+
+        app.MapDelete("/v1/leave-periods/{id:guid}", async (Guid id, DiaryService svc, HttpContext ctx, CancellationToken ct) =>
+        {
+            var userId = svc.RequireUserId(ctx);
+            var deleted = await svc.DeleteLeaveAsync(userId, id, ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        });
     }
 }

@@ -23,6 +23,10 @@
     <string name="settings_notification_time_hint">Posts a system notification at this time on selected days (save to apply). Skipped on leave days.</string>
     <string name="settings_notification_working_days">Reminder days</string>
     <string name="settings_notification_working_days_hint">Selected days get the morning reminder. Unselected days are off (e.g. weekends).</string>
+    <string name="year_previous">Previous year</string>
+    <string name="year_next">Next year</string>
+    <string name="month_previous">Previous month</string>
+    <string name="month_next">Next month</string>
     <string name="settings_missed_notification_title">If reminder is ignored</string>
     <string name="settings_missed_notification_hint">On a working day, if you do not tap Home, Office, or Leave on the morning notification, the app can apply a default at the time below using your configured times.</string>
     <string name="settings_missed_notification_apply_at">Apply default at</string>
@@ -87,6 +91,9 @@
     <string name="leave_end_date">End date</string>
     <string name="leave_note">Note (optional)</string>
     <string name="leave_save">Save leave</string>
+    <string name="leave_existing_title">Scheduled leave</string>
+    <string name="leave_empty_list">No leave scheduled.</string>
+    <string name="leave_delete">Delete leave</string>
     <string name="leave_error_dates_required">Start and end dates are required.</string>
     <string name="leave_error_end_before_start">End date must be on or after start date.</string>
     <string name="fy_selector_label">FY %1$d–%2$d</string>

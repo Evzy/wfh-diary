@@ -75,33 +75,12 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         loadMonth(_uiState.value.yearMonth.plusMonths(1))
     }
 
-    fun showPreviousFy() {
-        selectFyYear(_uiState.value.fyYear - 1)
+    fun showPreviousYear() {
+        loadMonth(_uiState.value.yearMonth.minusMonths(12))
     }
 
-    fun showNextFy() {
-        selectFyYear(_uiState.value.fyYear + 1)
-    }
-
-    fun openFyPicker() {
-        _uiState.update { it.copy(showFyPicker = true) }
-    }
-
-    fun dismissFyPicker() {
-        _uiState.update { it.copy(showFyPicker = false) }
-    }
-
-    fun selectFyYear(fyYear: Int) {
-        _uiState.update { it.copy(showFyPicker = false) }
-        val today = LocalDate.now()
-        val (start, end) = FinancialYearHelper.fyRange(fyYear)
-        val month =
-            if (!today.isBefore(start) && !today.isAfter(end)) {
-                YearMonth.from(today)
-            } else {
-                YearMonth.of(fyYear, 7)
-            }
-        loadMonth(month)
+    fun showNextYear() {
+        loadMonth(_uiState.value.yearMonth.plusMonths(12))
     }
 
     fun selectDate(date: String?) {
@@ -118,28 +97,42 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun scheduleLeave(request: CreateLeaveRequest) {
         viewModelScope.launch {
-            val state = _uiState.value
-            val fyYear = state.fyYear
-            val from = state.yearMonth.atDay(1)
-            val to = state.yearMonth.atEndOfMonth()
-            runCatching {
-                repo.createLeave(fyYear, request)
-                val leavePeriods = repo.getLeavePeriods()
-                val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
-                val summary = repo.getSummary(fyYear)
-                cacheDays(days, fyYear)
-                _uiState.update {
-                    it.copy(
-                        days = days,
-                        leavePeriods = leavePeriods,
-                        summary = summary,
-                        showLeaveSheet = false,
-                        error = null,
-                    )
-                }
-            }.onFailure { e ->
-                _uiState.update { it.copy(error = e.message) }
+            refreshAfterLeaveChange(closeSheet = true) {
+                repo.createLeave(_uiState.value.fyYear, request)
             }
+        }
+    }
+
+    fun deleteLeave(id: String) {
+        viewModelScope.launch {
+            refreshAfterLeaveChange(closeSheet = false) {
+                repo.deleteLeave(id)
+            }
+        }
+    }
+
+    private suspend fun refreshAfterLeaveChange(closeSheet: Boolean, action: suspend () -> Unit) {
+        val state = _uiState.value
+        val fyYear = state.fyYear
+        val from = state.yearMonth.atDay(1)
+        val to = state.yearMonth.atEndOfMonth()
+        runCatching {
+            action()
+            val leavePeriods = repo.getLeavePeriods()
+            val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
+            val summary = repo.getSummary(fyYear)
+            cacheDays(days, fyYear)
+            _uiState.update {
+                it.copy(
+                    days = days,
+                    leavePeriods = leavePeriods,
+                    summary = summary,
+                    showLeaveSheet = if (closeSheet) false else it.showLeaveSheet,
+                    error = null,
+                )
+            }
+        }.onFailure { e ->
+            _uiState.update { it.copy(error = e.message) }
         }
     }
 

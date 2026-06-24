@@ -209,6 +209,46 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
             .ToListAsync(ct);
     }
 
+    public async Task<bool> DeleteLeaveAsync(string userId, Guid leaveId, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var leave = await db.LeavePeriods
+            .FirstOrDefaultAsync(l => l.Id == leaveId && l.OwnerUserId == userId, ct);
+        if (leave is null) return false;
+
+        var otherLeaves = await db.LeavePeriods
+            .Where(l => l.OwnerUserId == userId && l.Id != leaveId)
+            .ToListAsync(ct);
+
+        db.LeavePeriods.Remove(leave);
+
+        var diaryIds = await db.Diaries
+            .Where(d => d.OwnerUserId == userId)
+            .Select(d => d.Id)
+            .ToListAsync(ct);
+
+        foreach (var date in FinancialYearHelper.EachDay(leave.StartDate, leave.EndDate))
+        {
+            if (otherLeaves.Any(l => date >= l.StartDate && date <= l.EndDate)) continue;
+
+            var entries = await db.DayEntries
+                .Where(e => diaryIds.Contains(e.DiaryId) && e.Date == date)
+                .ToListAsync(ct);
+            foreach (var entry in entries)
+            {
+                if (!string.Equals(entry.Description, "LEAVE", StringComparison.OrdinalIgnoreCase)) continue;
+                entry.StartTimeMinutes = null;
+                entry.FinishTimeMinutes = null;
+                entry.BreakHours = null;
+                entry.Description = null;
+                entry.Location = null;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     public static UserSettingsDto ToDto(UserSettingsEntity s) => new(
         s.DisplayName,
         TimeHelpers.MinutesToTimeString(s.NotificationTimeMinutes),
