@@ -1,81 +1,63 @@
 # WFH Diary — continuation backlog
 
-Use this file to resume work (human or agent). **Product vision:** [`WFH_DIARY_PLAN.md`](WFH_DIARY_PLAN.md). **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
+Use this file to resume work (human or agent). **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md). **CI/CD:** [`CI_CD.md`](CI_CD.md).
 
 ## Repo state (as of last doc update)
 
 | Area | Status |
 | --- | --- |
 | .NET solution (`WfhDiary.sln`) | Present |
-| `WfhDiary.Api` — settings, diaries, days, leave, summary, xlsx export | Done (local SQLite dev) |
+| `WfhDiary.Api` — settings, diaries, days, leave, summary, xlsx export | Done |
 | `WfhDiary.Shared` — DTOs (one type per file under `Dtos/`) | Done |
-| API integration tests | 3 smoke tests (`HealthTests`, `DiaryFlowTests`) |
-| Android app | Not started |
-| Docs (full Platra-equivalent suite) | Partial |
-| CI/CD + GitHub repos | Done — [`Evzy/wfh-diary`](https://github.com/Evzy/wfh-diary), [`Evzy/wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
-| Firebase auth enforcement (prod) | Middleware present; optional in local dev |
+| API tests | 9 tests (integration + `TimeHelpers` / `SummaryCalculator` unit) |
+| Android app (`dev.wfhdiary.app`) | Done — month grid, day edit, settings, notifications, OTA |
+| GitHub Actions | `ci.yml`, `deploy-api.yml`, `release-android.yml` |
+| GitHub repos | Private [`wfh-diary`](https://github.com/Evzy/wfh-diary), public [`wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
+| Azure App Service | Workflow ready; provision `app-wfh-diary-api-dev` when needed |
+| Firebase / `google-services.json` | Optional; dev uses `X-Debug-User-Id` |
 
 ## Ordered milestones
 
 | # | Milestone | Status |
 | --- | --- | --- |
 | 1 | API core + xlsx export | Done |
-| 2 | Android app — month grid, sync, settings | Pending |
-| 3 | Morning notification (Home / Office / Add time / Leave) | Pending |
-| 4 | CI/CD — GitHub Actions, Azure deploy, release workflow | Pending (repos created) |
-| 5 | Full documentation suite | Pending |
+| 2 | Android — month grid, sync, settings | Done |
+| 3 | Morning notification (Home / Office / Add time / Leave) | Done |
+| 4 | CI/CD — GitHub Actions + releases repo | Done (secrets TBD) |
+| 5 | Full documentation suite | Partial — add `ANDROID.md`, `AZURE_DEPLOY.md`, `API.md` |
+
+## Next manual steps
+
+- [ ] Add GitHub secrets: `WFH_RELEASES_TOKEN`, shared debug keystore (see [`CI_CD.md`](CI_CD.md))
+- [ ] Provision Azure `app-wfh-diary-api-dev` + OIDC secrets (copy from Platra [`AZURE_DEPLOY.md`](https://github.com/Evzy/platra/blob/main/docs/AZURE_DEPLOY.md))
+- [ ] Add `apps/android/app/google-services.json` + Firebase SHA-1 for release/sign-in
+- [ ] First device test: API on `:5222`, install debug APK, log a day, export xlsx
 
 ## End improvements (after core ship)
 
-These are **explicitly deferred** until milestones 1–5 are done. Do not block the first usable release on them.
-
 ### A. Location-aware auto logging
 
-At the configured morning time (or when the user opens the app), use **device location** to pre-fill the day:
-
-- If the phone is inside a user-configured **office geofence** → mark **Office** with default office times.
-- Otherwise → mark **Home** with default home times (same as dismiss today).
-- Requires: location permission, office lat/lng + radius in Settings, battery/permission UX notes in [`ANDROID.md`](ANDROID.md).
-- User can always override via month grid or notification actions.
+Office geofence → auto Office; otherwise default Home. See prior spec in git history / plan.
 
 ### B. Strong unit testing
 
-Expand from current smoke tests to a **docs-driven test suite** (see [`testing/TEST_STRATEGY.md`](testing/TEST_STRATEGY.md) and [`testing/API_TEST_PLAN.md`](testing/API_TEST_PLAN.md)).
-
-**API (priority order):**
-
-- [ ] Pure unit tests: `TimeHelpers`, `FinancialYearHelper`, `SummaryCalculator` (edge cases: leave, zero hours, logic check)
-- [ ] `DiaryService` with in-memory DB: FY creation, leave blocks, upsert partial fields
-- [ ] xlsx golden-file test: fixture diary → export → assert key cells/formulas match reference
-- [ ] Auth gate: `/v1/*` rejects missing Bearer when Firebase configured
-
-**Android (priority order):**
-
-- [ ] JVM unit tests: time math, FY month navigation, total-hours calculation
-- [ ] ViewModel tests: month grid state, day edit save payload, summary display
-- [ ] Notification action handler tests: Home dismiss applies defaults, leave suppresses schedule
-- [ ] Repository tests (fake Ktor): sync PUT/GET mapping
-
-**CI:** run `dotnet test` + `./gradlew :app:testDebugUnitTest` on every PR (see [`CI_CD.md`](CI_CD.md)).
+Golden-file xlsx test, `DiaryService` tests, Android ViewModel/notification tests. See [`testing/TEST_STRATEGY.md`](testing/TEST_STRATEGY.md).
 
 ## Conventions
 
-- **One public type per `.cs` / `.kt` file** (DTOs, entities, endpoints, test classes).
-- **Use Platra as the working reference** — same monorepo layout, auth, CI, OTA, and Android patterns. See [Platra comparison](#platra-comparison) below before inventing new approaches.
-- Bump **Last updated** in `ARCHITECTURE.md` when API or sync shape changes.
+- **One public type per `.cs` / `.kt` file**
+- **Use Platra as the working reference** — see [Platra comparison](#platra-comparison)
+- Bump **Last updated** in `ARCHITECTURE.md` when API or sync shape changes
 
 ## Platra comparison
 
-The sibling repo [`platra`](https://github.com/Evzy/platra) is the **canonical example** for infrastructure that already works. Copy and adapt rather than redesign.
-
 | WFH Diary | Platra reference | Notes |
 | --- | --- | --- |
-| `wfh-diary` monorepo | `platra` | `apps/android/`, `services/api/`, `packages/shared/`, `docs/` |
-| `wfh-diary-releases` | `platra-releases` | APK-only repo for GitHub Releases + in-app updater |
-| Firebase Bearer auth | `Platra.Api/Auth/` | Same middleware pattern |
-| GitHub Actions CI | `.github/workflows/` | `deploy-api.yml`, `release-android.yml`, shared debug keystore |
-| In-app OTA | `GithubApkReleaseUpdater.kt` | Settings → check/download/install |
-| Android shell | `apps/android/` | Compose, Ktor, Room, DataStore, Firebase sign-in |
-| Docs-driven backlog | `docs/TODO.md`, `docs/CI_CD.md` | Same maintenance rules |
+| `wfh-diary` monorepo | `platra` | Same layout |
+| `wfh-diary-releases` | `platra-releases` | **Public** APK-only; source **private** |
+| Firebase Bearer auth | `Platra.Api/Auth/` | Same middleware |
+| GitHub Actions | `.github/workflows/` | Same patterns |
+| In-app OTA | `GithubApkReleaseUpdater.kt` | Settings → update |
+| Android | `apps/android/` | Compose, Ktor, Room, WorkManager |
 
-Local path for side-by-side work: `C:\Users\evanb\platra` and `C:\Users\evanb\wfh-diary`.
+Local paths: `C:\Users\evanb\platra`, `C:\Users\evanb\wfh-diary`.
