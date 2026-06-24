@@ -26,6 +26,14 @@ object TimeHelpers {
         return null
     }
 
+    fun hourMinuteOrDefault(value: String?, defaultHour: Int, defaultMinute: Int): Pair<Int, Int> {
+        val minutes = parseTimeString(value)
+        return if (minutes != null) minutes / 60 to minutes % 60 else defaultHour to defaultMinute
+    }
+
+    fun formatHourMinute(hour: Int, minute: Int): String =
+        minutesToTimeString(hour * 60 + minute)
+
     fun computeTotalHours(startMinutes: Int?, finishMinutes: Int?, breakHours: BigDecimal?): BigDecimal {
         if (startMinutes == null || finishMinutes == null) return BigDecimal.ZERO
         val spanHours =

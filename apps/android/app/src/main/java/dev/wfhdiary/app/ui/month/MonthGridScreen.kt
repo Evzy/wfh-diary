@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,23 +64,7 @@ fun MonthGridScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(monthTitle)
-                        uiState.summary?.let { s ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text(
-                                    stringResource(R.string.month_summary_home, s.homeHours),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                                Text(
-                                    stringResource(R.string.month_summary_claimable, s.claimableWfhAmount),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
-                        }
-                    }
-                },
+                title = { Text(monthTitle) },
                 navigationIcon = {
                     IconButton(onClick = onPreviousMonth) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
@@ -126,7 +111,10 @@ fun MonthGridScreen(
             }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
-                modifier = Modifier.fillMaxSize().padding(8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
             ) {
                 items(cells, key = { it.key }) { cell ->
                     MonthDayCell(
@@ -135,6 +123,10 @@ fun MonthGridScreen(
                     )
                 }
             }
+            FySummaryGrid(
+                fyYear = uiState.fyYear,
+                summary = uiState.summary,
+            )
             uiState.error?.let { err ->
                 Text(
                     err,

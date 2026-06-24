@@ -28,7 +28,7 @@ class WfhDiaryApplication : Application() {
         private set
 
     val firebaseIdTokenHolder = FirebaseIdTokenHolder()
-    val appSettingsPreferences = AppSettingsPreferences(this)
+    val appSettingsPreferences by lazy { AppSettingsPreferences(this) }
 
     private val authSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 

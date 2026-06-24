@@ -9,10 +9,32 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 object NotificationScheduler {
     private const val WORK_NAME = "wfh_morning_reminder"
+    private val nextReminderFormatter = DateTimeFormatter.ofPattern("EEE d MMM 'at' HH:mm")
+
+    fun nextReminderAt(notificationTime: String): LocalDateTime {
+        val minutes = TimeHelpers.parseTimeString(notificationTime) ?: (8 * 60)
+        val hour = minutes / 60
+        val minute = minutes % 60
+        val now = LocalDateTime.now()
+        var target = LocalDateTime.of(LocalDate.now(), LocalTime.of(hour, minute))
+        if (!target.isAfter(now)) {
+            target = target.plusDays(1)
+        }
+        return target
+    }
+
+    fun formatNextReminder(notificationTime: String): String =
+        nextReminderAt(notificationTime).format(nextReminderFormatter)
+
+    fun showTestNow(context: Context) {
+        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        MorningReminderNotifier.show(context, today)
+    }
 
     fun scheduleNext(context: Context, notificationTime: String) {
         val minutes = TimeHelpers.parseTimeString(notificationTime) ?: (8 * 60)

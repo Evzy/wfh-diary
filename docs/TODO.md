@@ -13,7 +13,7 @@ Use this file to resume work (human or agent). **Architecture:** [`ARCHITECTURE.
 | Android app (`dev.wfhdiary.app`) | Done — month grid, day edit, settings, notifications, OTA |
 | GitHub Actions | `ci.yml`, `deploy-api.yml`, `release-android.yml` |
 | GitHub repos | Private [`wfh-diary`](https://github.com/Evzy/wfh-diary), public [`wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
-| Azure App Service | Workflow ready; provision `app-wfh-diary-api-dev` when needed |
+| Azure App Service | `app-wfh-diary-api-dev` provisioned; **SQLite on app disk** (ephemeral) |
 | Firebase / `google-services.json` | Optional; dev uses `X-Debug-User-Id` |
 
 ## Ordered milestones
@@ -30,7 +30,8 @@ Use this file to resume work (human or agent). **Architecture:** [`ARCHITECTURE.
 
 - [ ] Add GitHub secrets: `WFH_RELEASES_TOKEN`, shared debug keystore (see [`CI_CD.md`](CI_CD.md))
 - [ ] **Phase 2 Azure:** run [`scripts/azure/provision-wfh-diary-dev.ps1`](../scripts/azure/provision-wfh-diary-dev.ps1) + OIDC in [`CI_CD.md`](CI_CD.md) (see [`AZURE_DEPLOY.md`](AZURE_DEPLOY.md))
-- [ ] Add `apps/android/app/google-services.json` + Firebase SHA-1 for release/sign-in
+- [ ] **Use Azure (no Firebase yet):** Settings → Azure backend, log a day (uses shared `dev-user` on API)
+- [ ] **Firebase + live API:** follow [`FIREBASE_SETUP.md`](FIREBASE_SETUP.md) — `google-services.json`, SHA fingerprints, Azure `Firebase__ServiceAccountJson`
 - [ ] First device test: API on `:5222`, install debug APK, log a day, export xlsx
 
 ## End improvements (after core ship)
@@ -79,6 +80,34 @@ User-defined **repeatable work scenarios** so daily logging is mostly a dropdown
 
 **Platra comparison:** no direct equivalent; this is WFH-diary-specific productivity UX.
 
+### D. Managed Azure database (PostgreSQL)
+
+Replace **SQLite on App Service local disk** with a **managed online DB** so diary data survives restarts, redeploys, and scale events. Platra uses the same ephemeral SQLite pattern today; WFH Diary should move to Postgres first because diary data must be reliable.
+
+**Why:**
+
+- App Service **F1** local disk is **not durable** — `wfh_diary_dev.db` can be wiped on restart or deploy.
+- A small **Azure Database for PostgreSQL Flexible Server** (Burstable tier) in `rg-wfh-diary-dev-australiaeast` is lightweight and fits personal/single-user load.
+- The API **already supports Postgres** when `WfhDiary__ConnectionString` is set (`Program.cs` switches from SQLite to Npgsql).
+
+**Suggested resources (dev):**
+
+| Resource | Name (example) |
+| --- | --- |
+| PostgreSQL Flexible Server | `pg-wfh-diary-dev` |
+| Database | `wfh_diary` |
+
+**App setting:** `WfhDiary__ConnectionString` — connection string with SSL (see [`AZURE_DEPLOY.md`](AZURE_DEPLOY.md) § Database).
+
+**Follow-up work:**
+
+- Provision server + firewall (allow Azure services / App Service outbound).
+- One-time schema: `DatabaseBootstrap` / EF `EnsureCreated` against Postgres (or add proper EF migrations).
+- Optional: GitHub Action step or doc for migration runs on deploy (not automated yet — same gap as Platra).
+- Keep SQLite for **local** `dotnet run`; Postgres for **Azure** only.
+
+**Priority:** after first deploy + device smoke test, **before** or alongside Firebase — data durability matters more than auth for day-to-day use.
+
 ## Conventions
 
 - **One public type per `.cs` / `.kt` file**
@@ -95,5 +124,6 @@ User-defined **repeatable work scenarios** so daily logging is mostly a dropdown
 | GitHub Actions | `.github/workflows/` | Same patterns |
 | In-app OTA | `GithubApkReleaseUpdater.kt` | Settings → update |
 | Android | `apps/android/` | Compose, Ktor, Room, WorkManager |
+| Production DB | SQLite on App Service (both) | WFH: plan **Postgres** — [§ D](#d-managed-azure-database-postgresql) |
 
 Local paths: `C:\Users\evanb\platra`, `C:\Users\evanb\wfh-diary`.

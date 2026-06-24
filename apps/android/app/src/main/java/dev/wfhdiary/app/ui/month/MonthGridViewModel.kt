@@ -34,10 +34,10 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun loadMonth(yearMonth: YearMonth) {
         viewModelScope.launch {
-            _uiState.update { it.copy(yearMonth = yearMonth, loading = true, error = null) }
             val from = yearMonth.atDay(1)
             val to = yearMonth.atEndOfMonth()
             val fyYear = FinancialYearHelper.currentFyYear(yearMonth.atDay(15))
+            _uiState.update { it.copy(yearMonth = yearMonth, fyYear = fyYear, loading = true, error = null) }
             runCatching {
                 repo.getDiary(fyYear)
                 val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))

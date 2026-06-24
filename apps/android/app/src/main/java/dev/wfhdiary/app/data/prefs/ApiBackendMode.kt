@@ -8,8 +8,8 @@ enum class ApiBackendMode(val storageKey: String) {
     companion object {
         fun fromStorageKey(raw: String?): ApiBackendMode {
             val t = raw?.trim().orEmpty()
-            if (t.isEmpty()) return API_LOCAL
-            return entries.find { it.storageKey == t } ?: API_LOCAL
+            if (t.isEmpty()) return API_AZURE
+            return entries.find { it.storageKey == t } ?: API_AZURE
         }
     }
 }

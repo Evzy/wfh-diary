@@ -145,7 +145,9 @@ Allow the web app outbound to Postgres (firewall rule for Azure services or the 
 
 ## Firebase Admin (optional)
 
-Until Firebase is configured, the API accepts **`X-Debug-User-Id`** for dev. For production token verification, bind the service account JSON from **Key Vault** (same pattern as Platra):
+Full walkthrough: **[`FIREBASE_SETUP.md`](FIREBASE_SETUP.md)**.
+
+Until Firebase is configured, the API accepts **`X-Debug-User-Id`** for dev. For production token verification:
 
 1. Create Key Vault in `rg-wfh-diary-dev-australiaeast` (e.g. `kv-wfh-diary-dev`).
 2. Secret `wfh-firebase-adminsdk` = full Firebase service account JSON.

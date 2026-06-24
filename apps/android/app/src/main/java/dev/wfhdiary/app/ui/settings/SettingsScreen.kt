@@ -1,5 +1,9 @@
 package dev.wfhdiary.app.ui.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,13 +27,21 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.data.prefs.ApiBackendMode
+import dev.wfhdiary.app.notification.NotificationPermissions
+import dev.wfhdiary.app.notification.NotificationScheduler
+import dev.wfhdiary.app.ui.time.TimePickerField
 
 @Composable
 private fun ApiBackendOptionRow(
@@ -62,11 +74,14 @@ private fun ApiBackendOptionRow(
 fun SettingsScreen(
     form: SettingsFormState?,
     saveMessage: String,
+    notificationMessage: String,
     apiBackendMode: ApiBackendMode,
     resolvedBaseUrl: String,
     onApiBackendModeChange: (ApiBackendMode) -> Unit,
     onFormChange: ((SettingsFormState) -> SettingsFormState) -> Unit,
     onSave: () -> Unit,
+    onSendTestNotification: () -> Unit,
+    onClearNotificationMessage: () -> Unit,
     onExportClick: () -> Unit,
     firebaseUserLabel: String?,
     firebaseSignInBusy: Boolean,
@@ -82,6 +97,40 @@ fun SettingsScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    var notificationsEnabled by remember { mutableStateOf(NotificationPermissions.canPost(context)) }
+    var pendingTestAfterPermission by remember { mutableStateOf(false) }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            notificationsEnabled = NotificationPermissions.canPost(context)
+            val wasForTest = pendingTestAfterPermission
+            pendingTestAfterPermission = false
+            if (wasForTest) {
+                onSendTestNotification()
+            }
+        }
+
+    fun requestNotificationPermission(forTest: Boolean) {
+        pendingTestAfterPermission = forTest
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else if (!NotificationPermissions.canPost(context)) {
+            NotificationPermissions.openAppNotificationSettings(context)
+        }
+    }
+
+    fun sendTestNotification() {
+        onClearNotificationMessage()
+        if (NotificationPermissions.canPost(context)) {
+            onSendTestNotification()
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestNotificationPermission(forTest = true)
+        } else {
+            NotificationPermissions.openAppNotificationSettings(context)
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -171,45 +220,106 @@ fun SettingsScreen(
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         form?.let { f ->
+            Text(stringResource(R.string.settings_notification_section_title), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.settings_notification_time_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            Text(
+                stringResource(
+                    R.string.settings_notification_next,
+                    NotificationScheduler.formatNextReminder(f.notificationTime),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            if (notificationsEnabled) {
+                Text(
+                    stringResource(R.string.settings_notification_enabled),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            } else {
+                Text(
+                    stringResource(R.string.settings_notification_disabled),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                TextButton(
+                    onClick = { requestNotificationPermission(forTest = false) },
+                    modifier = Modifier.padding(bottom = 4.dp),
+                ) {
+                    Text(stringResource(R.string.settings_notification_enable))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+                Button(onClick = ::sendTestNotification) {
+                    Text(stringResource(R.string.settings_notification_send_test))
+                }
+            }
+            if (notificationMessage.isNotBlank()) {
+                Text(
+                    notificationMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (notificationMessage == stringResource(R.string.settings_notification_test_sent)) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
             OutlinedTextField(
                 value = f.displayName,
                 onValueChange = { v -> onFormChange { it.copy(displayName = v) } },
                 label = { Text(stringResource(R.string.settings_display_name)) },
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
+            TimePickerField(
                 value = f.notificationTime,
                 onValueChange = { v -> onFormChange { it.copy(notificationTime = v) } },
                 label = { Text(stringResource(R.string.settings_notification_time)) },
+                defaultHour = 8,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(stringResource(R.string.settings_default_home), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                TimePickerField(
                     value = f.defaultHomeStart,
                     onValueChange = { v -> onFormChange { it.copy(defaultHomeStart = v) } },
-                    label = { Text("Start") },
+                    label = { Text(stringResource(R.string.day_edit_start)) },
+                    defaultHour = 8,
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
+                TimePickerField(
                     value = f.defaultHomeFinish,
                     onValueChange = { v -> onFormChange { it.copy(defaultHomeFinish = v) } },
-                    label = { Text("Finish") },
+                    label = { Text(stringResource(R.string.day_edit_finish)) },
+                    defaultHour = 17,
                     modifier = Modifier.weight(1f),
                 )
             }
             Text(stringResource(R.string.settings_default_office), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                TimePickerField(
                     value = f.defaultOfficeStart,
                     onValueChange = { v -> onFormChange { it.copy(defaultOfficeStart = v) } },
-                    label = { Text("Start") },
+                    label = { Text(stringResource(R.string.day_edit_start)) },
+                    defaultHour = 8,
+                    defaultMinute = 30,
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
+                TimePickerField(
                     value = f.defaultOfficeFinish,
                     onValueChange = { v -> onFormChange { it.copy(defaultOfficeFinish = v) } },
-                    label = { Text("Finish") },
+                    label = { Text(stringResource(R.string.day_edit_finish)) },
+                    defaultHour = 17,
                     modifier = Modifier.weight(1f),
                 )
             }

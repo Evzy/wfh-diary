@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
                 val monthState by monthViewModel.uiState.collectAsStateWithLifecycle()
                 val settingsForm by settingsViewModel.settingsForm.collectAsStateWithLifecycle()
                 val saveMessage by settingsViewModel.saveMessage.collectAsStateWithLifecycle()
+                val notificationMessage by settingsViewModel.notificationMessage.collectAsStateWithLifecycle()
                 val apiBackendMode by settingsViewModel.apiBackendMode.collectAsStateWithLifecycle()
                 val resolvedBaseUrl by settingsViewModel.resolvedBaseUrl.collectAsStateWithLifecycle()
                 val firebaseUserLabel by settingsViewModel.firebaseUserLabel.collectAsStateWithLifecycle()
@@ -68,11 +69,14 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 form = settingsForm,
                                 saveMessage = saveMessage,
+                                notificationMessage = notificationMessage,
                                 apiBackendMode = apiBackendMode,
                                 resolvedBaseUrl = resolvedBaseUrl,
                                 onApiBackendModeChange = settingsViewModel::setApiBackendMode,
                                 onFormChange = settingsViewModel::updateForm,
                                 onSave = settingsViewModel::saveSettings,
+                                onSendTestNotification = settingsViewModel::sendTestNotification,
+                                onClearNotificationMessage = settingsViewModel::clearNotificationMessage,
                                 onExportClick = {
                                     scope.launch {
                                         runCatching {

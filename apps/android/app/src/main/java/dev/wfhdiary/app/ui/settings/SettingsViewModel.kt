@@ -14,6 +14,7 @@ import dev.wfhdiary.app.data.auth.GoogleFirebaseSignIn
 import dev.wfhdiary.app.data.prefs.ApiBackendMode
 import dev.wfhdiary.app.data.prefs.AppSettingsPreferences
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
+import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _saveMessage = MutableStateFlow("")
     val saveMessage = _saveMessage.asStateFlow()
 
+    private val _notificationMessage = MutableStateFlow("")
+    val notificationMessage = _notificationMessage.asStateFlow()
+
     private val _resolvedBaseUrl = MutableStateFlow("")
     val resolvedBaseUrl = _resolvedBaseUrl.asStateFlow()
 
@@ -65,7 +69,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val apiBackendMode = prefs.apiBackendMode.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        initialValue = ApiBackendMode.API_LOCAL,
+        initialValue = ApiBackendMode.API_AZURE,
     )
 
     fun refreshSettings() {
@@ -120,6 +124,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _saveMessage.value = e.message.orEmpty()
             }
         }
+    }
+
+    fun sendTestNotification() {
+        val app = getApplication<Application>()
+        if (!NotificationPermissions.canPost(app)) {
+            _notificationMessage.value = app.getString(R.string.settings_notification_permission_denied)
+            return
+        }
+        NotificationScheduler.showTestNow(app)
+        _notificationMessage.value = app.getString(R.string.settings_notification_test_sent)
+    }
+
+    fun clearNotificationMessage() {
+        _notificationMessage.value = ""
     }
 
     suspend fun exportUrlAsync(): String {

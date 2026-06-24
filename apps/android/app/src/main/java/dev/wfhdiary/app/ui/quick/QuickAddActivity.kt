@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -25,6 +26,7 @@ import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.notification.NotificationChannels
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme
+import dev.wfhdiary.app.ui.time.TimePickerField
 import dev.wfhdiary.app.util.FinancialYearHelper
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -59,18 +61,22 @@ class QuickAddActivity : ComponentActivity() {
                             label = { Text(stringResource(R.string.day_edit_location)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        OutlinedTextField(
-                            value = startTime,
-                            onValueChange = { startTime = it },
-                            label = { Text(stringResource(R.string.day_edit_start)) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        OutlinedTextField(
-                            value = finishTime,
-                            onValueChange = { finishTime = it },
-                            label = { Text(stringResource(R.string.day_edit_finish)) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TimePickerField(
+                                value = startTime,
+                                onValueChange = { startTime = it },
+                                label = { Text(stringResource(R.string.day_edit_start)) },
+                                defaultHour = 8,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TimePickerField(
+                                value = finishTime,
+                                onValueChange = { finishTime = it },
+                                label = { Text(stringResource(R.string.day_edit_finish)) },
+                                defaultHour = 17,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Button(
                             onClick = {
