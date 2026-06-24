@@ -47,7 +47,7 @@ class DiaryRepository(
 
     suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
         val response = client.get("${base()}v1/diaries/$fyYear/export.xlsx")
-        val bytes = response.readBytes()
+        val bytes = response.readRawBytes()
         val filename = "WFH-Diary-$fyYear-${fyYear + 1}.xlsx"
         return bytes to filename
     }
