@@ -1,0 +1,41 @@
+# .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.cache
+.vs/
+*.DotSettings.user
+
+# User secrets / local env
+appsettings.*.local.json
+.env
+.env.*
+
+# Firebase Admin service account JSON
+services/api/WfhDiary.Api/secrets/*.json
+
+# Local API SQLite
+services/api/WfhDiary.Api/wfh_diary_dev.db
+services/api/WfhDiary.Api/wfh_diary_dev.db-*
+
+# Android / Gradle (when added)
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+apps/android/local.properties
+apps/android/app/ci-shared-debug.keystore
+/ci-shared-debug.keystore
+apps/android/*.iml
+apps/android/.idea/
+
+# Packaged apps — publish via wfh-diary-releases only
+*.apk
+*.aab
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+*.log
