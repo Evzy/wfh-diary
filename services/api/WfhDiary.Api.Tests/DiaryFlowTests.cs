@@ -53,4 +53,31 @@ public class DiaryFlowTests
         Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             response.Content.Headers.ContentType?.MediaType);
     }
+
+    [Fact]
+    public async Task Clear_day_removes_times_and_location()
+    {
+        await using var factory = new WfhDiaryApiFactory();
+        var client = CreateClient(factory);
+        const int fy = 2025;
+        const string date = "2025-07-15";
+
+        await client.GetAsync($"/v1/diaries/{fy}");
+        var put = await client.PutAsJsonAsync($"/v1/diaries/{fy}/days/{date}", new
+        {
+            startTime = "09:00",
+            finishTime = "17:00",
+            breakHours = 1m,
+            location = "Office",
+        });
+        put.EnsureSuccessStatusCode();
+
+        var delete = await client.DeleteAsync($"/v1/diaries/{fy}/days/{date}");
+        delete.EnsureSuccessStatusCode();
+        var cleared = await delete.Content.ReadFromJsonAsync<DayEntryDto>();
+        Assert.NotNull(cleared);
+        Assert.Null(cleared!.StartTime);
+        Assert.Null(cleared.FinishTime);
+        Assert.Null(cleared.Location);
+    }
 }
