@@ -17,6 +17,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 ?: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
         MorningReminderNotifier.cancel(context)
+        MissedNotificationScheduler.cancel(context, date)
 
         val request =
             OneTimeWorkRequestBuilder<NotificationActionWorker>()

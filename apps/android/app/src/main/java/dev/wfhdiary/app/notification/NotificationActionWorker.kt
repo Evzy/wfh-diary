@@ -4,9 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
-import dev.wfhdiary.app.util.FinancialYearHelper
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -22,39 +19,9 @@ class NotificationActionWorker(
         val app = applicationContext as WfhDiaryApplication
 
         return runCatching {
-            val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
-            val fyYear = FinancialYearHelper.currentFyYear(localDate)
             val settings = app.diaryRepository.getSettings()
-            when (action) {
-                NotificationChannels.ACTION_HOME ->
-                    app.diaryRepository.upsertDay(
-                        fyYear,
-                        date,
-                        UpsertDayEntryRequest(
-                            startTime = settings.defaultHomeStart,
-                            finishTime = settings.defaultHomeFinish,
-                            breakHours = settings.defaultHomeBreakHours,
-                            location = "Home",
-                        ),
-                    )
-                NotificationChannels.ACTION_OFFICE ->
-                    app.diaryRepository.upsertDay(
-                        fyYear,
-                        date,
-                        UpsertDayEntryRequest(
-                            startTime = settings.defaultOfficeStart,
-                            finishTime = settings.defaultOfficeFinish,
-                            breakHours = settings.defaultOfficeBreakHours,
-                            location = "Office",
-                        ),
-                    )
-                NotificationChannels.ACTION_LEAVE ->
-                    app.diaryRepository.createLeave(
-                        fyYear,
-                        CreateLeaveRequest(startDate = date, endDate = date),
-                    )
-                else -> error("Unknown notification action: $action")
-            }
+            NotificationDayActions.apply(app, date, action, settings)
+            MissedNotificationScheduler.cancel(applicationContext, date)
             Result.success()
         }.getOrElse { Result.failure() }
     }

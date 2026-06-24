@@ -23,6 +23,10 @@
     <string name="settings_notification_time_hint">Posts a system notification at this time on selected days (save to apply). Skipped on leave days.</string>
     <string name="settings_notification_working_days">Reminder days</string>
     <string name="settings_notification_working_days_hint">Selected days get the morning reminder. Unselected days are off (e.g. weekends).</string>
+    <string name="settings_missed_notification_title">If reminder is ignored</string>
+    <string name="settings_missed_notification_hint">On a working day, if you do not tap Home, Office, or Leave on the morning notification, the app can apply a default at the time below using your configured times.</string>
+    <string name="settings_missed_notification_apply_at">Apply default at</string>
+    <string name="settings_missed_none">None</string>
     <string name="settings_notification_next">Next system notification: %1$s</string>
     <string name="settings_notification_enabled">System notifications are allowed for this app.</string>
     <string name="settings_notification_disabled">System notifications are blocked — enable to receive reminders.</string>

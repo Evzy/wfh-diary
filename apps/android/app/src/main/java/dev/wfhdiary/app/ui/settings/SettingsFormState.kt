@@ -6,6 +6,8 @@ data class SettingsFormState(
     val displayName: String = "",
     val notificationTime: String = "08:00",
     val notificationWorkingDaysMask: Int = WorkingDaysMask.DEFAULT,
+    val missedNotificationDefault: String = "None",
+    val missedNotificationApplyAt: String = "12:00",
     val defaultHomeStart: String = "08:00",
     val defaultHomeFinish: String = "17:00",
     val defaultHomeBreakHours: String = "1",

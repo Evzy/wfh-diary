@@ -4,6 +4,8 @@ public sealed record UpdateUserSettingsRequest(
     string? DisplayName,
     string? NotificationTime,
     int? NotificationWorkingDaysMask,
+    string? MissedNotificationDefault,
+    string? MissedNotificationApplyAt,
     string? DefaultHomeStart,
     string? DefaultHomeFinish,
     decimal? DefaultHomeBreakHours,

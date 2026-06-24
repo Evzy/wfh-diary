@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
+import dev.wfhdiary.app.notification.MissedNotificationDefault
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.ui.BreakHoursField
@@ -199,6 +200,22 @@ fun SettingsScreen(
                 onMaskChange = { mask -> onFormChange { it.copy(notificationWorkingDaysMask = mask) } },
                 modifier = Modifier.padding(bottom = 12.dp),
             )
+            MissedNotificationDefaultSelector(
+                selected = f.missedNotificationDefault,
+                onSelectedChange = { value -> onFormChange { it.copy(missedNotificationDefault = value) } },
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            if (MissedNotificationDefault.isEnabled(f.missedNotificationDefault)) {
+                TimePickerField(
+                    value = f.missedNotificationApplyAt,
+                    onValueChange = { v -> onFormChange { it.copy(missedNotificationApplyAt = v) } },
+                    label = { Text(stringResource(R.string.settings_missed_notification_apply_at)) },
+                    defaultHour = 12,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                )
+            } else {
+                Spacer(Modifier.padding(bottom = 12.dp))
+            }
             if (notificationsEnabled) {
                 Text(
                     stringResource(R.string.settings_notification_enabled),

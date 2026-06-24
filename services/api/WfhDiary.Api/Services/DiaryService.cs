@@ -55,6 +55,16 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
             settings.DefaultOfficeFinishMinutes = of;
         if (req.DefaultOfficeBreakHours is not null) settings.DefaultOfficeBreakHours = req.DefaultOfficeBreakHours.Value;
         if (req.NotificationWorkingDaysMask is int mask) settings.NotificationWorkingDaysMask = mask;
+        if (req.MissedNotificationDefault is not null)
+        {
+            var d = req.MissedNotificationDefault.Trim();
+            settings.MissedNotificationDefault = d is "Home" or "Office" or "Leave" or "None" ? d : "None";
+        }
+        if (req.MissedNotificationApplyAt is not null &&
+            TimeHelpers.ParseTimeString(req.MissedNotificationApplyAt) is int applyAt)
+        {
+            settings.MissedNotificationApplyAtMinutes = applyAt;
+        }
 
         await db.SaveChangesAsync(ct);
         return settings;
@@ -203,6 +213,8 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         s.DisplayName,
         TimeHelpers.MinutesToTimeString(s.NotificationTimeMinutes),
         s.NotificationWorkingDaysMask,
+        s.MissedNotificationDefault,
+        TimeHelpers.MinutesToTimeString(s.MissedNotificationApplyAtMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultHomeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultHomeFinishMinutes),
         s.DefaultHomeBreakHours,

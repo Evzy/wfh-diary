@@ -50,6 +50,14 @@ class MorningReminderWorker(
 
         if (NotificationPermissions.canPost(applicationContext)) {
             MorningReminderNotifier.show(applicationContext, todayStr)
+            settings?.let { s ->
+                MissedNotificationScheduler.schedule(
+                    applicationContext,
+                    todayStr,
+                    s.missedNotificationApplyAt,
+                    s.missedNotificationDefault,
+                )
+            }
         }
         reschedule()
         return Result.success()

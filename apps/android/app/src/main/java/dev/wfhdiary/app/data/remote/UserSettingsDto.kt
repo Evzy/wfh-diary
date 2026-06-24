@@ -8,6 +8,8 @@ data class UserSettingsDto(
     val displayName: String,
     val notificationTime: String,
     val notificationWorkingDaysMask: Int = WorkingDaysMask.DEFAULT,
+    val missedNotificationDefault: String = "None",
+    val missedNotificationApplyAt: String = "12:00",
     val defaultHomeStart: String,
     val defaultHomeFinish: String,
     val defaultHomeBreakHours: Double,

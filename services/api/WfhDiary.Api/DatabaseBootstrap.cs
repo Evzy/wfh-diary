@@ -11,17 +11,19 @@ public static class DatabaseBootstrap
         var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<WfhDiaryDbContext>>();
         await using var db = await factory.CreateDbContextAsync();
         await db.Database.EnsureCreatedAsync();
-        await EnsureNotificationWorkingDaysMaskColumnAsync(db);
+        await EnsureSqliteColumnAsync(db, "NotificationWorkingDaysMask", "INTEGER NOT NULL DEFAULT 31");
+        await EnsureSqliteColumnAsync(db, "MissedNotificationDefault", "TEXT NOT NULL DEFAULT 'None'");
+        await EnsureSqliteColumnAsync(db, "MissedNotificationApplyAtMinutes", "INTEGER NOT NULL DEFAULT 720");
     }
 
-    private static async Task EnsureNotificationWorkingDaysMaskColumnAsync(WfhDiaryDbContext db)
+    private static async Task EnsureSqliteColumnAsync(WfhDiaryDbContext db, string column, string definition)
     {
         if (!db.Database.IsSqlite()) return;
 
         try
         {
             await db.Database.ExecuteSqlRawAsync(
-                "ALTER TABLE user_settings ADD COLUMN NotificationWorkingDaysMask INTEGER NOT NULL DEFAULT 31");
+                $"ALTER TABLE user_settings ADD COLUMN {column} {definition}");
         }
         catch
         {

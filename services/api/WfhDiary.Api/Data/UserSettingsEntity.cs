@@ -15,4 +15,7 @@ public sealed class UserSettingsEntity
     public decimal DefaultOfficeBreakHours { get; set; } = 1m;
     /// <summary>Bitmask of ISO weekdays (Mon=bit0 … Sun=bit6) when morning reminders are sent.</summary>
     public int NotificationWorkingDaysMask { get; set; } = WorkingDaysMask.Default;
+    /// <summary>None, Home, Office, or Leave — applied if the user ignores the morning reminder.</summary>
+    public string MissedNotificationDefault { get; set; } = "None";
+    public int MissedNotificationApplyAtMinutes { get; set; } = 12 * 60;
 }
