@@ -12,7 +12,7 @@ Use this file to resume work (human or agent). **Product vision:** [`WFH_DIARY_P
 | API integration tests | 3 smoke tests (`HealthTests`, `DiaryFlowTests`) |
 | Android app | Not started |
 | Docs (full Platra-equivalent suite) | Partial |
-| CI/CD + GitHub repos | Not started |
+| CI/CD + GitHub repos | Done — [`Evzy/wfh-diary`](https://github.com/Evzy/wfh-diary), [`Evzy/wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
 | Firebase auth enforcement (prod) | Middleware present; optional in local dev |
 
 ## Ordered milestones
@@ -22,7 +22,7 @@ Use this file to resume work (human or agent). **Product vision:** [`WFH_DIARY_P
 | 1 | API core + xlsx export | Done |
 | 2 | Android app — month grid, sync, settings | Pending |
 | 3 | Morning notification (Home / Office / Add time / Leave) | Pending |
-| 4 | CI/CD — `wfh-diary` + `wfh-diary-releases` GitHub repos, Azure deploy | Pending |
+| 4 | CI/CD — GitHub Actions, Azure deploy, release workflow | Pending (repos created) |
 | 5 | Full documentation suite | Pending |
 
 ## End improvements (after core ship)
