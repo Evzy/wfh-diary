@@ -38,6 +38,7 @@ dotnet test WfhDiary.sln -c Release
 
 - One public type per `.cs` / `.kt` file.
 - Australian financial year: 1 July – 30 June.
+- **Version:** [`version.json`](version.json) at repo root — bumped automatically on every commit via git hooks (`./scripts/setup-git-hooks.ps1`). See [`docs/CI_CD.md`](docs/CI_CD.md).
 
 ## Why two repos?
 

@@ -84,7 +84,7 @@ jobs:
         run: |
           set -e
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            V=$(grep -E 'versionName\s*=\s*"' apps/android/app/build.gradle.kts | head -1 | sed -E 's/.*versionName\s*=\s*"([^"]+)".*/\1/')
+            V=$(python3 -c "import json; print(json.load(open('version.json'))['versionName'])")
             TAG="v${V}"
             echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
             echo "mode=main" >> "$GITHUB_OUTPUT"

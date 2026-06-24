@@ -16,6 +16,7 @@ concurrency:
 
 env:
   AZURE_WEBAPP_NAME: app-wfh-diary-api-dev
+  AZURE_RESOURCE_GROUP: rg-wfh-diary-dev-australiaeast
 
 jobs:
   build:
@@ -54,4 +55,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
           package: ./publish

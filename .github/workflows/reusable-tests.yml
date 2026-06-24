@@ -16,6 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify version files match version.json
+        shell: bash
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 -SyncOnly
+          git diff --exit-code version.json services/api/WfhDiary.Api/AppVersion.cs services/api/WfhDiary.Api/WfhDiary.Api.csproj
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"

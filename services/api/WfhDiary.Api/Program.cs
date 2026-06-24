@@ -95,6 +95,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapHealthEndpoints();
+app.MapVersionEndpoints();
 app.MapSettingsEndpoints();
 app.MapDiaryEndpoints();
 

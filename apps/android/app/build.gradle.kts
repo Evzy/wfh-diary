@@ -26,6 +26,12 @@ private fun localPropOrEnv(propertyKey: String): String {
     return System.getenv(propertyKey)?.trim().orEmpty()
 }
 
+@Suppress("UNCHECKED_CAST")
+private val repoVersion: Map<String, Any> = run {
+    val f = rootProject.file("../../version.json")
+    JsonSlurper().parse(f) as Map<String, Any>
+}
+
 private fun escapeForBuildConfigString(s: String): String =
     buildString {
         for (c in s) {
@@ -98,8 +104,8 @@ android {
         applicationId = "dev.wfhdiary.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (repoVersion["versionCode"] as Number).toInt()
+        versionName = repoVersion["versionName"] as String
         buildConfigField("boolean", "GOOGLE_SERVICES_CONFIGURED", if (hasGoogleServicesJson) "true" else "false")
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5222/\"")
         buildConfigField("String", "AZURE_API_BASE_URL", "\"https://app-wfh-diary-api-dev.azurewebsites.net/\"")
