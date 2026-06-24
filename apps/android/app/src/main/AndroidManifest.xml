@@ -45,7 +45,13 @@
 
         <receiver
             android:name=".notification.NotificationActionReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dev.wfhdiary.app.notification.HOME" />
+                <action android:name="dev.wfhdiary.app.notification.OFFICE" />
+                <action android:name="dev.wfhdiary.app.notification.LEAVE" />
+            </intent-filter>
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

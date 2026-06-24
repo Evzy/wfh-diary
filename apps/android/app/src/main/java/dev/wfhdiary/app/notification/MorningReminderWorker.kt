@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.wfhdiary.app.WfhDiaryApplication
+import dev.wfhdiary.app.util.WorkingDaysMask
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -17,6 +18,22 @@ class MorningReminderWorker(
         val iso = DateTimeFormatter.ISO_LOCAL_DATE
         val todayStr = today.format(iso)
 
+        val settings =
+            runCatching { app.diaryRepository.getSettings() }
+                .getOrNull()
+
+        val notificationTime = settings?.notificationTime ?: "08:00"
+        val workingDaysMask = settings?.notificationWorkingDaysMask ?: WorkingDaysMask.DEFAULT
+
+        fun reschedule() {
+            NotificationScheduler.scheduleNext(applicationContext, notificationTime, workingDaysMask)
+        }
+
+        if (!WorkingDaysMask.isWorkingDay(workingDaysMask, today)) {
+            reschedule()
+            return Result.success()
+        }
+
         val onLeave =
             runCatching {
                 app.diaryRepository.getLeavePeriods().any { period ->
@@ -27,20 +44,14 @@ class MorningReminderWorker(
             }.getOrDefault(false)
 
         if (onLeave) {
-            NotificationScheduler.scheduleNext(
-                applicationContext,
-                app.diaryRepository.getSettings().notificationTime,
-            )
+            reschedule()
             return Result.success()
         }
 
         if (NotificationPermissions.canPost(applicationContext)) {
             MorningReminderNotifier.show(applicationContext, todayStr)
         }
-        NotificationScheduler.scheduleNext(
-            applicationContext,
-            runCatching { app.diaryRepository.getSettings().notificationTime }.getOrDefault("08:00"),
-        )
+        reschedule()
         return Result.success()
     }
 }

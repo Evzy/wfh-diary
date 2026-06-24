@@ -9,7 +9,11 @@ import dev.wfhdiary.app.R
 import dev.wfhdiary.app.ui.quick.QuickAddActivity
 
 object MorningReminderNotifier {
-    private const val NOTIFICATION_ID = 1001
+    const val NOTIFICATION_ID = 1001
+
+    fun cancel(context: Context) {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
 
     fun show(context: Context, date: String) {
         val mgr = NotificationManagerCompat.from(context)
@@ -50,7 +54,7 @@ object MorningReminderNotifier {
             }
         return PendingIntent.getBroadcast(
             context,
-            action.hashCode(),
+            (action + date).hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -60,10 +64,11 @@ object MorningReminderNotifier {
         val intent =
             Intent(context, QuickAddActivity::class.java).apply {
                 putExtra(NotificationChannels.EXTRA_DATE, date)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         return PendingIntent.getActivity(
             context,
-            date.hashCode(),
+            ("add_time$date").hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

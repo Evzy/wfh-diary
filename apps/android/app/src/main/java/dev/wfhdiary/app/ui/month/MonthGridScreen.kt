@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,12 +37,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.data.remote.DayEntryDto
+import dev.wfhdiary.app.data.remote.LeavePeriodDto
 import dev.wfhdiary.app.ui.day.DayEditSheet
+import dev.wfhdiary.app.ui.leave.LeaveScheduleSheet
 import dev.wfhdiary.app.util.DayBadge
+import dev.wfhdiary.app.util.LeavePeriodHelper
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+
+private val HomeDayColor = Color(0xFFA5D6A7)
+private val OfficeDayColor = Color(0xFF81D4FA)
+private val LeaveDayColor = Color(0xFFE0E0E0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +61,15 @@ fun MonthGridScreen(
     onOpenSettings: () -> Unit,
     onSelectDate: (String?) -> Unit,
     onSaveDay: (String, dev.wfhdiary.app.data.remote.UpsertDayEntryRequest) -> Unit,
+    onOpenLeaveSheet: () -> Unit,
+    onDismissLeaveSheet: () -> Unit,
+    onScheduleLeave: (dev.wfhdiary.app.data.remote.CreateLeaveRequest) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ym = uiState.yearMonth
     val monthTitle = ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + ym.year
     val daysByDate = uiState.days.associateBy { it.date }
-    val cells = buildMonthCells(ym, daysByDate)
+    val cells = buildMonthCells(ym, daysByDate, uiState.leavePeriods)
     val selectedEntry = uiState.selectedDate?.let { daysByDate[it] }
 
     Scaffold(
@@ -123,6 +135,14 @@ fun MonthGridScreen(
                     )
                 }
             }
+            Button(
+                onClick = onOpenLeaveSheet,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+            ) {
+                Text(stringResource(R.string.schedule_leave_button))
+            }
             FySummaryGrid(
                 fyYear = uiState.fyYear,
                 summary = uiState.summary,
@@ -145,6 +165,13 @@ fun MonthGridScreen(
             onSave = { req -> onSaveDay(uiState.selectedDate, req) },
         )
     }
+
+    if (uiState.showLeaveSheet) {
+        LeaveScheduleSheet(
+            onDismiss = onDismissLeaveSheet,
+            onSave = onScheduleLeave,
+        )
+    }
 }
 
 private data class MonthCell(
@@ -159,10 +186,17 @@ private data class MonthCell(
 private fun MonthDayCell(cell: MonthCell, onClick: () -> Unit) {
     val bg =
         when (cell.badge) {
-            DayBadge.Home -> MaterialTheme.colorScheme.primaryContainer
-            DayBadge.Office -> MaterialTheme.colorScheme.secondaryContainer
-            DayBadge.Leave -> MaterialTheme.colorScheme.tertiaryContainer
-            DayBadge.Empty -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            DayBadge.Home -> HomeDayColor
+            DayBadge.Office -> OfficeDayColor
+            DayBadge.Leave -> LeaveDayColor
+            DayBadge.Empty -> MaterialTheme.colorScheme.surface
+        }
+    val textColor =
+        when (cell.badge) {
+            DayBadge.Home -> Color(0xFF1B5E20)
+            DayBadge.Office -> Color(0xFF01579B)
+            DayBadge.Leave -> Color(0xFF616161)
+            DayBadge.Empty -> MaterialTheme.colorScheme.onSurface
         }
     Box(
         modifier = Modifier
@@ -177,15 +211,24 @@ private fun MonthDayCell(cell: MonthCell, onClick: () -> Unit) {
                 text = cell.dayNumber?.toString() ?: "",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (cell.inMonth) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (cell.inMonth) textColor else MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (cell.inMonth) {
-                Text(cell.badge.label, style = MaterialTheme.typography.labelLarge)
+            if (cell.inMonth && cell.badge != DayBadge.Empty) {
+                Text(
+                    cell.badge.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = textColor,
+                )
             }
         }
     }
 }
 
-private fun buildMonthCells(yearMonth: YearMonth, daysByDate: Map<String, DayEntryDto>): List<MonthCell> {
+private fun buildMonthCells(
+    yearMonth: YearMonth,
+    daysByDate: Map<String, DayEntryDto>,
+    leavePeriods: List<LeavePeriodDto>,
+): List<MonthCell> {
     val first = yearMonth.atDay(1)
     val startOffset = (first.dayOfWeek.value + 6) % 7
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -198,12 +241,13 @@ private fun buildMonthCells(yearMonth: YearMonth, daysByDate: Map<String, DayEnt
         val date = yearMonth.atDay(d)
         val key = date.format(iso)
         val entry = daysByDate[key]
+        val onLeave = LeavePeriodHelper.isOnLeave(date, leavePeriods)
         result += MonthCell(
             key = key,
             dayNumber = d,
             date = key,
             inMonth = true,
-            badge = resolveBadge(entry),
+            badge = resolveBadge(entry, onLeave),
         )
     }
     while (result.size % 7 != 0) {
@@ -212,7 +256,8 @@ private fun buildMonthCells(yearMonth: YearMonth, daysByDate: Map<String, DayEnt
     return result
 }
 
-private fun resolveBadge(entry: DayEntryDto?): DayBadge {
+private fun resolveBadge(entry: DayEntryDto?, onLeave: Boolean): DayBadge {
+    if (onLeave) return DayBadge.Leave
     if (entry == null) return DayBadge.Empty
     if (entry.description.equals("LEAVE", ignoreCase = true)) return DayBadge.Leave
     return when (entry.location?.trim()?.lowercase()) {

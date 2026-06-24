@@ -1,3 +1,5 @@
+using WfhDiary.Api.Services;
+
 namespace WfhDiary.Api.Data;
 
 public sealed class UserSettingsEntity
@@ -11,4 +13,6 @@ public sealed class UserSettingsEntity
     public int DefaultOfficeStartMinutes { get; set; } = 8 * 60;
     public int DefaultOfficeFinishMinutes { get; set; } = 17 * 60;
     public decimal DefaultOfficeBreakHours { get; set; } = 1m;
+    /// <summary>Bitmask of ISO weekdays (Mon=bit0 … Sun=bit6) when morning reminders are sent.</summary>
+    public int NotificationWorkingDaysMask { get; set; } = WorkingDaysMask.Default;
 }

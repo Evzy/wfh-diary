@@ -25,6 +25,7 @@ import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.notification.NotificationChannels
+import dev.wfhdiary.app.notification.MorningReminderNotifier
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme
 import dev.wfhdiary.app.ui.time.TimePickerField
 import dev.wfhdiary.app.util.FinancialYearHelper
@@ -35,6 +36,7 @@ import java.time.format.DateTimeFormatter
 class QuickAddActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MorningReminderNotifier.cancel(this)
         val date =
             intent.getStringExtra(NotificationChannels.EXTRA_DATE)
                 ?: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)

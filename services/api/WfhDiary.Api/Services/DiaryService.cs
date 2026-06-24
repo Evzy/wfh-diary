@@ -54,6 +54,7 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         if (req.DefaultOfficeFinish is not null && TimeHelpers.ParseTimeString(req.DefaultOfficeFinish) is int of)
             settings.DefaultOfficeFinishMinutes = of;
         if (req.DefaultOfficeBreakHours is not null) settings.DefaultOfficeBreakHours = req.DefaultOfficeBreakHours.Value;
+        if (req.NotificationWorkingDaysMask is int mask) settings.NotificationWorkingDaysMask = mask;
 
         await db.SaveChangesAsync(ct);
         return settings;
@@ -180,6 +181,7 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
     public static UserSettingsDto ToDto(UserSettingsEntity s) => new(
         s.DisplayName,
         TimeHelpers.MinutesToTimeString(s.NotificationTimeMinutes),
+        s.NotificationWorkingDaysMask,
         TimeHelpers.MinutesToTimeString(s.DefaultHomeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultHomeFinishMinutes),
         s.DefaultHomeBreakHours,

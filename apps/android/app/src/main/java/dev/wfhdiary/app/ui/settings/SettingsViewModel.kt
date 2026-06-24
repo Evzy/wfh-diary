@@ -14,6 +14,7 @@ import dev.wfhdiary.app.data.auth.GoogleFirebaseSignIn
 import dev.wfhdiary.app.data.prefs.ApiBackendMode
 import dev.wfhdiary.app.data.prefs.AppSettingsPreferences
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
+import dev.wfhdiary.app.util.WorkingDaysMask
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
@@ -80,6 +81,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     SettingsFormState(
                         displayName = s.displayName,
                         notificationTime = s.notificationTime,
+                        notificationWorkingDaysMask = s.notificationWorkingDaysMask,
                         defaultHomeStart = s.defaultHomeStart,
                         defaultHomeFinish = s.defaultHomeFinish,
                         defaultHomeBreakHours = s.defaultHomeBreakHours.toString(),
@@ -110,6 +112,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         UpdateUserSettingsRequest(
                             displayName = form.displayName,
                             notificationTime = form.notificationTime,
+                            notificationWorkingDaysMask = form.notificationWorkingDaysMask,
                             defaultHomeStart = form.defaultHomeStart,
                             defaultHomeFinish = form.defaultHomeFinish,
                             defaultHomeBreakHours = form.defaultHomeBreakHours.toDoubleOrNull(),
@@ -118,7 +121,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             defaultOfficeBreakHours = form.defaultOfficeBreakHours.toDoubleOrNull(),
                         ),
                     )
-                NotificationScheduler.scheduleNext(getApplication(), updated.notificationTime)
+                NotificationScheduler.scheduleNext(
+                    getApplication(),
+                    updated.notificationTime,
+                    updated.notificationWorkingDaysMask,
+                )
                 _saveMessage.value = getApplication<Application>().getString(R.string.settings_saved)
             }.onFailure { e ->
                 _saveMessage.value = e.message.orEmpty()

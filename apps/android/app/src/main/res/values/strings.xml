@@ -22,7 +22,9 @@
     <string name="settings_display_name">Display name</string>
     <string name="settings_notification_time">Morning reminder time</string>
     <string name="settings_notification_section_title">Morning reminder (status bar)</string>
-    <string name="settings_notification_time_hint">Posts a system notification at this time each weekday (save to apply). Skipped on leave days.</string>
+    <string name="settings_notification_time_hint">Posts a system notification at this time on selected days (save to apply). Skipped on leave days.</string>
+    <string name="settings_notification_working_days">Reminder days</string>
+    <string name="settings_notification_working_days_hint">Selected days get the morning reminder. Unselected days are off (e.g. weekends).</string>
     <string name="settings_notification_next">Next system notification: %1$s</string>
     <string name="settings_notification_enabled">System notifications are allowed for this app.</string>
     <string name="settings_notification_disabled">System notifications are blocked — enable to receive reminders.</string>
@@ -74,4 +76,14 @@
     <string name="time_picker_open">Choose time</string>
     <string name="time_picker_ok">OK</string>
     <string name="time_picker_cancel">Cancel</string>
+    <string name="date_picker_not_set">Tap to choose date</string>
+    <string name="date_picker_open">Choose date</string>
+    <string name="schedule_leave_button">Schedule leave</string>
+    <string name="leave_schedule_title">Schedule leave</string>
+    <string name="leave_start_date">Start date</string>
+    <string name="leave_end_date">End date</string>
+    <string name="leave_note">Note (optional)</string>
+    <string name="leave_save">Save leave</string>
+    <string name="leave_error_dates_required">Start and end dates are required.</string>
+    <string name="leave_error_end_before_start">End date must be on or after start date.</string>
 </resources>

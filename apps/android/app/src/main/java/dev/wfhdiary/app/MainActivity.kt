@@ -112,6 +112,9 @@ class MainActivity : ComponentActivity() {
                             onOpenSettings = { scope.launch { drawerState.open() } },
                             onSelectDate = monthViewModel::selectDate,
                             onSaveDay = monthViewModel::saveDay,
+                            onOpenLeaveSheet = monthViewModel::openLeaveSheet,
+                            onDismissLeaveSheet = monthViewModel::dismissLeaveSheet,
+                            onScheduleLeave = monthViewModel::scheduleLeave,
                         )
                     }
                 }

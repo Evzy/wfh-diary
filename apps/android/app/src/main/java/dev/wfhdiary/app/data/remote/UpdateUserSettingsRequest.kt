@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class UpdateUserSettingsRequest(
     val displayName: String? = null,
     val notificationTime: String? = null,
+    val notificationWorkingDaysMask: Int? = null,
     val defaultHomeStart: String? = null,
     val defaultHomeFinish: String? = null,
     val defaultHomeBreakHours: Double? = null,

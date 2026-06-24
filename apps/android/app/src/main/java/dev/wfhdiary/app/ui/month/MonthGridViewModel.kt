@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.local.DayEntryEntity
+import dev.wfhdiary.app.data.remote.CreateLeaveRequest
 import dev.wfhdiary.app.data.remote.DayEntryDto
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.util.FinancialYearHelper
@@ -41,10 +42,17 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             runCatching {
                 repo.getDiary(fyYear)
                 val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
+                val leavePeriods = repo.getLeavePeriods()
                 val summary = repo.getSummary(fyYear)
                 cacheDays(days, fyYear)
                 _uiState.update {
-                    it.copy(days = days, summary = summary, loading = false, error = null)
+                    it.copy(
+                        days = days,
+                        leavePeriods = leavePeriods,
+                        summary = summary,
+                        loading = false,
+                        error = null,
+                    )
                 }
             }.onFailure { e ->
                 val cached = loadCached(from, to)
@@ -71,6 +79,35 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun selectDate(date: String?) {
         _uiState.update { it.copy(selectedDate = date) }
+    }
+
+    fun openLeaveSheet() {
+        _uiState.update { it.copy(showLeaveSheet = true) }
+    }
+
+    fun dismissLeaveSheet() {
+        _uiState.update { it.copy(showLeaveSheet = false) }
+    }
+
+    fun scheduleLeave(request: CreateLeaveRequest) {
+        viewModelScope.launch {
+            val fyYear = _uiState.value.fyYear
+            runCatching {
+                repo.createLeave(fyYear, request)
+                val leavePeriods = repo.getLeavePeriods()
+                val summary = repo.getSummary(fyYear)
+                _uiState.update {
+                    it.copy(
+                        leavePeriods = leavePeriods,
+                        summary = summary,
+                        showLeaveSheet = false,
+                        error = null,
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
     }
 
     fun saveDay(date: String, request: UpsertDayEntryRequest) {

@@ -96,7 +96,11 @@ class WfhDiaryApplication : Application() {
         authSyncScope.launch {
             runCatching {
                 val settings = diaryRepository.getSettings()
-                NotificationScheduler.scheduleNext(this@WfhDiaryApplication, settings.notificationTime)
+                NotificationScheduler.scheduleNext(
+                    this@WfhDiaryApplication,
+                    settings.notificationTime,
+                    settings.notificationWorkingDaysMask,
+                )
             }
         }
     }

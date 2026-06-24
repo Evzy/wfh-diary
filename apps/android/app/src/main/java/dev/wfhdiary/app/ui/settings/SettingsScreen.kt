@@ -41,6 +41,7 @@ import dev.wfhdiary.app.R
 import dev.wfhdiary.app.data.prefs.ApiBackendMode
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
+import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 
 @Composable
@@ -230,11 +231,19 @@ fun SettingsScreen(
             Text(
                 stringResource(
                     R.string.settings_notification_next,
-                    NotificationScheduler.formatNextReminder(f.notificationTime),
+                    NotificationScheduler.formatNextReminder(
+                        f.notificationTime,
+                        f.notificationWorkingDaysMask,
+                    ),
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp),
+            )
+            WorkingDaysSelector(
+                mask = f.notificationWorkingDaysMask,
+                onMaskChange = { mask -> onFormChange { it.copy(notificationWorkingDaysMask = mask) } },
+                modifier = Modifier.padding(bottom = 12.dp),
             )
             if (notificationsEnabled) {
                 Text(
@@ -305,6 +314,11 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
             }
+            BreakHoursField(
+                value = f.defaultHomeBreakHours,
+                onValueChange = { v -> onFormChange { it.copy(defaultHomeBreakHours = v) } },
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
             Text(stringResource(R.string.settings_default_office), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TimePickerField(
@@ -323,6 +337,11 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
             }
+            BreakHoursField(
+                value = f.defaultOfficeBreakHours,
+                onValueChange = { v -> onFormChange { it.copy(defaultOfficeBreakHours = v) } },
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.settings_save))
             }
