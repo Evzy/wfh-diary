@@ -2,11 +2,13 @@ package dev.wfhdiary.app.data.remote
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.put
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
@@ -31,6 +33,9 @@ class DiaryRepository(
             setBody(request)
         }.body()
 
+    suspend fun deleteDay(fyYear: Int, date: String): DayEntryDto =
+        client.delete("${base()}v1/diaries/$fyYear/days/$date").body()
+
     suspend fun createLeave(fyYear: Int, request: CreateLeaveRequest): LeavePeriodDto =
         client.post("${base()}v1/diaries/$fyYear/leave") {
             contentType(ContentType.Application.Json)
@@ -40,8 +45,12 @@ class DiaryRepository(
     suspend fun getSummary(fyYear: Int): DiarySummaryDto =
         client.get("${base()}v1/diaries/$fyYear/summary").body()
 
-    suspend fun exportXlsxUrl(fyYear: Int): String =
-        "${base()}v1/diaries/$fyYear/export.xlsx"
+    suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
+        val response = client.get("${base()}v1/diaries/$fyYear/export.xlsx")
+        val bytes = response.readBytes()
+        val filename = "WFH-Diary-$fyYear-${fyYear + 1}.xlsx"
+        return bytes to filename
+    }
 
     suspend fun getLeavePeriods(): List<LeavePeriodDto> =
         client.get("${base()}v1/leave-periods").body()

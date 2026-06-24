@@ -1,7 +1,5 @@
 package dev.wfhdiary.app
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,8 +42,8 @@ class MainActivity : ComponentActivity() {
                 val settingsForm by settingsViewModel.settingsForm.collectAsStateWithLifecycle()
                 val saveMessage by settingsViewModel.saveMessage.collectAsStateWithLifecycle()
                 val notificationMessage by settingsViewModel.notificationMessage.collectAsStateWithLifecycle()
-                val apiBackendMode by settingsViewModel.apiBackendMode.collectAsStateWithLifecycle()
-                val resolvedBaseUrl by settingsViewModel.resolvedBaseUrl.collectAsStateWithLifecycle()
+                val exportBusy by settingsViewModel.exportBusy.collectAsStateWithLifecycle()
+                val exportStatus by settingsViewModel.exportStatus.collectAsStateWithLifecycle()
                 val firebaseUserLabel by settingsViewModel.firebaseUserLabel.collectAsStateWithLifecycle()
                 val firebaseSignInBusy by settingsViewModel.firebaseSignInBusy.collectAsStateWithLifecycle()
                 val firebaseAuthMessage by settingsViewModel.firebaseAuthMessage.collectAsStateWithLifecycle()
@@ -57,7 +55,6 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(drawerState.currentValue) {
                     if (drawerState.currentValue == DrawerValue.Open) {
                         settingsViewModel.refreshSettings()
-                        settingsViewModel.refreshBaseUrlMeta()
                     }
                 }
 
@@ -70,21 +67,15 @@ class MainActivity : ComponentActivity() {
                                 form = settingsForm,
                                 saveMessage = saveMessage,
                                 notificationMessage = notificationMessage,
-                                apiBackendMode = apiBackendMode,
-                                resolvedBaseUrl = resolvedBaseUrl,
-                                onApiBackendModeChange = settingsViewModel::setApiBackendMode,
+                                exportFyYear = monthState.fyYear,
+                                exportBusy = exportBusy,
+                                exportStatus = exportStatus,
                                 onFormChange = settingsViewModel::updateForm,
                                 onSave = settingsViewModel::saveSettings,
                                 onSendTestNotification = settingsViewModel::sendTestNotification,
                                 onClearNotificationMessage = settingsViewModel::clearNotificationMessage,
                                 onExportClick = {
-                                    scope.launch {
-                                        runCatching {
-                                            settingsViewModel.exportUrlAsync()
-                                        }.onSuccess { url ->
-                                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                        }
-                                    }
+                                    settingsViewModel.exportXlsx(monthState.fyYear, activity)
                                 },
                                 firebaseUserLabel = firebaseUserLabel,
                                 firebaseSignInBusy = firebaseSignInBusy,
@@ -115,6 +106,12 @@ class MainActivity : ComponentActivity() {
                             onOpenLeaveSheet = monthViewModel::openLeaveSheet,
                             onDismissLeaveSheet = monthViewModel::dismissLeaveSheet,
                             onScheduleLeave = monthViewModel::scheduleLeave,
+                            onPreviousFy = monthViewModel::showPreviousFy,
+                            onNextFy = monthViewModel::showNextFy,
+                            onOpenFyPicker = monthViewModel::openFyPicker,
+                            onDismissFyPicker = monthViewModel::dismissFyPicker,
+                            onSelectFyYear = monthViewModel::selectFyYear,
+                            onDeleteDay = monthViewModel::deleteDay,
                         )
                     }
                 }

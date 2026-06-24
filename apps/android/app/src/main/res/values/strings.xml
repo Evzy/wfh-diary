@@ -13,12 +13,10 @@
     <string name="firebase_signout_button">Sign out</string>
     <string name="firebase_signin_need_json">Add google-services.json under apps/android/app/ and Sync Gradle to enable sign-in.</string>
     <string name="firebase_user_signed_in_as">Signed in as %1$s</string>
-    <string name="api_backend_section_title">API backend</string>
-    <string name="api_backend_local_title">Local (emulator / LAN)</string>
-    <string name="api_backend_local_desc">http://10.0.2.2:5222/ by default — change API_BASE_URL in build.gradle.kts for a physical device.</string>
-    <string name="api_backend_azure_title">Azure (dev)</string>
-    <string name="api_backend_azure_desc">Hosted App Service URL compiled into the app.</string>
     <string name="settings_export_xlsx">Export financial year (XLSX)</string>
+    <string name="settings_export_fy_hint">Exports FY %1$d–%2$d (the year shown on the calendar).</string>
+    <string name="settings_export_downloading">Downloading spreadsheet…</string>
+    <string name="settings_export_failed">Export failed</string>
     <string name="settings_display_name">Display name</string>
     <string name="settings_notification_time">Morning reminder time</string>
     <string name="settings_notification_section_title">Morning reminder (status bar)</string>
@@ -68,7 +66,8 @@
     <string name="day_edit_location">Location</string>
     <string name="day_edit_start">Start</string>
     <string name="day_edit_finish">Finish</string>
-    <string name="day_edit_break">Break (hours)</string>
+    <string name="day_edit_break">Total break (hours)</string>
+    <string name="day_edit_delete">Delete entry</string>
     <string name="day_edit_description">Description</string>
     <string name="quick_add_title">Add time</string>
     <string name="quick_add_save">Save</string>
@@ -86,4 +85,8 @@
     <string name="leave_save">Save leave</string>
     <string name="leave_error_dates_required">Start and end dates are required.</string>
     <string name="leave_error_end_before_start">End date must be on or after start date.</string>
+    <string name="fy_selector_label">FY %1$d–%2$d</string>
+    <string name="fy_picker_title">Choose financial year</string>
+    <string name="fy_previous">Previous financial year</string>
+    <string name="fy_next">Next financial year</string>
 </resources>

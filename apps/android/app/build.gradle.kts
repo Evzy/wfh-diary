@@ -107,7 +107,6 @@ android {
         versionCode = (repoVersion["versionCode"] as Number).toInt()
         versionName = repoVersion["versionName"] as String
         buildConfigField("boolean", "GOOGLE_SERVICES_CONFIGURED", if (hasGoogleServicesJson) "true" else "false")
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5222/\"")
         buildConfigField("String", "AZURE_API_BASE_URL", "\"https://app-wfh-diary-api-dev.azurewebsites.net/\"")
         val updateOwner = escapeForBuildConfigString(
             localPropOrEnv("UPDATE_GITHUB_OWNER").ifEmpty { "Evzy" },
@@ -168,7 +167,6 @@ dependencies {
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
-    implementation(libs.datastore.preferences)
     implementation(libs.work.runtime.ktx)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)

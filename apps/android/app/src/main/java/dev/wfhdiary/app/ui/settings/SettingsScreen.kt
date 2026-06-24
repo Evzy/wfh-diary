@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -23,7 +22,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,47 +36,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.prefs.ApiBackendMode
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 
 @Composable
-private fun ApiBackendOptionRow(
-    selected: Boolean,
-    title: String,
-    description: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Column(Modifier.padding(start = 8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
 fun SettingsScreen(
     form: SettingsFormState?,
     saveMessage: String,
     notificationMessage: String,
-    apiBackendMode: ApiBackendMode,
-    resolvedBaseUrl: String,
-    onApiBackendModeChange: (ApiBackendMode) -> Unit,
+    exportFyYear: Int,
+    exportBusy: Boolean,
+    exportStatus: String,
     onFormChange: ((SettingsFormState) -> SettingsFormState) -> Unit,
     onSave: () -> Unit,
     onSendTestNotification: () -> Unit,
@@ -202,22 +172,6 @@ fun SettingsScreen(
         if (firebaseAuthMessage.isNotBlank()) {
             Text(firebaseAuthMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
-
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text(stringResource(R.string.api_backend_section_title), style = MaterialTheme.typography.titleSmall)
-        Text("Base URL: $resolvedBaseUrl", style = MaterialTheme.typography.bodySmall)
-        ApiBackendOptionRow(
-            selected = apiBackendMode == ApiBackendMode.API_LOCAL,
-            title = stringResource(R.string.api_backend_local_title),
-            description = stringResource(R.string.api_backend_local_desc),
-            onClick = { onApiBackendModeChange(ApiBackendMode.API_LOCAL) },
-        )
-        ApiBackendOptionRow(
-            selected = apiBackendMode == ApiBackendMode.API_AZURE,
-            title = stringResource(R.string.api_backend_azure_title),
-            description = stringResource(R.string.api_backend_azure_desc),
-            onClick = { onApiBackendModeChange(ApiBackendMode.API_AZURE) },
-        )
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         form?.let { f ->
@@ -352,9 +306,22 @@ fun SettingsScreen(
 
         Button(
             onClick = onExportClick,
+            enabled = !exportBusy,
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         ) {
             Text(stringResource(R.string.settings_export_xlsx))
+        }
+        Text(
+            stringResource(R.string.settings_export_fy_hint, exportFyYear, exportFyYear + 1),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (exportStatus.isNotBlank()) {
+            Text(
+                exportStatus,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))

@@ -68,13 +68,40 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun showPreviousMonth() {
-        val ym = _uiState.value.yearMonth.minusMonths(1)
-        loadMonth(ym)
+        loadMonth(_uiState.value.yearMonth.minusMonths(1))
     }
 
     fun showNextMonth() {
-        val ym = _uiState.value.yearMonth.plusMonths(1)
-        loadMonth(ym)
+        loadMonth(_uiState.value.yearMonth.plusMonths(1))
+    }
+
+    fun showPreviousFy() {
+        selectFyYear(_uiState.value.fyYear - 1)
+    }
+
+    fun showNextFy() {
+        selectFyYear(_uiState.value.fyYear + 1)
+    }
+
+    fun openFyPicker() {
+        _uiState.update { it.copy(showFyPicker = true) }
+    }
+
+    fun dismissFyPicker() {
+        _uiState.update { it.copy(showFyPicker = false) }
+    }
+
+    fun selectFyYear(fyYear: Int) {
+        _uiState.update { it.copy(showFyPicker = false) }
+        val today = LocalDate.now()
+        val (start, end) = FinancialYearHelper.fyRange(fyYear)
+        val month =
+            if (!today.isBefore(start) && !today.isAfter(end)) {
+                YearMonth.from(today)
+            } else {
+                YearMonth.of(fyYear, 7)
+            }
+        loadMonth(month)
     }
 
     fun selectDate(date: String?) {
@@ -91,13 +118,19 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun scheduleLeave(request: CreateLeaveRequest) {
         viewModelScope.launch {
-            val fyYear = _uiState.value.fyYear
+            val state = _uiState.value
+            val fyYear = state.fyYear
+            val from = state.yearMonth.atDay(1)
+            val to = state.yearMonth.atEndOfMonth()
             runCatching {
                 repo.createLeave(fyYear, request)
                 val leavePeriods = repo.getLeavePeriods()
+                val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
                 val summary = repo.getSummary(fyYear)
+                cacheDays(days, fyYear)
                 _uiState.update {
                     it.copy(
+                        days = days,
                         leavePeriods = leavePeriods,
                         summary = summary,
                         showLeaveSheet = false,
@@ -116,18 +149,35 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             val fyYear = FinancialYearHelper.currentFyYear(localDate)
             runCatching {
                 val saved = repo.upsertDay(fyYear, date, request)
-                cacheDays(listOf(saved), fyYear)
-                val summary = repo.getSummary(fyYear)
-                val days =
-                    _uiState.value.days.toMutableList().also { list ->
-                        val idx = list.indexOfFirst { it.date == date }
-                        if (idx >= 0) list[idx] = saved else list.add(saved)
-                    }.sortedBy { it.date }
-                _uiState.update { it.copy(days = days, summary = summary, selectedDate = null) }
+                refreshDayInState(fyYear, saved, date)
             }.onFailure { e ->
                 _uiState.update { it.copy(error = e.message) }
             }
         }
+    }
+
+    fun deleteDay(date: String) {
+        viewModelScope.launch {
+            val localDate = LocalDate.parse(date, isoDate)
+            val fyYear = FinancialYearHelper.currentFyYear(localDate)
+            runCatching {
+                val cleared = repo.deleteDay(fyYear, date)
+                refreshDayInState(fyYear, cleared, date)
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    private suspend fun refreshDayInState(fyYear: Int, saved: DayEntryDto, date: String) {
+        cacheDays(listOf(saved), fyYear)
+        val summary = repo.getSummary(fyYear)
+        val days =
+            _uiState.value.days.toMutableList().also { list ->
+                val idx = list.indexOfFirst { it.date == date }
+                if (idx >= 0) list[idx] = saved else list.add(saved)
+            }.sortedBy { it.date }
+        _uiState.update { it.copy(days = days, summary = summary, selectedDate = null) }
     }
 
     private suspend fun cacheDays(days: List<DayEntryDto>, fyYear: Int) {

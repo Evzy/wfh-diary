@@ -3,6 +3,6 @@ namespace WfhDiary.Api;
 
 public static class AppVersion
 {
-    public const string VersionName = "0.1.3";
-    public const int VersionCode = 4;
+    public const string VersionName = "0.1.4";
+    public const int VersionCode = 5;
 }

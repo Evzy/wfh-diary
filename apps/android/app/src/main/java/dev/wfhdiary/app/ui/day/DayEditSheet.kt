@@ -9,6 +9,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -26,6 +27,15 @@ import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 
+private fun DayEntryDto?.hasLoggedWork(): Boolean {
+    if (this == null) return false
+    return !location.isNullOrBlank() ||
+        !startTime.isNullOrBlank() ||
+        !finishTime.isNullOrBlank() ||
+        (breakHours != null && breakHours > 0.0) ||
+        !description.isNullOrBlank()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayEditSheet(
@@ -33,6 +43,7 @@ fun DayEditSheet(
     entry: DayEntryDto?,
     onDismiss: () -> Unit,
     onSave: (UpsertDayEntryRequest) -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var location by remember(date, entry) { mutableStateOf(entry?.location ?: "") }
@@ -104,6 +115,14 @@ fun DayEditSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.day_edit_save))
+            }
+            if (entry.hasLoggedWork() && onDelete != null) {
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.day_edit_delete))
+                }
             }
         }
     }

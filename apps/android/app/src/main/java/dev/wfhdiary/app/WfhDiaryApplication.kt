@@ -4,7 +4,6 @@ import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
 import dev.wfhdiary.app.data.auth.FirebaseIdTokenHolder
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.prefs.AppSettingsPreferences
 import dev.wfhdiary.app.data.remote.DiaryRepository
 import dev.wfhdiary.app.notification.NotificationChannels
 import dev.wfhdiary.app.notification.NotificationScheduler
@@ -18,7 +17,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
@@ -28,7 +26,6 @@ class WfhDiaryApplication : Application() {
         private set
 
     val firebaseIdTokenHolder = FirebaseIdTokenHolder()
-    val appSettingsPreferences by lazy { AppSettingsPreferences(this) }
 
     private val authSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -64,12 +61,8 @@ class WfhDiaryApplication : Application() {
     }
 
     suspend fun resolveApiBaseUrl(): String {
-        val mode = appSettingsPreferences.apiBackendMode.first()
-        return appSettingsPreferences.resolvedApiBaseUrl(
-            mode,
-            BuildConfig.API_BASE_URL,
-            BuildConfig.AZURE_API_BASE_URL,
-        )
+        val url = BuildConfig.AZURE_API_BASE_URL.trim().trimEnd('/')
+        return "$url/"
     }
 
     override fun onCreate() {

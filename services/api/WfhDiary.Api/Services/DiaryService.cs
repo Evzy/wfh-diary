@@ -131,6 +131,27 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         return entry;
     }
 
+    public async Task<DayEntryEntity?> ClearDayAsync(string userId, int fyYear, DateOnly date, CancellationToken ct)
+    {
+        var diary = await GetOrCreateDiaryAsync(userId, fyYear, ct);
+        if (date < diary.FyStartDate || date > diary.FyEndDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(date), "Date outside financial year.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var entry = await db.DayEntries.FirstOrDefaultAsync(d => d.DiaryId == diary.Id && d.Date == date, ct);
+        if (entry is null) return null;
+
+        entry.StartTimeMinutes = null;
+        entry.FinishTimeMinutes = null;
+        entry.BreakHours = null;
+        entry.Description = null;
+        entry.Location = null;
+        await db.SaveChangesAsync(ct);
+        return entry;
+    }
+
     public async Task<LeavePeriodEntity> CreateLeaveAsync(string userId, int fyYear, CreateLeaveRequest req, CancellationToken ct)
     {
         if (!DateOnly.TryParse(req.StartDate, out var start) || !DateOnly.TryParse(req.EndDate, out var end))

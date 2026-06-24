@@ -42,6 +42,27 @@ public static class DiaryEndpoints
             }
         });
 
+        app.MapDelete("/v1/diaries/{fyYear:int}/days/{date}", async (int fyYear, string date, DiaryService svc, HttpContext ctx, CancellationToken ct) =>
+        {
+            if (!DateOnly.TryParse(date, out var parsed))
+            {
+                return Results.BadRequest(new { error = "Invalid date. Use yyyy-MM-dd." });
+            }
+
+            var userId = svc.RequireUserId(ctx);
+            try
+            {
+                var entry = await svc.ClearDayAsync(userId, fyYear, parsed, ct);
+                return entry is null
+                    ? Results.NotFound()
+                    : Results.Ok(DiaryService.ToDto(entry));
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
         app.MapPost("/v1/diaries/{fyYear:int}/leave", async (int fyYear, CreateLeaveRequest req, DiaryService svc, HttpContext ctx, CancellationToken ct) =>
         {
             var userId = svc.RequireUserId(ctx);

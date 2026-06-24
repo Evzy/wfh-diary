@@ -11,25 +11,21 @@ import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.auth.GoogleFirebaseSignIn
-import dev.wfhdiary.app.data.prefs.ApiBackendMode
-import dev.wfhdiary.app.data.prefs.AppSettingsPreferences
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
+import dev.wfhdiary.app.export.XlsxExportHelper
 import dev.wfhdiary.app.util.WorkingDaysMask
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val wfhApp = application as WfhDiaryApplication
-    private val prefs = wfhApp.appSettingsPreferences
     private val repo = wfhApp.diaryRepository
 
     private val _firebaseUserLabel = MutableStateFlow<String?>(null)
@@ -50,8 +46,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _notificationMessage = MutableStateFlow("")
     val notificationMessage = _notificationMessage.asStateFlow()
 
-    private val _resolvedBaseUrl = MutableStateFlow("")
-    val resolvedBaseUrl = _resolvedBaseUrl.asStateFlow()
+    private val _exportBusy = MutableStateFlow(false)
+    val exportBusy = _exportBusy.asStateFlow()
+
+    private val _exportStatus = MutableStateFlow("")
+    val exportStatus = _exportStatus.asStateFlow()
 
     init {
         if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
@@ -64,14 +63,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             auth.addAuthStateListener { syncLabel() }
         }
         refreshSettings()
-        refreshBaseUrlMeta()
     }
-
-    val apiBackendMode = prefs.apiBackendMode.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        initialValue = ApiBackendMode.API_AZURE,
-    )
 
     fun refreshSettings() {
         viewModelScope.launch {
@@ -90,12 +82,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         defaultOfficeBreakHours = s.defaultOfficeBreakHours.toString(),
                     )
             }
-        }
-    }
-
-    fun refreshBaseUrlMeta() {
-        viewModelScope.launch {
-            _resolvedBaseUrl.value = wfhApp.resolveApiBaseUrl()
         }
     }
 
@@ -147,15 +133,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _notificationMessage.value = ""
     }
 
-    suspend fun exportUrlAsync(): String {
-        val fy = dev.wfhdiary.app.util.FinancialYearHelper.currentFyYear(java.time.LocalDate.now())
-        return repo.exportXlsxUrl(fy)
-    }
-
-    fun setApiBackendMode(mode: ApiBackendMode) {
+    fun exportXlsx(fyYear: Int, activity: Activity) {
+        val app = getApplication<Application>()
         viewModelScope.launch {
-            prefs.setApiBackendMode(mode)
-            refreshBaseUrlMeta()
+            _exportBusy.value = true
+            _exportStatus.value = app.getString(R.string.settings_export_downloading)
+            runCatching {
+                val (bytes, filename) =
+                    withContext(Dispatchers.IO) { repo.downloadExportXlsx(fyYear) }
+                withContext(Dispatchers.Main) {
+                    XlsxExportHelper.saveAndShare(activity, bytes, filename)
+                }
+                _exportStatus.value = ""
+            }.onFailure { e ->
+                _exportStatus.value = e.message?.trim().orEmpty().ifEmpty {
+                    app.getString(R.string.settings_export_failed)
+                }
+            }
+            _exportBusy.value = false
         }
     }
 
