@@ -48,11 +48,12 @@ class MainActivity : ComponentActivity() {
                 val firebaseSignInBusy by settingsViewModel.firebaseSignInBusy.collectAsStateWithLifecycle()
                 val firebaseAuthMessage by settingsViewModel.firebaseAuthMessage.collectAsStateWithLifecycle()
                 val githubUpdateUi by settingsViewModel.githubUpdateUiState.collectAsStateWithLifecycle()
-                val workTemplates by settingsViewModel.workTemplates.collectAsStateWithLifecycle()
-                val showWorkTemplatesSheet by settingsViewModel.showWorkTemplatesSheet.collectAsStateWithLifecycle()
                 val geofenceBusy by settingsViewModel.geofenceBusy.collectAsStateWithLifecycle()
                 val geofenceMessage by settingsViewModel.geofenceMessage.collectAsStateWithLifecycle()
                 val geofenceMapPicker by settingsViewModel.geofenceMapPicker.collectAsStateWithLifecycle()
+                val workScheduleCustomize by settingsViewModel.workScheduleCustomize.collectAsStateWithLifecycle()
+                val geolocationSettingsOpen by settingsViewModel.geolocationSettingsOpen.collectAsStateWithLifecycle()
+                val geolocationDraft by settingsViewModel.geolocationDraft.collectAsStateWithLifecycle()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val activity = LocalContext.current as ComponentActivity
@@ -95,12 +96,17 @@ class MainActivity : ComponentActivity() {
                                 onDownloadInstallGithubApk = {
                                     settingsViewModel.downloadAndInstallGithubApk(activity)
                                 },
-                                workTemplates = workTemplates,
-                                showWorkTemplatesSheet = showWorkTemplatesSheet,
-                                onOpenWorkTemplates = settingsViewModel::openWorkTemplatesSheet,
-                                onDismissWorkTemplates = settingsViewModel::dismissWorkTemplatesSheet,
-                                onCreateWorkTemplate = settingsViewModel::createWorkTemplate,
-                                onDeleteWorkTemplate = settingsViewModel::deleteWorkTemplate,
+                                workScheduleCustomize = workScheduleCustomize,
+                                onCustomizeHomeSchedule = settingsViewModel::openHomeScheduleCustomize,
+                                onCustomizeOfficeSchedule = settingsViewModel::openOfficeScheduleCustomize,
+                                onDismissWorkScheduleCustomize = settingsViewModel::dismissWorkScheduleCustomize,
+                                onApplyWorkScheduleCustomize = settingsViewModel::applyWorkScheduleCustomize,
+                                geolocationSettingsOpen = geolocationSettingsOpen,
+                                geolocationDraft = geolocationDraft,
+                                onOpenGeolocationSettings = settingsViewModel::openGeolocationSettings,
+                                onDismissGeolocationSettings = settingsViewModel::dismissGeolocationSettings,
+                                onApplyGeolocationSettings = settingsViewModel::applyGeolocationSettings,
+                                onGeolocationDraftChange = settingsViewModel::updateGeolocationDraft,
                                 geofenceBusy = geofenceBusy,
                                 geofenceMessage = geofenceMessage,
                                 onSetHomeLocation = settingsViewModel::setHomeLocationFromGps,

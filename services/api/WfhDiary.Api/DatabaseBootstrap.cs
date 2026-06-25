@@ -20,6 +20,9 @@ public static class DatabaseBootstrap
         await EnsureSqliteColumnAsync(db, "OfficeGeofenceLatitude", "REAL NULL");
         await EnsureSqliteColumnAsync(db, "OfficeGeofenceLongitude", "REAL NULL");
         await EnsureSqliteColumnAsync(db, "OfficeGeofenceRadiusMeters", "INTEGER NULL");
+        await EnsureSqliteColumnAsync(db, "MissedNotificationAwayDefault", "TEXT NOT NULL DEFAULT 'Office'");
+        await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtHome", "INTEGER NOT NULL DEFAULT 0");
+        await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtOffice", "INTEGER NOT NULL DEFAULT 0");
         await EnsureWorkTemplatesTableAsync(db);
     }
 

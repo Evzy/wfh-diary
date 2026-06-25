@@ -58,7 +58,22 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         if (req.MissedNotificationDefault is not null)
         {
             var d = req.MissedNotificationDefault.Trim();
-            settings.MissedNotificationDefault = d is "Home" or "Office" or "Leave" or "None" ? d : "None";
+            settings.MissedNotificationDefault =
+                d is "Home" or "Office" or "Leave" or "Geolocation" or "None" ? d : "None";
+        }
+        if (req.MissedNotificationAwayDefault is not null)
+        {
+            var away = req.MissedNotificationAwayDefault.Trim();
+            settings.MissedNotificationAwayDefault =
+                away is "Home" or "Office" or "Leave" ? away : "Office";
+        }
+        if (req.GeolocationSkipNotificationAtHome is bool skipAtHome)
+        {
+            settings.GeolocationSkipNotificationAtHome = skipAtHome;
+        }
+        if (req.GeolocationSkipNotificationAtOffice is bool skipAtOffice)
+        {
+            settings.GeolocationSkipNotificationAtOffice = skipAtOffice;
         }
         if (req.MissedNotificationApplyAt is not null &&
             TimeHelpers.ParseTimeString(req.MissedNotificationApplyAt) is int applyAt)
@@ -388,6 +403,9 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         s.NotificationWorkingDaysMask,
         s.MissedNotificationDefault,
         TimeHelpers.MinutesToTimeString(s.MissedNotificationApplyAtMinutes),
+        s.MissedNotificationAwayDefault,
+        s.GeolocationSkipNotificationAtHome,
+        s.GeolocationSkipNotificationAtOffice,
         TimeHelpers.MinutesToTimeString(s.DefaultHomeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultHomeFinishMinutes),
         s.DefaultHomeBreakHours,

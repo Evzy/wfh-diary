@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dev.wfhdiary.app.WfhDiaryApplication
+import dev.wfhdiary.app.util.DayEntryHelper
 import dev.wfhdiary.app.util.WorkingDaysMask
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -46,6 +47,25 @@ class MorningReminderWorker(
         if (onLeave) {
             reschedule()
             return Result.success()
+        }
+
+        if (settings != null &&
+            MissedNotificationDefault.isGeolocation(settings.missedNotificationDefault)
+        ) {
+            val fyYear = dev.wfhdiary.app.util.FinancialYearHelper.currentFyYear(today)
+            val entry =
+                runCatching { app.diaryRepository.getDays(fyYear, todayStr, todayStr).firstOrNull() }
+                    .getOrNull()
+            if (DayEntryHelper.needsDefault(entry)) {
+                val place = GeolocationNotificationHelper.matchingPlace(app, settings)
+                if (place != null &&
+                    GeolocationNotificationHelper.shouldSkipNotification(settings, place)
+                ) {
+                    GeolocationNotificationHelper.applyPlace(app, todayStr, settings, place)
+                    reschedule()
+                    return Result.success()
+                }
+            }
         }
 
         if (NotificationPermissions.canPost(applicationContext)) {

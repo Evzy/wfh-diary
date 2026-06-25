@@ -4,7 +4,6 @@ import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.remote.CreateLeaveRequest
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.data.remote.UserSettingsDto
-import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import dev.wfhdiary.app.util.FinancialYearHelper
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -50,25 +49,5 @@ object NotificationDayActions {
                 )
             else -> error("Unknown notification action: $action")
         }
-    }
-
-    suspend fun applyWorkTemplate(
-        app: WfhDiaryApplication,
-        date: String,
-        template: WorkTemplateDto,
-    ) {
-        val localDate = LocalDate.parse(date, iso)
-        val fyYear = FinancialYearHelper.currentFyYear(localDate)
-        app.diaryRepository.upsertDay(
-            fyYear,
-            date,
-            UpsertDayEntryRequest(
-                startTime = template.startTime,
-                finishTime = template.finishTime,
-                breakHours = template.breakHours,
-                description = template.description,
-                location = template.location,
-            ),
-        )
     }
 }

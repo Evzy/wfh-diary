@@ -1,10 +1,7 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,30 +14,6 @@ class GeofenceHelperTest {
     @Test
     fun isWithinRadius_farPoint_isFalse() {
         assertFalse(GeofenceHelper.isWithinRadius(-33.8688, 151.2093, -37.8136, 144.9631, 200))
-    }
-
-    @Test
-    fun matchingTemplate_prefersDefaultWhenMultipleMatch() {
-        val templates =
-            listOf(
-                template("a", isDefault = false, lat = -33.8688, lng = 151.2093),
-                template("b", isDefault = true, lat = -33.8688, lng = 151.2093),
-            )
-        val match = GeofenceHelper.matchingTemplate(templates, -33.8688, 151.2093)
-        assertNotNull(match)
-        assertEquals("b", match!!.label)
-    }
-
-    @Test
-    fun matchingTemplate_returnsNullWhenNoGeofence() {
-        val templates = listOf(template("plain", isDefault = true))
-        assertNull(GeofenceHelper.matchingTemplate(templates, -33.8688, 151.2093))
-    }
-
-    @Test
-    fun matchingTemplate_returnsNullWhenOutsideRadius() {
-        val templates = listOf(template("office", lat = -33.8688, lng = 151.2093))
-        assertNull(GeofenceHelper.matchingTemplate(templates, -37.8136, 144.9631))
     }
 
     @Test
@@ -74,18 +47,4 @@ class GeofenceHelperTest {
             )
         assertEquals(GeofenceHelper.Place.HOME, place)
     }
-
-    private fun template(
-        label: String,
-        isDefault: Boolean = false,
-        lat: Double? = null,
-        lng: Double? = null,
-    ) = WorkTemplateDto(
-        id = label,
-        label = label,
-        isDefault = isDefault,
-        geofenceLatitude = lat,
-        geofenceLongitude = lng,
-        geofenceRadiusMeters = if (lat != null && lng != null) 200 else null,
-    )
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +21,7 @@ import dev.wfhdiary.app.notification.MissedNotificationDefault
 fun MissedNotificationDefaultSelector(
     selected: String,
     onSelectedChange: (String) -> Unit,
+    onOpenGeolocationSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Text(
@@ -41,18 +43,31 @@ fun MissedNotificationDefaultSelector(
             FilterChip(
                 selected = selected.equals(option, ignoreCase = true),
                 onClick = { onSelectedChange(option) },
-                label = {
-                    Text(
-                        when (option) {
-                            MissedNotificationDefault.NONE -> stringResource(R.string.settings_missed_none)
-                            MissedNotificationDefault.HOME -> stringResource(R.string.notification_action_home)
-                            MissedNotificationDefault.OFFICE -> stringResource(R.string.notification_action_office)
-                            MissedNotificationDefault.LEAVE -> stringResource(R.string.notification_action_leave)
-                            else -> option
-                        },
-                    )
-                },
+                label = { Text(missedNotificationLabel(option)) },
             )
         }
     }
+
+    if (MissedNotificationDefault.isGeolocation(selected)) {
+        Text(
+            stringResource(R.string.settings_missed_geolocation_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+        )
+        Button(onClick = onOpenGeolocationSettings, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.geolocation_settings_open))
+        }
+    }
 }
+
+@Composable
+private fun missedNotificationLabel(option: String): String =
+    when (option) {
+        MissedNotificationDefault.NONE -> stringResource(R.string.settings_missed_none)
+        MissedNotificationDefault.HOME -> stringResource(R.string.notification_action_home)
+        MissedNotificationDefault.OFFICE -> stringResource(R.string.notification_action_office)
+        MissedNotificationDefault.LEAVE -> stringResource(R.string.notification_action_leave)
+        MissedNotificationDefault.GEOLOCATION -> stringResource(R.string.settings_missed_geolocation)
+        else -> option
+    }

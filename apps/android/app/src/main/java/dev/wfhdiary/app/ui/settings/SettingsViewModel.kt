@@ -11,9 +11,7 @@ import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.auth.GoogleFirebaseSignIn
-import dev.wfhdiary.app.data.remote.CreateWorkTemplateRequest
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import dev.wfhdiary.app.export.XlsxExportHelper
 import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
@@ -57,11 +55,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _exportStatus = MutableStateFlow("")
     val exportStatus = _exportStatus.asStateFlow()
 
-    private val _workTemplates = MutableStateFlow<List<WorkTemplateDto>>(emptyList())
-    val workTemplates = _workTemplates.asStateFlow()
-
-    private val _showWorkTemplatesSheet = MutableStateFlow(false)
-    val showWorkTemplatesSheet = _showWorkTemplatesSheet.asStateFlow()
+    private val _workScheduleCustomize = MutableStateFlow<WorkScheduleTarget?>(null)
+    val workScheduleCustomize = _workScheduleCustomize.asStateFlow()
 
     private val _geofenceBusy = MutableStateFlow(false)
     val geofenceBusy = _geofenceBusy.asStateFlow()
@@ -71,6 +66,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _geofenceMapPicker = MutableStateFlow<GeofenceMapTarget?>(null)
     val geofenceMapPicker = _geofenceMapPicker.asStateFlow()
+
+    private val _geolocationSettingsOpen = MutableStateFlow(false)
+    val geolocationSettingsOpen = _geolocationSettingsOpen.asStateFlow()
+
+    private val _geolocationDraft = MutableStateFlow<GeolocationSettingsDraft?>(null)
+    val geolocationDraft = _geolocationDraft.asStateFlow()
 
     init {
         if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
@@ -96,6 +97,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         notificationWorkingDaysMask = s.notificationWorkingDaysMask,
                         missedNotificationDefault = s.missedNotificationDefault,
                         missedNotificationApplyAt = s.missedNotificationApplyAt,
+                        missedNotificationAwayDefault = s.missedNotificationAwayDefault,
+                        geolocationSkipNotificationAtHome = s.geolocationSkipNotificationAtHome,
+                        geolocationSkipNotificationAtOffice = s.geolocationSkipNotificationAtOffice,
                         defaultHomeStart = s.defaultHomeStart,
                         defaultHomeFinish = s.defaultHomeFinish,
                         defaultHomeBreakHours = s.defaultHomeBreakHours.toString(),
@@ -129,6 +133,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             notificationWorkingDaysMask = form.notificationWorkingDaysMask,
                             missedNotificationDefault = form.missedNotificationDefault,
                             missedNotificationApplyAt = form.missedNotificationApplyAt,
+                            missedNotificationAwayDefault = form.missedNotificationAwayDefault,
+                            geolocationSkipNotificationAtHome = form.geolocationSkipNotificationAtHome,
+                            geolocationSkipNotificationAtOffice = form.geolocationSkipNotificationAtOffice,
                             defaultHomeStart = form.defaultHomeStart,
                             defaultHomeFinish = form.defaultHomeFinish,
                             defaultHomeBreakHours = form.defaultHomeBreakHours.toDoubleOrNull(),
@@ -163,42 +170,68 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _notificationMessage.value = ""
     }
 
-    fun openWorkTemplatesSheet() {
-        _showWorkTemplatesSheet.value = true
-        refreshWorkTemplates()
+    fun openHomeScheduleCustomize() {
+        _workScheduleCustomize.value = WorkScheduleTarget.HOME
     }
 
-    fun dismissWorkTemplatesSheet() {
-        _showWorkTemplatesSheet.value = false
+    fun openOfficeScheduleCustomize() {
+        _workScheduleCustomize.value = WorkScheduleTarget.OFFICE
     }
 
-    fun refreshWorkTemplates() {
+    fun dismissWorkScheduleCustomize() {
+        _workScheduleCustomize.value = null
+    }
+
+    fun applyWorkScheduleCustomize(updated: SettingsFormState) {
+        _settingsForm.value = updated
+        _workScheduleCustomize.value = null
+    }
+
+    fun openGeolocationSettings() {
+        val form = _settingsForm.value ?: return
+        _geolocationDraft.value = form.toGeolocationDraft()
+        _geolocationSettingsOpen.value = true
+        _geofenceMessage.value = ""
+    }
+
+    fun dismissGeolocationSettings() {
+        _geolocationSettingsOpen.value = false
+        _geolocationDraft.value = null
+        _geofenceMapPicker.value = null
+    }
+
+    fun updateGeolocationDraft(transform: (GeolocationSettingsDraft) -> GeolocationSettingsDraft) {
+        _geolocationDraft.update { current -> current?.let(transform) }
+    }
+
+    fun applyGeolocationSettings() {
+        val draft = _geolocationDraft.value ?: return
+        val app = getApplication<Application>()
         viewModelScope.launch {
+            _geofenceBusy.value = true
             runCatching {
-                _workTemplates.value = repo.getWorkTemplates()
-            }
-        }
-    }
-
-    fun createWorkTemplate(request: CreateWorkTemplateRequest) {
-        viewModelScope.launch {
-            runCatching {
-                repo.createWorkTemplate(request)
-                refreshWorkTemplates()
+                val updated = repo.updateSettings(geolocationRequestFrom(draft))
+                _settingsForm.value =
+                    draft.applyTo(_settingsForm.value ?: SettingsFormState()).let { merged ->
+                        merged.copy(
+                            missedNotificationAwayDefault = updated.missedNotificationAwayDefault,
+                            geolocationSkipNotificationAtHome = updated.geolocationSkipNotificationAtHome,
+                            geolocationSkipNotificationAtOffice = updated.geolocationSkipNotificationAtOffice,
+                            homeGeofenceLatitude = updated.homeGeofenceLatitude,
+                            homeGeofenceLongitude = updated.homeGeofenceLongitude,
+                            homeGeofenceRadiusMeters = updated.homeGeofenceRadiusMeters,
+                            officeGeofenceLatitude = updated.officeGeofenceLatitude,
+                            officeGeofenceLongitude = updated.officeGeofenceLongitude,
+                            officeGeofenceRadiusMeters = updated.officeGeofenceRadiusMeters,
+                        )
+                    }
+                _geolocationSettingsOpen.value = false
+                _geolocationDraft.value = null
+                _geofenceMessage.value = app.getString(R.string.geolocation_settings_saved)
             }.onFailure { e ->
-                _saveMessage.value = e.message.orEmpty()
+                _geofenceMessage.value = e.message.orEmpty()
             }
-        }
-    }
-
-    fun deleteWorkTemplate(id: String) {
-        viewModelScope.launch {
-            runCatching {
-                repo.deleteWorkTemplate(id)
-                refreshWorkTemplates()
-            }.onFailure { e ->
-                _saveMessage.value = e.message.orEmpty()
-            }
+            _geofenceBusy.value = false
         }
     }
 
@@ -233,20 +266,33 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         radiusMeters: Int,
     ) {
         _geofenceMapPicker.value = null
-        viewModelScope.launch {
-            _geofenceBusy.value = true
-            runCatching {
-                saveGeofenceAt(
-                    isHome = target == GeofenceMapTarget.HOME,
-                    latitude = latitude,
-                    longitude = longitude,
-                    radiusMeters = radiusMeters,
-                )
-            }.onFailure { e ->
-                _geofenceMessage.value = e.message.orEmpty()
+        if (!_geolocationSettingsOpen.value) return
+        updateGeolocationDraft { draft ->
+            when (target) {
+                GeofenceMapTarget.HOME ->
+                    draft.copy(
+                        homeGeofenceLatitude = latitude,
+                        homeGeofenceLongitude = longitude,
+                        homeGeofenceRadiusMeters = radiusMeters,
+                        clearHomeGeofence = false,
+                    )
+                GeofenceMapTarget.OFFICE ->
+                    draft.copy(
+                        officeGeofenceLatitude = latitude,
+                        officeGeofenceLongitude = longitude,
+                        officeGeofenceRadiusMeters = radiusMeters,
+                        clearOfficeGeofence = false,
+                    )
             }
-            _geofenceBusy.value = false
         }
+        val app = getApplication<Application>()
+        _geofenceMessage.value =
+            app.getString(
+                when (target) {
+                    GeofenceMapTarget.HOME -> R.string.location_geofence_home_saved
+                    GeofenceMapTarget.OFFICE -> R.string.location_geofence_office_saved
+                },
+            )
     }
 
     fun clearHomeLocation() {
@@ -259,6 +305,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private fun captureGeofenceFromGps(isHome: Boolean) {
         val app = getApplication<Application>()
+        if (!_geolocationSettingsOpen.value) return
         viewModelScope.launch {
             _geofenceBusy.value = true
             _geofenceMessage.value = app.getString(R.string.location_geofence_fetching)
@@ -269,80 +316,70 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val location =
                     LocationHelper.getCurrentLocation(app)
                         ?: error(app.getString(R.string.location_geofence_unavailable))
-                saveGeofenceAt(
-                    isHome = isHome,
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    radiusMeters = GeofenceHelper.DEFAULT_RADIUS_METERS,
-                )
+                updateGeolocationDraft { draft ->
+                    if (isHome) {
+                        draft.copy(
+                            homeGeofenceLatitude = location.latitude,
+                            homeGeofenceLongitude = location.longitude,
+                            homeGeofenceRadiusMeters = GeofenceHelper.DEFAULT_RADIUS_METERS,
+                            clearHomeGeofence = false,
+                        )
+                    } else {
+                        draft.copy(
+                            officeGeofenceLatitude = location.latitude,
+                            officeGeofenceLongitude = location.longitude,
+                            officeGeofenceRadiusMeters = GeofenceHelper.DEFAULT_RADIUS_METERS,
+                            clearOfficeGeofence = false,
+                        )
+                    }
+                }
+                _geofenceMessage.value =
+                    app.getString(
+                        if (isHome) R.string.location_geofence_home_saved else R.string.location_geofence_office_saved,
+                    )
             }.onFailure { e ->
                 _geofenceMessage.value = e.message.orEmpty()
             }
             _geofenceBusy.value = false
         }
-    }
-
-    private suspend fun saveGeofenceAt(
-        isHome: Boolean,
-        latitude: Double,
-        longitude: Double,
-        radiusMeters: Int,
-    ) {
-        val app = getApplication<Application>()
-        val updated =
-            repo.updateSettings(
-                if (isHome) {
-                    UpdateUserSettingsRequest(
-                        homeGeofenceLatitude = latitude,
-                        homeGeofenceLongitude = longitude,
-                        homeGeofenceRadiusMeters = radiusMeters,
-                    )
-                } else {
-                    UpdateUserSettingsRequest(
-                        officeGeofenceLatitude = latitude,
-                        officeGeofenceLongitude = longitude,
-                        officeGeofenceRadiusMeters = radiusMeters,
-                    )
-                },
-            )
-        applyGeofenceForm(updated)
-        _geofenceMessage.value =
-            app.getString(
-                if (isHome) R.string.location_geofence_home_saved else R.string.location_geofence_office_saved,
-            )
-    }
-
-    private fun applyGeofenceForm(updated: dev.wfhdiary.app.data.remote.UserSettingsDto) {
-        _settingsForm.value =
-            _settingsForm.value?.copy(
-                homeGeofenceLatitude = updated.homeGeofenceLatitude,
-                homeGeofenceLongitude = updated.homeGeofenceLongitude,
-                homeGeofenceRadiusMeters = updated.homeGeofenceRadiusMeters,
-                officeGeofenceLatitude = updated.officeGeofenceLatitude,
-                officeGeofenceLongitude = updated.officeGeofenceLongitude,
-                officeGeofenceRadiusMeters = updated.officeGeofenceRadiusMeters,
-            )
     }
 
     private fun clearGeofence(isHome: Boolean) {
-        viewModelScope.launch {
-            _geofenceBusy.value = true
-            runCatching {
-                val updated =
-                    repo.updateSettings(
-                        if (isHome) {
-                            UpdateUserSettingsRequest(clearHomeGeofence = true)
-                        } else {
-                            UpdateUserSettingsRequest(clearOfficeGeofence = true)
-                        },
-                    )
-                applyGeofenceForm(updated)
-            }.onFailure { e ->
-                _geofenceMessage.value = e.message.orEmpty()
+        if (!_geolocationSettingsOpen.value) return
+        updateGeolocationDraft { draft ->
+            if (isHome) {
+                draft.copy(
+                    homeGeofenceLatitude = null,
+                    homeGeofenceLongitude = null,
+                    homeGeofenceRadiusMeters = null,
+                    clearHomeGeofence = true,
+                )
+            } else {
+                draft.copy(
+                    officeGeofenceLatitude = null,
+                    officeGeofenceLongitude = null,
+                    officeGeofenceRadiusMeters = null,
+                    clearOfficeGeofence = true,
+                )
             }
-            _geofenceBusy.value = false
         }
+        _geofenceMessage.value = ""
     }
+
+    private fun geolocationRequestFrom(draft: GeolocationSettingsDraft): UpdateUserSettingsRequest =
+        UpdateUserSettingsRequest(
+            missedNotificationAwayDefault = draft.missedNotificationAwayDefault,
+            geolocationSkipNotificationAtHome = draft.skipNotificationAtHome,
+            geolocationSkipNotificationAtOffice = draft.skipNotificationAtOffice,
+            homeGeofenceLatitude = if (!draft.clearHomeGeofence) draft.homeGeofenceLatitude else null,
+            homeGeofenceLongitude = if (!draft.clearHomeGeofence) draft.homeGeofenceLongitude else null,
+            homeGeofenceRadiusMeters = if (!draft.clearHomeGeofence) draft.homeGeofenceRadiusMeters else null,
+            officeGeofenceLatitude = if (!draft.clearOfficeGeofence) draft.officeGeofenceLatitude else null,
+            officeGeofenceLongitude = if (!draft.clearOfficeGeofence) draft.officeGeofenceLongitude else null,
+            officeGeofenceRadiusMeters = if (!draft.clearOfficeGeofence) draft.officeGeofenceRadiusMeters else null,
+            clearHomeGeofence = draft.clearHomeGeofence,
+            clearOfficeGeofence = draft.clearOfficeGeofence,
+        )
 
     fun exportXlsx(fyYear: Int, activity: Activity) {
         val app = getApplication<Application>()

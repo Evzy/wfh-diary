@@ -35,13 +35,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
-import dev.wfhdiary.app.data.remote.CreateWorkTemplateRequest
-import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.notification.MissedNotificationDefault
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
-import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 import dev.wfhdiary.app.util.LocationHelper
 
@@ -69,12 +66,17 @@ fun SettingsScreen(
     githubUpdateHasPendingApk: Boolean,
     onCheckGithubUpdate: () -> Unit,
     onDownloadInstallGithubApk: () -> Unit,
-    workTemplates: List<WorkTemplateDto>,
-    showWorkTemplatesSheet: Boolean,
-    onOpenWorkTemplates: () -> Unit,
-    onDismissWorkTemplates: () -> Unit,
-    onCreateWorkTemplate: (CreateWorkTemplateRequest) -> Unit,
-    onDeleteWorkTemplate: (String) -> Unit,
+    workScheduleCustomize: WorkScheduleTarget?,
+    onCustomizeHomeSchedule: () -> Unit,
+    onCustomizeOfficeSchedule: () -> Unit,
+    onDismissWorkScheduleCustomize: () -> Unit,
+    onApplyWorkScheduleCustomize: (SettingsFormState) -> Unit,
+    geolocationSettingsOpen: Boolean,
+    geolocationDraft: GeolocationSettingsDraft?,
+    onOpenGeolocationSettings: () -> Unit,
+    onDismissGeolocationSettings: () -> Unit,
+    onApplyGeolocationSettings: () -> Unit,
+    onGeolocationDraftChange: ((GeolocationSettingsDraft) -> GeolocationSettingsDraft) -> Unit,
     geofenceBusy: Boolean,
     geofenceMessage: String,
     onSetHomeLocation: () -> Unit,
@@ -204,12 +206,28 @@ fun SettingsScreen(
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         form?.let { f ->
+            Text(stringResource(R.string.settings_profile_section_title), style = MaterialTheme.typography.titleSmall)
+            OutlinedTextField(
+                value = f.displayName,
+                onValueChange = { v -> onFormChange { it.copy(displayName = v) } },
+                label = { Text(stringResource(R.string.settings_display_name)) },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp),
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text(stringResource(R.string.settings_notification_section_title), style = MaterialTheme.typography.titleSmall)
             Text(
                 stringResource(R.string.settings_notification_time_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
+            )
+            TimePickerField(
+                value = f.notificationTime,
+                onValueChange = { v -> onFormChange { it.copy(notificationTime = v) } },
+                label = { Text(stringResource(R.string.settings_notification_time)) },
+                defaultHour = 8,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             )
             Text(
                 stringResource(
@@ -228,22 +246,6 @@ fun SettingsScreen(
                 onMaskChange = { mask -> onFormChange { it.copy(notificationWorkingDaysMask = mask) } },
                 modifier = Modifier.padding(bottom = 12.dp),
             )
-            MissedNotificationDefaultSelector(
-                selected = f.missedNotificationDefault,
-                onSelectedChange = { value -> onFormChange { it.copy(missedNotificationDefault = value) } },
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            if (MissedNotificationDefault.isEnabled(f.missedNotificationDefault)) {
-                TimePickerField(
-                    value = f.missedNotificationApplyAt,
-                    onValueChange = { v -> onFormChange { it.copy(missedNotificationApplyAt = v) } },
-                    label = { Text(stringResource(R.string.settings_missed_notification_apply_at)) },
-                    defaultHour = 12,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                )
-            } else {
-                Spacer(Modifier.padding(bottom = 12.dp))
-            }
             if (notificationsEnabled) {
                 Text(
                     stringResource(R.string.settings_notification_enabled),
@@ -283,105 +285,34 @@ fun SettingsScreen(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-            OutlinedTextField(
-                value = f.displayName,
-                onValueChange = { v -> onFormChange { it.copy(displayName = v) } },
-                label = { Text(stringResource(R.string.settings_display_name)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            TimePickerField(
-                value = f.notificationTime,
-                onValueChange = { v -> onFormChange { it.copy(notificationTime = v) } },
-                label = { Text(stringResource(R.string.settings_notification_time)) },
-                defaultHour = 8,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(stringResource(R.string.settings_default_home), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TimePickerField(
-                    value = f.defaultHomeStart,
-                    onValueChange = { v -> onFormChange { it.copy(defaultHomeStart = v) } },
-                    label = { Text(stringResource(R.string.day_edit_start)) },
-                    defaultHour = 8,
-                    modifier = Modifier.weight(1f),
-                )
-                TimePickerField(
-                    value = f.defaultHomeFinish,
-                    onValueChange = { v -> onFormChange { it.copy(defaultHomeFinish = v) } },
-                    label = { Text(stringResource(R.string.day_edit_finish)) },
-                    defaultHour = 17,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            BreakHoursField(
-                value = f.defaultHomeBreakHours,
-                onValueChange = { v -> onFormChange { it.copy(defaultHomeBreakHours = v) } },
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            Text(stringResource(R.string.settings_default_office), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TimePickerField(
-                    value = f.defaultOfficeStart,
-                    onValueChange = { v -> onFormChange { it.copy(defaultOfficeStart = v) } },
-                    label = { Text(stringResource(R.string.day_edit_start)) },
-                    defaultHour = 8,
-                    defaultMinute = 30,
-                    modifier = Modifier.weight(1f),
-                )
-                TimePickerField(
-                    value = f.defaultOfficeFinish,
-                    onValueChange = { v -> onFormChange { it.copy(defaultOfficeFinish = v) } },
-                    label = { Text(stringResource(R.string.day_edit_finish)) },
-                    defaultHour = 17,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            BreakHoursField(
-                value = f.defaultOfficeBreakHours,
-                onValueChange = { v -> onFormChange { it.copy(defaultOfficeBreakHours = v) } },
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            LocationGeofenceSection(
+            MissedNotificationDefaultSelector(
+                selected = f.missedNotificationDefault,
+                onSelectedChange = { value -> onFormChange { it.copy(missedNotificationDefault = value) } },
+                onOpenGeolocationSettings = onOpenGeolocationSettings,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            if (MissedNotificationDefault.isEnabled(f.missedNotificationDefault)) {
+                TimePickerField(
+                    value = f.missedNotificationApplyAt,
+                    onValueChange = { v -> onFormChange { it.copy(missedNotificationApplyAt = v) } },
+                    label = { Text(stringResource(R.string.settings_missed_notification_apply_at)) },
+                    defaultHour = 12,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                )
+            } else {
+                Spacer(Modifier.padding(bottom = 12.dp))
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            WorkPresetsSection(
                 form = f,
-                locationGranted = locationGranted,
-                mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
-                geofenceBusy = geofenceBusy,
-                onRequestLocationPermission = {
-                    locationPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                        ),
-                    )
-                },
-                onPickHomeOnMap = onPickHomeOnMap,
-                onPickOfficeOnMap = onPickOfficeOnMap,
-                onSetHomeLocation = onSetHomeLocation,
-                onClearHomeLocation = onClearHomeLocation,
-                onSetOfficeLocation = onSetOfficeLocation,
-                onClearOfficeLocation = onClearOfficeLocation,
+                onCustomizeHome = onCustomizeHomeSchedule,
+                onCustomizeOffice = onCustomizeOfficeSchedule,
+                modifier = Modifier.padding(bottom = 12.dp),
             )
-            if (geofenceMessage.isNotBlank()) {
-                Text(
-                    geofenceMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-            }
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            Text(stringResource(R.string.work_templates_section_title), style = MaterialTheme.typography.titleSmall)
-            Text(
-                stringResource(R.string.work_templates_section_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            Button(onClick = onOpenWorkTemplates, modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-                Text(stringResource(R.string.work_templates_manage))
-            }
-            Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onSave, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 Text(stringResource(R.string.settings_save))
             }
             if (saveMessage.isNotBlank()) {
@@ -430,17 +361,47 @@ fun SettingsScreen(
         }
     }
 
-    if (showWorkTemplatesSheet) {
-        WorkTemplatesSheet(
-            templates = workTemplates,
-            onDismiss = onDismissWorkTemplates,
-            onCreate = onCreateWorkTemplate,
-            onDelete = onDeleteWorkTemplate,
+    workScheduleCustomize?.let { target ->
+        val currentForm = form ?: return@let
+        WorkScheduleCustomizeSheet(
+            target = target,
+            form = currentForm,
+            onDismiss = onDismissWorkScheduleCustomize,
+            onSave = onApplyWorkScheduleCustomize,
         )
     }
 
+    if (geolocationSettingsOpen) {
+        geolocationDraft?.let { draft ->
+            GeolocationSettingsSheet(
+                draft = draft,
+                locationGranted = locationGranted,
+                mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
+                geofenceBusy = geofenceBusy,
+                statusMessage = geofenceMessage,
+                onDismiss = onDismissGeolocationSettings,
+                onApply = onApplyGeolocationSettings,
+                onDraftChange = onGeolocationDraftChange,
+                onRequestLocationPermission = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                },
+                onPickHomeOnMap = onPickHomeOnMap,
+                onPickOfficeOnMap = onPickOfficeOnMap,
+                onSetHomeLocation = onSetHomeLocation,
+                onClearHomeLocation = onClearHomeLocation,
+                onSetOfficeLocation = onSetOfficeLocation,
+                onClearOfficeLocation = onClearOfficeLocation,
+            )
+        }
+    }
+
     geofenceMapPicker?.let { target ->
-        val currentForm = form ?: return@let
+        geolocationDraft?.let { draft ->
         GeofenceMapPickerSheet(
             title =
                 when (target) {
@@ -451,18 +412,24 @@ fun SettingsScreen(
                 },
             initialLatitude =
                 when (target) {
-                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceLatitude
-                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceLatitude
+                    SettingsViewModel.GeofenceMapTarget.HOME ->
+                        if (draft.clearHomeGeofence) null else draft.homeGeofenceLatitude
+                    SettingsViewModel.GeofenceMapTarget.OFFICE ->
+                        if (draft.clearOfficeGeofence) null else draft.officeGeofenceLatitude
                 },
             initialLongitude =
                 when (target) {
-                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceLongitude
-                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceLongitude
+                    SettingsViewModel.GeofenceMapTarget.HOME ->
+                        if (draft.clearHomeGeofence) null else draft.homeGeofenceLongitude
+                    SettingsViewModel.GeofenceMapTarget.OFFICE ->
+                        if (draft.clearOfficeGeofence) null else draft.officeGeofenceLongitude
                 },
             initialRadiusMeters =
                 when (target) {
-                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceRadiusMeters
-                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceRadiusMeters
+                    SettingsViewModel.GeofenceMapTarget.HOME ->
+                        if (draft.clearHomeGeofence) null else draft.homeGeofenceRadiusMeters
+                    SettingsViewModel.GeofenceMapTarget.OFFICE ->
+                        if (draft.clearOfficeGeofence) null else draft.officeGeofenceRadiusMeters
                 },
             mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
             onDismiss = onDismissGeofenceMapPicker,
@@ -470,5 +437,6 @@ fun SettingsScreen(
                 onSaveGeofenceFromMap(target, latitude, longitude, radiusMeters)
             },
         )
+        }
     }
 }

@@ -15,9 +15,15 @@ public sealed class UserSettingsEntity
     public decimal DefaultOfficeBreakHours { get; set; } = 1m;
     /// <summary>Bitmask of ISO weekdays (Mon=bit0 … Sun=bit6) when morning reminders are sent.</summary>
     public int NotificationWorkingDaysMask { get; set; } = WorkingDaysMask.Default;
-    /// <summary>None, Home, Office, or Leave — applied if the user ignores the morning reminder.</summary>
+    /// <summary>None, Home, Office, Leave, or Geolocation — applied if the user ignores the morning reminder.</summary>
     public string MissedNotificationDefault { get; set; } = "None";
     public int MissedNotificationApplyAtMinutes { get; set; } = 12 * 60;
+    /// <summary>When Geolocation mode and not at home or office: Home, Office, or Leave.</summary>
+    public string MissedNotificationAwayDefault { get; set; } = "Office";
+    /// <summary>When Geolocation mode and at home before reminder: skip notification and auto-log.</summary>
+    public bool GeolocationSkipNotificationAtHome { get; set; }
+    /// <summary>When Geolocation mode and at office before reminder: skip notification and auto-log.</summary>
+    public bool GeolocationSkipNotificationAtOffice { get; set; }
     public double? HomeGeofenceLatitude { get; set; }
     public double? HomeGeofenceLongitude { get; set; }
     public int? HomeGeofenceRadiusMeters { get; set; }

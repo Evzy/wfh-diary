@@ -1,6 +1,5 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.pow
@@ -38,23 +37,6 @@ object GeofenceHelper {
                 cos(lat1) * cos(lat2) * sin(dLon / 2).pow(2.0)
         val c = 2 * asin(sqrt(a))
         return earthRadius * c
-    }
-
-    fun matchingTemplate(
-        templates: List<WorkTemplateDto>,
-        latitude: Double,
-        longitude: Double,
-    ): WorkTemplateDto? {
-        val withGeofence =
-            templates.filter { template ->
-                val lat = template.geofenceLatitude
-                val lng = template.geofenceLongitude
-                val radius = template.geofenceRadiusMeters
-                lat != null && lng != null && radius != null &&
-                    isWithinRadius(latitude, longitude, lat, lng, radius)
-            }
-        return withGeofence.firstOrNull { it.isDefault }
-            ?: withGeofence.firstOrNull()
     }
 
     fun matchingPlace(
