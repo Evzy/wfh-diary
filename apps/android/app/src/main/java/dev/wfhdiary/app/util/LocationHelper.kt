@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -38,4 +39,19 @@ object LocationHelper {
         val coarse = ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION)
         return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
     }
+
+    fun hasBackgroundLocationPermission(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return hasLocationPermission(context)
+        }
+        return ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun canUseGeofencing(context: Context): Boolean = hasLocationPermission(context)
+
+    fun canCheckLocationInBackground(context: Context): Boolean =
+        hasLocationPermission(context) && hasBackgroundLocationPermission(context)
 }

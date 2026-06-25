@@ -24,9 +24,10 @@ fun MissedNotificationDefaultSelector(
     onOpenGeolocationSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        stringResource(R.string.settings_missed_notification_title),
-        style = MaterialTheme.typography.titleSmall,
+    SettingsSectionTitleRow(
+        title = stringResource(R.string.settings_missed_notification_title),
+        infoTitle = stringResource(R.string.settings_info_missed_response_title),
+        infoMessage = stringResource(R.string.settings_info_missed_response_message),
     )
     Text(
         stringResource(R.string.settings_missed_notification_hint),

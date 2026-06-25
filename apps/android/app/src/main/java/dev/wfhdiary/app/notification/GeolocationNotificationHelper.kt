@@ -3,13 +3,15 @@ package dev.wfhdiary.app.notification
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.remote.UserSettingsDto
 import dev.wfhdiary.app.util.GeofenceHelper
+import dev.wfhdiary.app.util.LocationHelper
 
 object GeolocationNotificationHelper {
     suspend fun matchingPlace(
         app: WfhDiaryApplication,
         settings: UserSettingsDto,
     ): GeofenceHelper.Place? {
-        val location = dev.wfhdiary.app.util.LocationHelper.getCurrentLocation(app) ?: return null
+        if (!hasGeofencesConfigured(settings)) return null
+        val location = LocationHelper.getCurrentLocation(app) ?: return null
         return GeofenceHelper.matchingPlace(
             homeLatitude = settings.homeGeofenceLatitude,
             homeLongitude = settings.homeGeofenceLongitude,
@@ -21,6 +23,14 @@ object GeolocationNotificationHelper {
             longitude = location.longitude,
         )
     }
+
+    fun hasGeofencesConfigured(settings: UserSettingsDto): Boolean =
+        (settings.homeGeofenceLatitude != null &&
+            settings.homeGeofenceLongitude != null &&
+            settings.homeGeofenceRadiusMeters != null) ||
+            (settings.officeGeofenceLatitude != null &&
+                settings.officeGeofenceLongitude != null &&
+                settings.officeGeofenceRadiusMeters != null)
 
     fun shouldSkipNotification(
         settings: UserSettingsDto,

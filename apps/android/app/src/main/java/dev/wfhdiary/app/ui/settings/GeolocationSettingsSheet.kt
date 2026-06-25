@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,12 +30,14 @@ import dev.wfhdiary.app.notification.MissedNotificationDefault
 fun GeolocationSettingsSheet(
     draft: GeolocationSettingsDraft,
     locationGranted: Boolean,
+    backgroundLocationGranted: Boolean,
     mapsConfigured: Boolean,
     geofenceBusy: Boolean,
     statusMessage: String,
     onDismiss: () -> Unit,
     onDraftChange: ((GeolocationSettingsDraft) -> GeolocationSettingsDraft) -> Unit,
     onRequestLocationPermission: () -> Unit,
+    onRequestBackgroundLocationPermission: () -> Unit,
     onPickHomeOnMap: () -> Unit,
     onPickOfficeOnMap: () -> Unit,
     onSetHomeLocation: () -> Unit,
@@ -57,12 +60,21 @@ fun GeolocationSettingsSheet(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
-            Text(
-                stringResource(R.string.geolocation_settings_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.geolocation_settings_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                SettingsInfoIcon(
+                    title = stringResource(R.string.settings_info_location_permission_title),
+                    message = stringResource(R.string.settings_info_location_permission_message),
+                )
+            }
 
             if (!locationGranted) {
                 Text(
@@ -77,11 +89,25 @@ fun GeolocationSettingsSheet(
                 ) {
                     Text(stringResource(R.string.work_templates_location_enable))
                 }
+            } else if (!backgroundLocationGranted) {
+                Text(
+                    stringResource(R.string.location_background_permission),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = onRequestBackgroundLocationPermission,
+                    enabled = !geofenceBusy,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                ) {
+                    Text(stringResource(R.string.location_background_enable))
+                }
             }
 
-            Text(
-                stringResource(R.string.settings_missed_notification_away_title),
-                style = MaterialTheme.typography.bodyMedium,
+            SettingsLabelRow(
+                label = stringResource(R.string.settings_missed_notification_away_title),
+                infoTitle = stringResource(R.string.settings_info_away_fallback_title),
+                infoMessage = stringResource(R.string.settings_info_away_fallback_message),
             )
             Text(
                 stringResource(R.string.settings_missed_notification_away_hint),
@@ -105,9 +131,10 @@ fun GeolocationSettingsSheet(
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            Text(
-                stringResource(R.string.settings_geolocation_skip_notification_title),
-                style = MaterialTheme.typography.bodyMedium,
+            SettingsLabelRow(
+                label = stringResource(R.string.settings_geolocation_skip_notification_title),
+                infoTitle = stringResource(R.string.settings_info_skip_notification_title),
+                infoMessage = stringResource(R.string.settings_info_skip_notification_message),
             )
             Text(
                 stringResource(R.string.settings_geolocation_skip_notification_hint),
@@ -141,6 +168,13 @@ fun GeolocationSettingsSheet(
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            SettingsLabelRow(
+                label = stringResource(R.string.settings_info_geofence_areas_title),
+                infoTitle = stringResource(R.string.settings_info_geofence_areas_title),
+                infoMessage = stringResource(R.string.settings_info_geofence_areas_message),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
 
             if (!mapsConfigured) {
                 Text(

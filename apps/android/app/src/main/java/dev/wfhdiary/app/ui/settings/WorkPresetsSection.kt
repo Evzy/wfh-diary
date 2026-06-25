@@ -19,7 +19,11 @@ fun WorkPresetsSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        Text(stringResource(R.string.work_presets_section_title), style = MaterialTheme.typography.titleSmall)
+        SettingsSectionTitleRow(
+            title = stringResource(R.string.work_presets_section_title),
+            infoTitle = stringResource(R.string.settings_info_presets_title),
+            infoMessage = stringResource(R.string.settings_info_presets_message),
+        )
         Text(
             stringResource(R.string.work_presets_section_hint),
             style = MaterialTheme.typography.bodySmall,

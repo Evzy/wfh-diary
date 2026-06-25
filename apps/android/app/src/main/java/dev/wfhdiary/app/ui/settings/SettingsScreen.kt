@@ -92,6 +92,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     var notificationsEnabled by remember { mutableStateOf(NotificationPermissions.canPost(context)) }
     var locationGranted by remember { mutableStateOf(LocationHelper.hasLocationPermission(context)) }
+    var backgroundLocationGranted by remember {
+        mutableStateOf(LocationHelper.hasBackgroundLocationPermission(context))
+    }
     var pendingTestAfterPermission by remember { mutableStateOf(false) }
 
     val permissionLauncher =
@@ -109,6 +112,12 @@ fun SettingsScreen(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) { _ ->
             locationGranted = LocationHelper.hasLocationPermission(context)
+            backgroundLocationGranted = LocationHelper.hasBackgroundLocationPermission(context)
+        }
+
+    val backgroundLocationPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+            backgroundLocationGranted = LocationHelper.hasBackgroundLocationPermission(context)
         }
 
     fun requestNotificationPermission(forTest: Boolean) {
@@ -227,7 +236,11 @@ fun SettingsScreen(
             )
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            Text(stringResource(R.string.settings_notification_section_title), style = MaterialTheme.typography.titleSmall)
+            SettingsSectionTitleRow(
+                title = stringResource(R.string.settings_notification_section_title),
+                infoTitle = stringResource(R.string.settings_info_morning_reminder_title),
+                infoMessage = stringResource(R.string.settings_info_morning_reminder_message),
+            )
             Text(
                 stringResource(R.string.settings_notification_time_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -309,7 +322,15 @@ fun SettingsScreen(
                 TimePickerField(
                     value = f.missedNotificationApplyAt,
                     onValueChange = { v -> onFormChange { it.copy(missedNotificationApplyAt = v) } },
-                    label = { Text(stringResource(R.string.settings_missed_notification_apply_at)) },
+                    label = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.settings_missed_notification_apply_at))
+                            SettingsInfoIcon(
+                                title = stringResource(R.string.settings_info_apply_at_title),
+                                message = stringResource(R.string.settings_info_apply_at_message),
+                            )
+                        }
+                    },
                     defaultHour = 12,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
@@ -382,6 +403,7 @@ fun SettingsScreen(
             GeolocationSettingsSheet(
                 draft = draft,
                 locationGranted = locationGranted,
+                backgroundLocationGranted = backgroundLocationGranted,
                 mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
                 geofenceBusy = geofenceBusy,
                 statusMessage = geofenceMessage,
@@ -394,6 +416,13 @@ fun SettingsScreen(
                             Manifest.permission.ACCESS_COARSE_LOCATION,
                         ),
                     )
+                },
+                onRequestBackgroundLocationPermission = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        backgroundLocationPermissionLauncher.launch(
+                            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                        )
+                    }
                 },
                 onPickHomeOnMap = onPickHomeOnMap,
                 onPickOfficeOnMap = onPickOfficeOnMap,

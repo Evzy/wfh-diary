@@ -8,6 +8,7 @@ import dev.wfhdiary.app.R
 
 object NotificationChannels {
     const val MORNING_REMINDER = "morning_reminder"
+    const val AUTO_LOG_RESULT = "auto_log_result"
     const val ACTION_HOME = "dev.wfhdiary.app.notification.HOME"
     const val ACTION_OFFICE = "dev.wfhdiary.app.notification.OFFICE"
     const val ACTION_LEAVE = "dev.wfhdiary.app.notification.LEAVE"
@@ -24,5 +25,12 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_DEFAULT,
             )
         mgr.createNotificationChannel(channel)
+        val autoLogChannel =
+            NotificationChannel(
+                AUTO_LOG_RESULT,
+                context.getString(R.string.notification_channel_auto_log),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            )
+        mgr.createNotificationChannel(autoLogChannel)
     }
 }
