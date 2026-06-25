@@ -67,4 +67,17 @@ class DiaryRepository(
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
+
+    suspend fun getWorkTemplates(): List<WorkTemplateDto> =
+        client.get("${base()}v1/work-templates").body()
+
+    suspend fun createWorkTemplate(request: CreateWorkTemplateRequest): WorkTemplateDto =
+        client.post("${base()}v1/work-templates") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    suspend fun deleteWorkTemplate(id: String) {
+        client.delete("${base()}v1/work-templates/$id")
+    }
 }

@@ -35,12 +35,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
+import dev.wfhdiary.app.data.remote.CreateWorkTemplateRequest
+import dev.wfhdiary.app.data.remote.WorkTemplateDto
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.notification.MissedNotificationDefault
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
+import dev.wfhdiary.app.util.LocationHelper
 
 @Composable
 fun SettingsScreen(
@@ -66,11 +69,29 @@ fun SettingsScreen(
     githubUpdateHasPendingApk: Boolean,
     onCheckGithubUpdate: () -> Unit,
     onDownloadInstallGithubApk: () -> Unit,
+    workTemplates: List<WorkTemplateDto>,
+    showWorkTemplatesSheet: Boolean,
+    onOpenWorkTemplates: () -> Unit,
+    onDismissWorkTemplates: () -> Unit,
+    onCreateWorkTemplate: (CreateWorkTemplateRequest) -> Unit,
+    onDeleteWorkTemplate: (String) -> Unit,
+    geofenceBusy: Boolean,
+    geofenceMessage: String,
+    onSetHomeLocation: () -> Unit,
+    onClearHomeLocation: () -> Unit,
+    onSetOfficeLocation: () -> Unit,
+    onClearOfficeLocation: () -> Unit,
+    geofenceMapPicker: SettingsViewModel.GeofenceMapTarget?,
+    onPickHomeOnMap: () -> Unit,
+    onPickOfficeOnMap: () -> Unit,
+    onDismissGeofenceMapPicker: () -> Unit,
+    onSaveGeofenceFromMap: (SettingsViewModel.GeofenceMapTarget, Double, Double, Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var notificationsEnabled by remember { mutableStateOf(NotificationPermissions.canPost(context)) }
+    var locationGranted by remember { mutableStateOf(LocationHelper.hasLocationPermission(context)) }
     var pendingTestAfterPermission by remember { mutableStateOf(false) }
 
     val permissionLauncher =
@@ -81,6 +102,13 @@ fun SettingsScreen(
             if (wasForTest) {
                 onSendTestNotification()
             }
+        }
+
+    val locationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { _ ->
+            locationGranted = LocationHelper.hasLocationPermission(context)
         }
 
     fun requestNotificationPermission(forTest: Boolean) {
@@ -313,6 +341,46 @@ fun SettingsScreen(
                 onValueChange = { v -> onFormChange { it.copy(defaultOfficeBreakHours = v) } },
                 modifier = Modifier.padding(bottom = 8.dp),
             )
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            LocationGeofenceSection(
+                form = f,
+                locationGranted = locationGranted,
+                mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
+                geofenceBusy = geofenceBusy,
+                onRequestLocationPermission = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                },
+                onPickHomeOnMap = onPickHomeOnMap,
+                onPickOfficeOnMap = onPickOfficeOnMap,
+                onSetHomeLocation = onSetHomeLocation,
+                onClearHomeLocation = onClearHomeLocation,
+                onSetOfficeLocation = onSetOfficeLocation,
+                onClearOfficeLocation = onClearOfficeLocation,
+            )
+            if (geofenceMessage.isNotBlank()) {
+                Text(
+                    geofenceMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text(stringResource(R.string.work_templates_section_title), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.work_templates_section_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            Button(onClick = onOpenWorkTemplates, modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                Text(stringResource(R.string.work_templates_manage))
+            }
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.settings_save))
             }
@@ -360,5 +428,47 @@ fun SettingsScreen(
                 Text(githubUpdateStatus, style = MaterialTheme.typography.bodySmall)
             }
         }
+    }
+
+    if (showWorkTemplatesSheet) {
+        WorkTemplatesSheet(
+            templates = workTemplates,
+            onDismiss = onDismissWorkTemplates,
+            onCreate = onCreateWorkTemplate,
+            onDelete = onDeleteWorkTemplate,
+        )
+    }
+
+    geofenceMapPicker?.let { target ->
+        val currentForm = form ?: return@let
+        GeofenceMapPickerSheet(
+            title =
+                when (target) {
+                    SettingsViewModel.GeofenceMapTarget.HOME ->
+                        stringResource(R.string.location_geofence_map_title_home)
+                    SettingsViewModel.GeofenceMapTarget.OFFICE ->
+                        stringResource(R.string.location_geofence_map_title_office)
+                },
+            initialLatitude =
+                when (target) {
+                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceLatitude
+                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceLatitude
+                },
+            initialLongitude =
+                when (target) {
+                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceLongitude
+                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceLongitude
+                },
+            initialRadiusMeters =
+                when (target) {
+                    SettingsViewModel.GeofenceMapTarget.HOME -> currentForm.homeGeofenceRadiusMeters
+                    SettingsViewModel.GeofenceMapTarget.OFFICE -> currentForm.officeGeofenceRadiusMeters
+                },
+            mapsConfigured = BuildConfig.GOOGLE_MAPS_CONFIGURED,
+            onDismiss = onDismissGeofenceMapPicker,
+            onConfirm = { latitude, longitude, radiusMeters ->
+                onSaveGeofenceFromMap(target, latitude, longitude, radiusMeters)
+            },
+        )
     }
 }

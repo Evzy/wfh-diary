@@ -14,4 +14,10 @@ data class SettingsFormState(
     val defaultOfficeStart: String = "08:00",
     val defaultOfficeFinish: String = "17:00",
     val defaultOfficeBreakHours: String = "1",
+    val homeGeofenceLatitude: Double? = null,
+    val homeGeofenceLongitude: Double? = null,
+    val homeGeofenceRadiusMeters: Int? = null,
+    val officeGeofenceLatitude: Double? = null,
+    val officeGeofenceLongitude: Double? = null,
+    val officeGeofenceRadiusMeters: Int? = null,
 )

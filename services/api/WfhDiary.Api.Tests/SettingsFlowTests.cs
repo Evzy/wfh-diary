@@ -42,7 +42,15 @@ public class SettingsFlowTests
             DefaultHomeBreakHours: null,
             DefaultOfficeStart: null,
             DefaultOfficeFinish: null,
-            DefaultOfficeBreakHours: null));
+            DefaultOfficeBreakHours: null,
+            HomeGeofenceLatitude: null,
+            HomeGeofenceLongitude: null,
+            HomeGeofenceRadiusMeters: null,
+            OfficeGeofenceLatitude: null,
+            OfficeGeofenceLongitude: null,
+            OfficeGeofenceRadiusMeters: null,
+            ClearHomeGeofence: null,
+            ClearOfficeGeofence: null));
         updated.EnsureSuccessStatusCode();
         var dto = await updated.Content.ReadFromJsonAsync<UserSettingsDto>();
         Assert.NotNull(dto);
@@ -72,9 +80,74 @@ public class SettingsFlowTests
             DefaultHomeBreakHours: null,
             DefaultOfficeStart: null,
             DefaultOfficeFinish: null,
-            DefaultOfficeBreakHours: null));
+            DefaultOfficeBreakHours: null,
+            HomeGeofenceLatitude: null,
+            HomeGeofenceLongitude: null,
+            HomeGeofenceRadiusMeters: null,
+            OfficeGeofenceLatitude: null,
+            OfficeGeofenceLongitude: null,
+            OfficeGeofenceRadiusMeters: null,
+            ClearHomeGeofence: null,
+            ClearOfficeGeofence: null));
         updated.EnsureSuccessStatusCode();
         var dto = await updated.Content.ReadFromJsonAsync<UserSettingsDto>();
         Assert.Equal("None", dto!.MissedNotificationDefault);
+    }
+
+    [Fact]
+    public async Task Settings_home_geofence_set_and_clear()
+    {
+        await using var factory = new WfhDiaryApiFactory();
+        var client = CreateClient(factory);
+
+        var updated = await client.PutAsJsonAsync("/v1/settings", new UpdateUserSettingsRequest(
+            DisplayName: null,
+            NotificationTime: null,
+            NotificationWorkingDaysMask: null,
+            MissedNotificationDefault: null,
+            MissedNotificationApplyAt: null,
+            DefaultHomeStart: null,
+            DefaultHomeFinish: null,
+            DefaultHomeBreakHours: null,
+            DefaultOfficeStart: null,
+            DefaultOfficeFinish: null,
+            DefaultOfficeBreakHours: null,
+            HomeGeofenceLatitude: -33.8688,
+            HomeGeofenceLongitude: 151.2093,
+            HomeGeofenceRadiusMeters: 200,
+            OfficeGeofenceLatitude: null,
+            OfficeGeofenceLongitude: null,
+            OfficeGeofenceRadiusMeters: null,
+            ClearHomeGeofence: null,
+            ClearOfficeGeofence: null));
+        updated.EnsureSuccessStatusCode();
+        var dto = await updated.Content.ReadFromJsonAsync<UserSettingsDto>();
+        Assert.Equal(-33.8688, dto!.HomeGeofenceLatitude);
+        Assert.Equal(200, dto.HomeGeofenceRadiusMeters);
+
+        var cleared = await client.PutAsJsonAsync("/v1/settings", new UpdateUserSettingsRequest(
+            DisplayName: null,
+            NotificationTime: null,
+            NotificationWorkingDaysMask: null,
+            MissedNotificationDefault: null,
+            MissedNotificationApplyAt: null,
+            DefaultHomeStart: null,
+            DefaultHomeFinish: null,
+            DefaultHomeBreakHours: null,
+            DefaultOfficeStart: null,
+            DefaultOfficeFinish: null,
+            DefaultOfficeBreakHours: null,
+            HomeGeofenceLatitude: null,
+            HomeGeofenceLongitude: null,
+            HomeGeofenceRadiusMeters: null,
+            OfficeGeofenceLatitude: null,
+            OfficeGeofenceLongitude: null,
+            OfficeGeofenceRadiusMeters: null,
+            ClearHomeGeofence: true,
+            ClearOfficeGeofence: null));
+        cleared.EnsureSuccessStatusCode();
+        var after = await cleared.Content.ReadFromJsonAsync<UserSettingsDto>();
+        Assert.Null(after!.HomeGeofenceLatitude);
+        Assert.Null(after.HomeGeofenceRadiusMeters);
     }
 }

@@ -1,0 +1,14 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "label": "Office geofence",
+  "sortOrder": 0,
+  "startTime": "08:30",
+  "finishTime": "17:00",
+  "breakHours": 1,
+  "location": "Office",
+  "description": "Auto office day",
+  "isDefault": false,
+  "geofenceLatitude": -33.8688,
+  "geofenceLongitude": 151.2093,
+  "geofenceRadiusMeters": 200
+}

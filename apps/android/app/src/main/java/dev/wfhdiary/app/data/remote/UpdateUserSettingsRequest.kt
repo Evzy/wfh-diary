@@ -15,4 +15,12 @@ data class UpdateUserSettingsRequest(
     val defaultOfficeStart: String? = null,
     val defaultOfficeFinish: String? = null,
     val defaultOfficeBreakHours: Double? = null,
+    val homeGeofenceLatitude: Double? = null,
+    val homeGeofenceLongitude: Double? = null,
+    val homeGeofenceRadiusMeters: Int? = null,
+    val officeGeofenceLatitude: Double? = null,
+    val officeGeofenceLongitude: Double? = null,
+    val officeGeofenceRadiusMeters: Int? = null,
+    val clearHomeGeofence: Boolean? = null,
+    val clearOfficeGeofence: Boolean? = null,
 )

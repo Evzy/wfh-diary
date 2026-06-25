@@ -8,6 +8,7 @@ public sealed class WfhDiaryDbContext(DbContextOptions<WfhDiaryDbContext> option
     public DbSet<DiaryEntity> Diaries => Set<DiaryEntity>();
     public DbSet<DayEntryEntity> DayEntries => Set<DayEntryEntity>();
     public DbSet<LeavePeriodEntity> LeavePeriods => Set<LeavePeriodEntity>();
+    public DbSet<WorkTemplateEntity> WorkTemplates => Set<WorkTemplateEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,13 @@ public sealed class WfhDiaryDbContext(DbContextOptions<WfhDiaryDbContext> option
             e.ToTable("leave_periods");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.OwnerUserId, x.StartDate, x.EndDate });
+        });
+
+        modelBuilder.Entity<WorkTemplateEntity>(e =>
+        {
+            e.ToTable("work_templates");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.OwnerUserId, x.SortOrder });
         });
     }
 }

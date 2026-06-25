@@ -11,4 +11,10 @@ public sealed record UserSettingsDto(
     decimal DefaultHomeBreakHours,
     string DefaultOfficeStart,
     string DefaultOfficeFinish,
-    decimal DefaultOfficeBreakHours);
+    decimal DefaultOfficeBreakHours,
+    double? HomeGeofenceLatitude,
+    double? HomeGeofenceLongitude,
+    int? HomeGeofenceRadiusMeters,
+    double? OfficeGeofenceLatitude,
+    double? OfficeGeofenceLongitude,
+    int? OfficeGeofenceRadiusMeters);

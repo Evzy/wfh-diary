@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "991277833122",
+    "project_id": "wfh-diary-dev",
+    "storage_bucket": "wfh-diary-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991277833122:android:bf92894fd1552d03bcb0fb",
+        "android_client_info": {
+          "package_name": "dev.wfhdiary.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "991277833122-u5pvuurot9hg7mka8te069dja6eahjoj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.wfhdiary.app",
+            "certificate_hash": "72b023e9d61ea1511925c9670262aea3126e9a4f"
+          }
+        },
+        {
+          "client_id": "991277833122-vn84dmuvdbg53j7uuepijuuq4462s684.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSviahbTC3mgKflBlglJtatcwxJ45uAlU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "991277833122-vn84dmuvdbg53j7uuepijuuq4462s684.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

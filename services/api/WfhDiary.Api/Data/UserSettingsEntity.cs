@@ -18,4 +18,10 @@ public sealed class UserSettingsEntity
     /// <summary>None, Home, Office, or Leave — applied if the user ignores the morning reminder.</summary>
     public string MissedNotificationDefault { get; set; } = "None";
     public int MissedNotificationApplyAtMinutes { get; set; } = 12 * 60;
+    public double? HomeGeofenceLatitude { get; set; }
+    public double? HomeGeofenceLongitude { get; set; }
+    public int? HomeGeofenceRadiusMeters { get; set; }
+    public double? OfficeGeofenceLatitude { get; set; }
+    public double? OfficeGeofenceLongitude { get; set; }
+    public int? OfficeGeofenceRadiusMeters { get; set; }
 }

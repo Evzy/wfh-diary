@@ -23,6 +23,8 @@ Publish from GitHub — no Android Studio required for releases. Mirrors [`platr
 |--------|---------|
 | `WFH_RELEASES_TOKEN` | PAT with **Contents: write** on `wfh-diary-releases` |
 | `WFH_SHARED_DEBUG_KEYSTORE_B64` (+ passwords, alias) | Same debug cert for CI + local OTA upgrades |
+| `WFH_MAPS_API_KEY` | Google Maps SDK key for **Pick on map** in CI-built APKs (same key as `local.properties`) |
+| `WFH_FIREBASE_WEB_CLIENT_ID` | OAuth Web client id for Google Sign-In in CI builds (only if `google-services.json` lacks `oauth_client`) |
 | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | OIDC deploy (when Azure app exists) |
 
 ## Versioning (required for CI release)
@@ -71,8 +73,12 @@ debug.keyPassword=YOUR_KEY_PASSWORD
 # Optional: only if wfh-diary-releases is not public
 # UPDATE_GITHUB_TOKEN=ghp_...
 
-# Optional: Firebase Auth — add app/google-services.json first
+# Optional: only if google-services.json has no oauth_client (client_type 3) — or set GitHub secret WFH_FIREBASE_WEB_CLIENT_ID for CI.
 # FIREBASE_WEB_CLIENT_ID=....apps.googleusercontent.com
+
+# Google Maps — Settings → Pick on map (enable Maps SDK for Android in Google Cloud, then):
+# MAPS_API_KEY=AIza...
+# Also add the same value as GitHub secret WFH_MAPS_API_KEY for CI release APKs.
 ```
 
 Generate the shared debug keystore once (from `apps/android/app`):

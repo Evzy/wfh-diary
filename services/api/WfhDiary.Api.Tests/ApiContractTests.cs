@@ -19,6 +19,12 @@ public class ApiContractTests
         "defaultOfficeStart",
         "defaultOfficeFinish",
         "defaultOfficeBreakHours",
+        "homeGeofenceLatitude",
+        "homeGeofenceLongitude",
+        "homeGeofenceRadiusMeters",
+        "officeGeofenceLatitude",
+        "officeGeofenceLongitude",
+        "officeGeofenceRadiusMeters",
     ];
 
     [Theory]
@@ -27,6 +33,7 @@ public class ApiContractTests
     [InlineData("leave-period.json", typeof(LeavePeriodDto))]
     [InlineData("diary-summary.json", typeof(DiarySummaryDto))]
     [InlineData("diary.json", typeof(DiaryDto))]
+    [InlineData("work-template.json", typeof(WorkTemplateDto))]
     public void Fixture_deserializes_to_shared_dto(string fileName, Type dtoType)
     {
         var json = File.ReadAllText(ContractTestPaths.ContractFile(fileName));

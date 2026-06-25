@@ -107,6 +107,9 @@ android {
         versionCode = (repoVersion["versionCode"] as Number).toInt()
         versionName = repoVersion["versionName"] as String
         buildConfigField("boolean", "GOOGLE_SERVICES_CONFIGURED", if (hasGoogleServicesJson) "true" else "false")
+        val mapsApiKey = escapeForBuildConfigString(localPropOrEnv("MAPS_API_KEY"))
+        buildConfigField("boolean", "GOOGLE_MAPS_CONFIGURED", if (mapsApiKey.isNotEmpty()) "true" else "false")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey.ifEmpty { "MISSING_MAPS_API_KEY" }
         buildConfigField("String", "AZURE_API_BASE_URL", "\"https://app-wfh-diary-api-dev.azurewebsites.net/\"")
         val updateOwner = escapeForBuildConfigString(
             localPropOrEnv("UPDATE_GITHUB_OWNER").ifEmpty { "Evzy" },
@@ -174,6 +177,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.location)
+    implementation(libs.play.services.maps)
+    implementation(libs.maps.compose)
     ksp(libs.room.compiler)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)

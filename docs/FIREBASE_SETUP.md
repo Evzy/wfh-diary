@@ -1,19 +1,33 @@
 # Firebase Auth — Android + Azure API
 
-Use this when you want **real sign-in** on the live Azure API. Each user's diary data is scoped to their **Firebase UID** (not shared `dev-user`).
+**Start here for a full walkthrough:** [`DEVICE_AND_FIREBASE_SETUP.md`](DEVICE_AND_FIREBASE_SETUP.md) (new Firebase project, Maps, sign-in, geofence, Azure — step by step).
 
-**Related:** Azure app settings → [`AZURE_DEPLOY.md`](AZURE_DEPLOY.md). Platra reference → [`API_AUTH_AND_AI_USAGE.md`](https://github.com/Evzy/platra/blob/main/docs/API_AUTH_AND_AI_USAGE.md).
+Use this doc as a **reference** for how auth behaves once configured.
+
+**Platra uses the same pattern** — see Platra's [`local.properties.example`](https://github.com/Evzy/platra/blob/main/apps/android/local.properties.example) and [`API_AUTH_AND_AI_USAGE.md`](https://github.com/Evzy/platra/blob/main/docs/API_AUTH_AND_AI_USAGE.md).
+
+## Keys and files specific to WFH Diary SSO
+
+| What | Where | Notes |
+| --- | --- | --- |
+| **Firebase Android app** | [Firebase Console](https://console.firebase.google.com/) | Package name **`dev.wfhdiary.app`** (not Platra's `dev.platra.app`) |
+| **`google-services.json`** | `apps/android/app/google-services.json` | Download from Firebase → **do not commit** |
+| **SHA-1 / SHA-256** | Firebase → Project settings → Android app → fingerprints | From `.\gradlew :app:signingReport` (debug + release keystores) |
+| **`FIREBASE_WEB_CLIENT_ID`** | `apps/android/local.properties` (optional) | OAuth **Web client** id (`…apps.googleusercontent.com`). Auto-read from `google-services.json` if omitted — same as Platra |
+| **`MAPS_API_KEY`** | `apps/android/local.properties` | Google Maps SDK key for **Pick on map** geofence UI (same Google Cloud / Firebase project) |
+| **`Firebase__ServiceAccountJson`** | Azure App Service `app-wfh-diary-api-dev` | Full service-account JSON body — **separate Firebase project from Platra** unless you intentionally share one |
+| Google Sign-In provider | Firebase → Authentication → Sign-in method | Enable **Google** |
+
+WFH Diary does **not** reuse Platra's `google-services.json` — create a Firebase project (or add a second Android app) for `dev.wfhdiary.app`.
+
+---
 
 ## Do you need Firebase today?
 
 | Azure API config | Android sign-in | What works |
-|------------------|-----------------|------------|
-| **Firebase OFF** (current default) | Not required | App sends `X-Debug-User-Id: dev-user` on every request. **All devices share one user's data** — fine for solo testing, not for real accounts. |
+| --- | --- | --- |
+| **Firebase OFF** (current default) | Not required | App sends `X-Debug-User-Id: dev-user` when no `google-services.json`. |
 | **Firebase ON** | **Required** (Google) | App sends `Authorization: Bearer <firebase-id-token>`. API verifies token; data is **per Firebase user**. |
-
-**Use Azure without Firebase first:** Settings → API backend → **Azure** (now the app default). Log days — data lands on Azure SQLite.
-
-**Enable Firebase** when you want your Google account (only yours) on the live API.
 
 ---
 
@@ -21,17 +35,12 @@ Use this when you want **real sign-in** on the live Azure API. Each user's diary
 
 ### 1. Firebase project + Android app
 
-1. [Firebase Console](https://console.firebase.google.com/) → create or pick a project (e.g. `wfh-diary-dev`).
-2. **Add app** → Android → package name **`dev.wfhdiary.app`**.
-3. Download **`google-services.json`** → save as:
+1. Firebase Console → create project (e.g. `wfh-diary-dev`) or add app to existing project.
+2. **Add app** → Android → package **`dev.wfhdiary.app`**.
+3. Download **`google-services.json`** → `apps/android/app/google-services.json`.
+4. **Sync Gradle** (plugin applies when the file exists).
 
-   `apps/android/app/google-services.json`
-
-   (Do **not** commit.)
-
-4. **Sync Gradle** in Android Studio (plugin applies automatically when the file exists).
-
-### 2. Register signing certificates (required for Google Sign-In)
+### 2. Register signing certificates
 
 From `apps/android`:
 
@@ -39,71 +48,75 @@ From `apps/android`:
 .\gradlew :app:signingReport
 ```
 
-Copy **SHA-1** and **SHA-256** from the **`debug`** variant (uses your `ci-shared-debug.keystore` when configured in `local.properties`).
+Add **SHA-1** and **SHA-256** for the **debug** variant (and release if you sideload release builds).
 
-Or with keytool:
+### 3. Enable Google Sign-In + Web client id
 
-```powershell
-keytool -list -v -keystore app\ci-shared-debug.keystore -alias wfh_shared_debug
-```
+1. Firebase → **Authentication** → **Google** → Enable.
+2. Copy the **Web client ID** (OAuth 2.0, ends with `.apps.googleusercontent.com`).
 
-In Firebase: **Project settings** → your Android app → **Add fingerprint** → paste SHA-1, then SHA-256.
-
-### 3. Enable Google Sign-In
-
-1. Firebase → **Authentication** → **Sign-in method** → **Google** → Enable.
-2. Note the **Web client ID** (OAuth 2.0, ends with `.apps.googleusercontent.com`).
-
-In `apps/android/local.properties` (optional if parsed from json):
+Optional in `apps/android/local.properties` (see `local.properties.example`):
 
 ```properties
 FIREBASE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
 ```
 
-Rebuild the app after adding `google-services.json`.
+Rebuild after adding `google-services.json`.
+
+### 3b. Google Maps (home / office picker)
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → same project as Firebase → **APIs & Services** → enable **Maps SDK for Android**.
+2. **Credentials** → **Create credentials** → **API key**.
+3. Restrict the key (recommended): Android apps → package **`dev.wfhdiary.app`** + your SHA-1.
+4. Add to `apps/android/local.properties`:
+
+```properties
+MAPS_API_KEY=AIza...
+```
+
+5. Sync Gradle and rebuild. Settings → **Pick on map** on Home / Office rows.
 
 ### 4. Azure API — verify Firebase tokens
 
-Download **service account JSON**: Firebase → **Project settings** → **Service accounts** → **Generate new private key**.
+Firebase → **Project settings** → **Service accounts** → **Generate new private key**.
 
-**Dev (quick):** paste the **entire JSON** as one App Service setting (Portal → `app-wfh-diary-api-dev` → **Environment variables**):
-
-| Name | Value |
-|------|--------|
-| `Firebase__ServiceAccountJson` | `{ "type": "service_account", ... }` entire file body |
-
-Restart the web app. After this, **`/v1/*` requires a valid Bearer token** (no more `X-Debug-User-Id` for data routes).
-
-**Better (later):** store JSON in **Key Vault** and use `@Microsoft.KeyVault(SecretUri=...)` — see [`AZURE_DEPLOY.md`](AZURE_DEPLOY.md).
-
-Optional fail-fast:
+Azure Portal → `app-wfh-diary-api-dev` → **Environment variables**:
 
 | Name | Value |
-|------|--------|
-| `Firebase__RequireConfigured` | `true` |
+| --- | --- |
+| `Firebase__ServiceAccountJson` | Entire JSON file body `{ "type": "service_account", ... }` |
+
+Restart the web app. After this, **`/v1/*` requires a valid Bearer token**.
 
 ### 5. Test end-to-end
 
 1. Rebuild/install the Android app (with `google-services.json`).
-2. Confirm Settings → API backend → **Azure**.
-3. Settings → **Sign in with Google**.
-4. Log a day on the month grid → sync should hit Azure with your Firebase UID.
+2. Settings → **Sign in with Google**.
+3. Log a day → sync should hit Azure with your Firebase UID.
 
 ---
 
 ## How the app wires auth
 
 - **`WfhDiaryApplication`:** when signed in, syncs Firebase ID token → Ktor adds `Authorization: Bearer …` on each API call.
-- **Not signed in + no Firebase json:** falls back to `X-Debug-User-Id: dev-user` (dev only).
-- **Firebase ON (Azure) + not signed in:** API returns **401** on `/v1/*` — sign in first.
+- **No `google-services.json`:** app sends `X-Debug-User-Id: dev-user` (local/dev only).
+- **`google-services.json` present but not signed in:** no debug header — API returns **401** on `/v1/*`.
+
+---
+
+## Home & office geofence (separate from SSO)
+
+Settings → **Home & office locations** → **Allow location** → **Pick on map** (or **Use current location**).
+
+If you ignore the morning reminder, the app uses GPS (200 m radius) to pick Home or Office default times before falling back to work templates or the missed-notification default.
 
 ---
 
 ## Troubleshooting
 
 | Symptom | Fix |
-|---------|-----|
+| --- | --- |
 | Google sign-in code 16 / re-auth | SHA-1/SHA-256 missing in Firebase for the keystore that signed the APK |
 | API 401 after enabling Firebase | Sign in on device; check `Firebase__ServiceAccountJson` on App Service |
 | Data "missing" after sign-in | New Firebase UID = new user row; data under `dev-user` is a different account |
-| App still hits local API | Settings → Azure; reinstall if DataStore still has `local` |
+| Used Platra's json by mistake | Wrong package — download json for **`dev.wfhdiary.app`** |

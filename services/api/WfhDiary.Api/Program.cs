@@ -88,6 +88,7 @@ var app = builder.Build();
 await DatabaseBootstrap.ApplyAsync(app);
 
 app.UseCors();
+app.UseMiddleware<UnauthorizedExceptionMiddleware>();
 app.UseMiddleware<FirebaseBearerMiddleware>();
 if (!app.Environment.IsDevelopment())
 {
@@ -98,6 +99,7 @@ app.MapHealthEndpoints();
 app.MapVersionEndpoints();
 app.MapSettingsEndpoints();
 app.MapDiaryEndpoints();
+app.MapWorkTemplateEndpoints();
 
 app.Run();
 

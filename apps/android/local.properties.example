@@ -1,0 +1,27 @@
+# Copy to local.properties (gitignored) and set sdk.dir to your Android SDK.
+# Android Studio usually creates local.properties when you open this project.
+#
+# Windows example (replace YOUR_USER):
+# sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+
+sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+
+# Optional: Settings → GitHub update. CI publishes APKs to Evzy/wfh-diary-releases (see docs/CI_CD.md).
+# UPDATE_GITHUB_OWNER=Evzy
+# UPDATE_GITHUB_REPO=wfh-diary-releases
+# UPDATE_GITHUB_TOKEN=ghp_...   # only if the repo or release assets are private
+#
+# Optional: same debug signing as CI so “update from GitHub” can replace your debug install (see docs/CI_CD.md).
+# debug.storeFile=ci-shared-debug.keystore
+# debug.storePassword=...
+# debug.keyAlias=wfh_shared_debug
+# debug.keyPassword=...
+#
+# Optional — auto-read from google-services.json when oauth_client is present; set explicitly if that array is empty:
+# FIREBASE_WEB_CLIENT_ID=....apps.googleusercontent.com
+# For CI: GitHub secret WFH_FIREBASE_WEB_CLIENT_ID (same value).
+#
+# Google Maps (Settings → pick home/office on map): enable Maps SDK for Android in Google Cloud Console,
+# create an API key restricted to this app, then:
+# MAPS_API_KEY=AIza...
+# For CI release APKs, add the same key as GitHub secret WFH_MAPS_API_KEY (see docs/CI_CD.md).

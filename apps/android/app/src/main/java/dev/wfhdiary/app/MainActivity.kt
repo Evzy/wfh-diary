@@ -48,6 +48,11 @@ class MainActivity : ComponentActivity() {
                 val firebaseSignInBusy by settingsViewModel.firebaseSignInBusy.collectAsStateWithLifecycle()
                 val firebaseAuthMessage by settingsViewModel.firebaseAuthMessage.collectAsStateWithLifecycle()
                 val githubUpdateUi by settingsViewModel.githubUpdateUiState.collectAsStateWithLifecycle()
+                val workTemplates by settingsViewModel.workTemplates.collectAsStateWithLifecycle()
+                val showWorkTemplatesSheet by settingsViewModel.showWorkTemplatesSheet.collectAsStateWithLifecycle()
+                val geofenceBusy by settingsViewModel.geofenceBusy.collectAsStateWithLifecycle()
+                val geofenceMessage by settingsViewModel.geofenceMessage.collectAsStateWithLifecycle()
+                val geofenceMapPicker by settingsViewModel.geofenceMapPicker.collectAsStateWithLifecycle()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val activity = LocalContext.current as ComponentActivity
@@ -90,6 +95,23 @@ class MainActivity : ComponentActivity() {
                                 onDownloadInstallGithubApk = {
                                     settingsViewModel.downloadAndInstallGithubApk(activity)
                                 },
+                                workTemplates = workTemplates,
+                                showWorkTemplatesSheet = showWorkTemplatesSheet,
+                                onOpenWorkTemplates = settingsViewModel::openWorkTemplatesSheet,
+                                onDismissWorkTemplates = settingsViewModel::dismissWorkTemplatesSheet,
+                                onCreateWorkTemplate = settingsViewModel::createWorkTemplate,
+                                onDeleteWorkTemplate = settingsViewModel::deleteWorkTemplate,
+                                geofenceBusy = geofenceBusy,
+                                geofenceMessage = geofenceMessage,
+                                onSetHomeLocation = settingsViewModel::setHomeLocationFromGps,
+                                onClearHomeLocation = settingsViewModel::clearHomeLocation,
+                                onSetOfficeLocation = settingsViewModel::setOfficeLocationFromGps,
+                                onClearOfficeLocation = settingsViewModel::clearOfficeLocation,
+                                geofenceMapPicker = geofenceMapPicker,
+                                onPickHomeOnMap = settingsViewModel::openHomeMapPicker,
+                                onPickOfficeOnMap = settingsViewModel::openOfficeMapPicker,
+                                onDismissGeofenceMapPicker = settingsViewModel::dismissGeofenceMapPicker,
+                                onSaveGeofenceFromMap = settingsViewModel::saveGeofenceFromMap,
                                 onClose = { scope.launch { drawerState.close() } },
                             )
                         }

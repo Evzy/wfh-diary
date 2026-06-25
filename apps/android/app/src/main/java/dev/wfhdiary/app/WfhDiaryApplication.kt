@@ -49,7 +49,7 @@ class WfhDiaryApplication : Application() {
                 val token = firebaseIdTokenHolder.getToken()
                 if (!token.isNullOrBlank()) {
                     headers.append(HttpHeaders.Authorization, "Bearer $token")
-                } else {
+                } else if (!BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
                     headers.append("X-Debug-User-Id", "dev-user")
                 }
             }

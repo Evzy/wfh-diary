@@ -33,6 +33,11 @@ class ContractDeserializationTest {
         assertNotNull(json.decodeFromString<DiaryDto>(readContract("diary.json")))
     }
 
+    @Test
+    fun workTemplate_fixture_deserializes() {
+        assertNotNull(json.decodeFromString<WorkTemplateDto>(readContract("work-template.json")))
+    }
+
     private fun readContract(name: String): String {
         val start = File(checkNotNull(System.getProperty("user.dir")))
         val root =

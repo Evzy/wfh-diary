@@ -16,4 +16,10 @@ data class UserSettingsDto(
     val defaultOfficeStart: String,
     val defaultOfficeFinish: String,
     val defaultOfficeBreakHours: Double,
+    val homeGeofenceLatitude: Double? = null,
+    val homeGeofenceLongitude: Double? = null,
+    val homeGeofenceRadiusMeters: Int? = null,
+    val officeGeofenceLatitude: Double? = null,
+    val officeGeofenceLongitude: Double? = null,
+    val officeGeofenceRadiusMeters: Int? = null,
 )

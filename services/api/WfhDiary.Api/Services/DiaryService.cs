@@ -66,6 +66,36 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
             settings.MissedNotificationApplyAtMinutes = applyAt;
         }
 
+        if (req.ClearHomeGeofence == true)
+        {
+            settings.HomeGeofenceLatitude = null;
+            settings.HomeGeofenceLongitude = null;
+            settings.HomeGeofenceRadiusMeters = null;
+        }
+        else if (req.HomeGeofenceLatitude is not null &&
+                 req.HomeGeofenceLongitude is not null &&
+                 req.HomeGeofenceRadiusMeters is int homeRadius)
+        {
+            settings.HomeGeofenceLatitude = req.HomeGeofenceLatitude;
+            settings.HomeGeofenceLongitude = req.HomeGeofenceLongitude;
+            settings.HomeGeofenceRadiusMeters = homeRadius;
+        }
+
+        if (req.ClearOfficeGeofence == true)
+        {
+            settings.OfficeGeofenceLatitude = null;
+            settings.OfficeGeofenceLongitude = null;
+            settings.OfficeGeofenceRadiusMeters = null;
+        }
+        else if (req.OfficeGeofenceLatitude is not null &&
+                 req.OfficeGeofenceLongitude is not null &&
+                 req.OfficeGeofenceRadiusMeters is int officeRadius)
+        {
+            settings.OfficeGeofenceLatitude = req.OfficeGeofenceLatitude;
+            settings.OfficeGeofenceLongitude = req.OfficeGeofenceLongitude;
+            settings.OfficeGeofenceRadiusMeters = officeRadius;
+        }
+
         await db.SaveChangesAsync(ct);
         return settings;
     }
@@ -249,6 +279,109 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         return true;
     }
 
+    public async Task<List<WorkTemplateEntity>> GetWorkTemplatesAsync(string userId, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.WorkTemplates
+            .Where(t => t.OwnerUserId == userId)
+            .OrderBy(t => t.SortOrder)
+            .ThenBy(t => t.Label)
+            .ToListAsync(ct);
+    }
+
+    public async Task<WorkTemplateEntity> CreateWorkTemplateAsync(string userId, CreateWorkTemplateRequest req, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (req.IsDefault)
+        {
+            await ClearDefaultWorkTemplateAsync(db, userId, ct);
+        }
+
+        var maxSort = await db.WorkTemplates
+            .Where(t => t.OwnerUserId == userId)
+            .Select(t => (int?)t.SortOrder)
+            .MaxAsync(ct) ?? -1;
+
+        var template = MapCreateWorkTemplate(userId, req, maxSort + 1);
+        db.WorkTemplates.Add(template);
+        await db.SaveChangesAsync(ct);
+        return template;
+    }
+
+    public async Task<WorkTemplateEntity?> UpdateWorkTemplateAsync(string userId, Guid id, UpdateWorkTemplateRequest req, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var template = await db.WorkTemplates.FirstOrDefaultAsync(t => t.Id == id && t.OwnerUserId == userId, ct);
+        if (template is null) return null;
+
+        if (req.IsDefault == true)
+        {
+            await ClearDefaultWorkTemplateAsync(db, userId, ct, exceptId: id);
+            template.IsDefault = true;
+        }
+        else if (req.IsDefault == false)
+        {
+            template.IsDefault = false;
+        }
+
+        if (req.Label is not null) template.Label = req.Label.Trim();
+        if (req.SortOrder is int sort) template.SortOrder = sort;
+        if (req.StartTime is not null) template.StartTimeMinutes = TimeHelpers.ParseTimeString(req.StartTime);
+        if (req.FinishTime is not null) template.FinishTimeMinutes = TimeHelpers.ParseTimeString(req.FinishTime);
+        if (req.BreakHours is not null) template.BreakHours = req.BreakHours;
+        if (req.Location is not null) template.Location = string.IsNullOrWhiteSpace(req.Location) ? null : req.Location;
+        if (req.Description is not null) template.Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description;
+        if (req.GeofenceLatitude is not null) template.GeofenceLatitude = req.GeofenceLatitude;
+        if (req.GeofenceLongitude is not null) template.GeofenceLongitude = req.GeofenceLongitude;
+        if (req.GeofenceRadiusMeters is not null) template.GeofenceRadiusMeters = req.GeofenceRadiusMeters;
+
+        await db.SaveChangesAsync(ct);
+        return template;
+    }
+
+    public async Task<bool> DeleteWorkTemplateAsync(string userId, Guid id, CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var template = await db.WorkTemplates.FirstOrDefaultAsync(t => t.Id == id && t.OwnerUserId == userId, ct);
+        if (template is null) return false;
+        db.WorkTemplates.Remove(template);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private static WorkTemplateEntity MapCreateWorkTemplate(string userId, CreateWorkTemplateRequest req, int sortOrder) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            OwnerUserId = userId,
+            Label = req.Label.Trim(),
+            SortOrder = req.SortOrder ?? sortOrder,
+            StartTimeMinutes = req.StartTime is not null ? TimeHelpers.ParseTimeString(req.StartTime) : null,
+            FinishTimeMinutes = req.FinishTime is not null ? TimeHelpers.ParseTimeString(req.FinishTime) : null,
+            BreakHours = req.BreakHours,
+            Location = string.IsNullOrWhiteSpace(req.Location) ? null : req.Location,
+            Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description,
+            IsDefault = req.IsDefault,
+            GeofenceLatitude = req.GeofenceLatitude,
+            GeofenceLongitude = req.GeofenceLongitude,
+            GeofenceRadiusMeters = req.GeofenceRadiusMeters,
+        };
+
+    private static async Task ClearDefaultWorkTemplateAsync(
+        WfhDiaryDbContext db,
+        string userId,
+        CancellationToken ct,
+        Guid? exceptId = null)
+    {
+        var defaults = await db.WorkTemplates
+            .Where(t => t.OwnerUserId == userId && t.IsDefault && (exceptId == null || t.Id != exceptId))
+            .ToListAsync(ct);
+        foreach (var item in defaults)
+        {
+            item.IsDefault = false;
+        }
+    }
+
     public static UserSettingsDto ToDto(UserSettingsEntity s) => new(
         s.DisplayName,
         TimeHelpers.MinutesToTimeString(s.NotificationTimeMinutes),
@@ -260,7 +393,13 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         s.DefaultHomeBreakHours,
         TimeHelpers.MinutesToTimeString(s.DefaultOfficeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultOfficeFinishMinutes),
-        s.DefaultOfficeBreakHours);
+        s.DefaultOfficeBreakHours,
+        s.HomeGeofenceLatitude,
+        s.HomeGeofenceLongitude,
+        s.HomeGeofenceRadiusMeters,
+        s.OfficeGeofenceLatitude,
+        s.OfficeGeofenceLongitude,
+        s.OfficeGeofenceRadiusMeters);
 
     public static DayEntryDto ToDto(DayEntryEntity e) => new(
         e.Date.ToString("yyyy-MM-dd"),
@@ -277,4 +416,18 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         l.StartDate.ToString("yyyy-MM-dd"),
         l.EndDate.ToString("yyyy-MM-dd"),
         l.Note);
+
+    public static WorkTemplateDto ToDto(WorkTemplateEntity t) => new(
+        t.Id,
+        t.Label,
+        t.SortOrder,
+        t.StartTimeMinutes is int sm ? TimeHelpers.MinutesToTimeString(sm) : null,
+        t.FinishTimeMinutes is int fm ? TimeHelpers.MinutesToTimeString(fm) : null,
+        t.BreakHours,
+        t.Location,
+        t.Description,
+        t.IsDefault,
+        t.GeofenceLatitude,
+        t.GeofenceLongitude,
+        t.GeofenceRadiusMeters);
 }

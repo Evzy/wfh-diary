@@ -9,5 +9,11 @@
   "defaultHomeBreakHours": 1,
   "defaultOfficeStart": "08:30",
   "defaultOfficeFinish": "17:00",
-  "defaultOfficeBreakHours": 1
+  "defaultOfficeBreakHours": 1,
+  "homeGeofenceLatitude": -33.8688,
+  "homeGeofenceLongitude": 151.2093,
+  "homeGeofenceRadiusMeters": 200,
+  "officeGeofenceLatitude": null,
+  "officeGeofenceLongitude": null,
+  "officeGeofenceRadiusMeters": null
 }

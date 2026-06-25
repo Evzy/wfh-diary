@@ -11,4 +11,12 @@ public sealed record UpdateUserSettingsRequest(
     decimal? DefaultHomeBreakHours,
     string? DefaultOfficeStart,
     string? DefaultOfficeFinish,
-    decimal? DefaultOfficeBreakHours);
+    decimal? DefaultOfficeBreakHours,
+    double? HomeGeofenceLatitude,
+    double? HomeGeofenceLongitude,
+    int? HomeGeofenceRadiusMeters,
+    double? OfficeGeofenceLatitude,
+    double? OfficeGeofenceLongitude,
+    int? OfficeGeofenceRadiusMeters,
+    bool? ClearHomeGeofence,
+    bool? ClearOfficeGeofence);
