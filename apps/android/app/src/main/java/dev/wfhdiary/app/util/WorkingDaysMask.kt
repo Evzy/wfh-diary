@@ -2,6 +2,8 @@ package dev.wfhdiary.app.util
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
 object WorkingDaysMask {
     /** Mon–Fri (ISO day 1–5). */
@@ -29,4 +31,9 @@ object WorkingDaysMask {
             DayOfWeek.SATURDAY,
             DayOfWeek.SUNDAY,
         )
+
+    fun selectedDayLabels(mask: Int, style: TextStyle = TextStyle.FULL): List<String> =
+        allDays()
+            .filter { isWorkingDay(mask, it) }
+            .map { it.getDisplayName(style, Locale.getDefault()) }
 }

@@ -1,10 +1,12 @@
 package dev.wfhdiary.app.util
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.TextStyle
 
 class WorkingDaysMaskTest {
     @Test
@@ -23,5 +25,13 @@ class WorkingDaysMaskTest {
         assertTrue(WorkingDaysMask.isWorkingDay(mask, DayOfWeek.SATURDAY))
         mask = WorkingDaysMask.setDay(mask, DayOfWeek.MONDAY, enabled = false)
         assertFalse(WorkingDaysMask.isWorkingDay(mask, DayOfWeek.MONDAY))
+    }
+
+    @Test
+    fun selectedDayLabels_lists_enabled_days() {
+        val labels = WorkingDaysMask.selectedDayLabels(WorkingDaysMask.DEFAULT, TextStyle.SHORT)
+        assertEquals(5, labels.size)
+        assertTrue(labels.contains("Mon"))
+        assertFalse(labels.contains("Sat"))
     }
 }

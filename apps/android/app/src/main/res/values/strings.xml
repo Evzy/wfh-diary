@@ -23,6 +23,10 @@
     <string name="settings_notification_time_hint">Posts a system notification at this time on selected days (save to apply). Skipped on leave days.</string>
     <string name="settings_notification_working_days">Reminder days</string>
     <string name="settings_notification_working_days_hint">Selected days get the morning reminder. Unselected days are off (e.g. weekends).</string>
+    <string name="settings_notification_working_days_set">Set</string>
+    <string name="settings_notification_working_days_dialog_title">Reminder days</string>
+    <string name="settings_notification_working_days_save">Save</string>
+    <string name="settings_notification_working_days_none">None selected</string>
     <string name="year_previous">Previous year</string>
     <string name="year_next">Next year</string>
     <string name="month_previous">Previous month</string>
