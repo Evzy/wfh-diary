@@ -14,7 +14,6 @@ import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
 import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
-import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -455,88 +454,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
             }
             _exportBusy.value = false
-        }
-    }
-
-    private val _githubUpdateUi = MutableStateFlow(GithubUpdateUiState())
-    val githubUpdateUiState = _githubUpdateUi.asStateFlow()
-
-    fun checkGithubRelease() {
-        val app = getApplication<Application>()
-        viewModelScope.launch {
-            if (!GithubApkReleaseUpdater.isConfigured()) {
-                _githubUpdateUi.update {
-                    it.copy(
-                        busy = false,
-                        pendingRelease = null,
-                        status = app.getString(R.string.github_update_not_configured),
-                    )
-                }
-                return@launch
-            }
-            _githubUpdateUi.update {
-                it.copy(busy = true, status = app.getString(R.string.github_update_checking))
-            }
-            GithubApkReleaseUpdater.fetchLatestApkRelease().fold(
-                onSuccess = { info ->
-                    _githubUpdateUi.update {
-                        it.copy(
-                            busy = false,
-                            pendingRelease = info,
-                            status = app.getString(R.string.github_update_found, info.tagName, info.assetName),
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _githubUpdateUi.update {
-                        it.copy(
-                            busy = false,
-                            pendingRelease = null,
-                            status = e.message ?: app.getString(R.string.github_update_failed),
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun downloadAndInstallGithubApk(activity: Activity) {
-        val app = getApplication<Application>()
-        viewModelScope.launch {
-            val pending = _githubUpdateUi.value.pendingRelease
-            if (pending == null) {
-                _githubUpdateUi.update { it.copy(status = app.getString(R.string.github_update_check_first)) }
-                return@launch
-            }
-            if (!GithubApkReleaseUpdater.ensureInstallFromUnknownSources(activity)) {
-                _githubUpdateUi.update {
-                    it.copy(status = app.getString(R.string.github_update_enable_unknown_sources))
-                }
-                return@launch
-            }
-            _githubUpdateUi.update {
-                it.copy(busy = true, status = app.getString(R.string.github_update_downloading))
-            }
-            val result =
-                withContext(Dispatchers.IO) {
-                    GithubApkReleaseUpdater.downloadApkToCache(activity, pending.downloadUrl)
-                }
-            result.fold(
-                onSuccess = { file ->
-                    _githubUpdateUi.update {
-                        it.copy(busy = false, status = app.getString(R.string.github_update_opening_installer))
-                    }
-                    GithubApkReleaseUpdater.startPackageInstall(activity, file)
-                },
-                onFailure = { e ->
-                    _githubUpdateUi.update {
-                        it.copy(
-                            busy = false,
-                            status = e.message ?: app.getString(R.string.github_update_failed),
-                        )
-                    }
-                },
-            )
         }
     }
 

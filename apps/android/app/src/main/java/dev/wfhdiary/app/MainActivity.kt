@@ -28,6 +28,7 @@ import dev.wfhdiary.app.ui.month.MonthGridViewModel
 import dev.wfhdiary.app.ui.settings.SettingsScreen
 import dev.wfhdiary.app.ui.settings.SettingsViewModel
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme
+import dev.wfhdiary.app.ui.update.AppUpdateViewModel
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.launch
 
@@ -41,6 +42,9 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels {
         SettingsViewModel.factory(application)
     }
+    private val appUpdateViewModel: AppUpdateViewModel by viewModels {
+        AppUpdateViewModel.factory(application)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             WfhDiaryTheme {
                 val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+                val appUpdateState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
                 val activity = LocalContext.current as ComponentActivity
 
                 when {
@@ -64,12 +69,22 @@ class MainActivity : ComponentActivity() {
                             signInBusy = authState.signInBusy,
                             errorMessage = authState.errorMessage,
                             onSignInWithGoogle = { authViewModel.signInWithGoogle(activity) },
+                            updateConfigured = GithubApkReleaseUpdater.isConfigured(),
+                            updateBusy = appUpdateState.busy,
+                            updateStatus = appUpdateState.status,
+                            pendingUpdate = appUpdateState.pendingRelease,
+                            showUpdateDialog = appUpdateState.showUpdateDialog,
+                            onAutoCheckForUpdate = appUpdateViewModel::checkOnLoginIfNeeded,
+                            onCheckForUpdate = { appUpdateViewModel.checkForUpdate(manual = true) },
+                            onDismissUpdateDialog = appUpdateViewModel::dismissUpdateDialog,
+                            onDownloadUpdate = { appUpdateViewModel.downloadAndInstall(activity) },
                         )
                     }
                     else -> {
                         MainAppContent(
                             settingsViewModel = settingsViewModel,
                             monthViewModel = monthViewModel,
+                            appUpdateViewModel = appUpdateViewModel,
                             accountUserLabel = authState.userLabel,
                             onSignOut = authViewModel::signOut,
                         )
@@ -84,6 +99,7 @@ class MainActivity : ComponentActivity() {
 private fun MainAppContent(
     settingsViewModel: SettingsViewModel,
     monthViewModel: MonthGridViewModel,
+    appUpdateViewModel: AppUpdateViewModel,
     accountUserLabel: String?,
     onSignOut: () -> Unit,
 ) {
@@ -93,7 +109,7 @@ private fun MainAppContent(
     val notificationMessage by settingsViewModel.notificationMessage.collectAsStateWithLifecycle()
     val exportBusy by settingsViewModel.exportBusy.collectAsStateWithLifecycle()
     val exportStatus by settingsViewModel.exportStatus.collectAsStateWithLifecycle()
-    val githubUpdateUi by settingsViewModel.githubUpdateUiState.collectAsStateWithLifecycle()
+    val githubUpdateUi by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
     val geofenceBusy by settingsViewModel.geofenceBusy.collectAsStateWithLifecycle()
     val geofenceMessage by settingsViewModel.geofenceMessage.collectAsStateWithLifecycle()
     val geofenceMapPicker by settingsViewModel.geofenceMapPicker.collectAsStateWithLifecycle()
@@ -134,9 +150,9 @@ private fun MainAppContent(
                     githubUpdateBusy = githubUpdateUi.busy,
                     githubUpdateStatus = githubUpdateUi.status,
                     githubUpdateHasPendingApk = githubUpdateUi.pendingRelease != null,
-                    onCheckGithubUpdate = settingsViewModel::checkGithubRelease,
+                    onCheckGithubUpdate = { appUpdateViewModel.checkForUpdate(manual = true) },
                     onDownloadInstallGithubApk = {
-                        settingsViewModel.downloadAndInstallGithubApk(activity)
+                        appUpdateViewModel.downloadAndInstall(activity)
                     },
                     workScheduleCustomize = workScheduleCustomize,
                     onCustomizeHomeSchedule = settingsViewModel::openHomeScheduleCustomize,

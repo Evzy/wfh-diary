@@ -87,6 +87,12 @@
     <string name="settings_save">Save settings</string>
     <string name="settings_saved">Settings saved</string>
     <string name="github_update_section_title">App update (GitHub Releases)</string>
+    <string name="login_update_dialog_title">Update available</string>
+    <string name="login_update_dialog_message">Version %1$s is available (%2$s). Install it to continue using the latest app.</string>
+    <string name="login_update_dialog_later">Not now</string>
+    <string name="login_update_download_available">Download update (%1$s)</string>
+    <string name="github_update_up_to_date">You\'re on the latest version.</string>
+    <string name="github_update_installed_newer">Installed build is newer than release %1$s.</string>
     <string name="github_update_check">Check for update</string>
     <string name="github_update_download_install">Download and install</string>
     <string name="github_update_not_configured">GitHub owner/repo not configured in build.</string>

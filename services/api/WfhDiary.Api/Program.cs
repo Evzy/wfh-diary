@@ -17,15 +17,7 @@ if (string.IsNullOrEmpty(connectionString))
     connectionString = $"Data Source={dbPath}";
 }
 
-if (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
-    connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
-{
-    builder.Services.AddDbContextFactory<WfhDiaryDbContext>(o => o.UseNpgsql(connectionString));
-}
-else
-{
-    builder.Services.AddDbContextFactory<WfhDiaryDbContext>(o => o.UseSqlite(connectionString));
-}
+builder.Services.AddWfhDiaryDatabase(connectionString);
 
 builder.Services.AddScoped<DiaryService>();
 builder.Services.AddSingleton<XlsxExportService>();

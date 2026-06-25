@@ -10,6 +10,18 @@ public static class DatabaseBootstrap
         await using var scope = app.Services.CreateAsyncScope();
         var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<WfhDiaryDbContext>>();
         await using var db = await factory.CreateDbContextAsync();
+
+        if (db.Database.IsSqlite())
+        {
+            await BootstrapSqliteAsync(db);
+            return;
+        }
+
+        await db.Database.MigrateAsync();
+    }
+
+    private static async Task BootstrapSqliteAsync(WfhDiaryDbContext db)
+    {
         await db.Database.EnsureCreatedAsync();
         await EnsureSqliteColumnAsync(db, "NotificationWorkingDaysMask", "INTEGER NOT NULL DEFAULT 31");
         await EnsureSqliteColumnAsync(db, "MissedNotificationDefault", "TEXT NOT NULL DEFAULT 'None'");
@@ -23,10 +35,10 @@ public static class DatabaseBootstrap
         await EnsureSqliteColumnAsync(db, "MissedNotificationAwayDefault", "TEXT NOT NULL DEFAULT 'Office'");
         await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtHome", "INTEGER NOT NULL DEFAULT 0");
         await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtOffice", "INTEGER NOT NULL DEFAULT 0");
-        await EnsureWorkTemplatesTableAsync(db);
+        await EnsureSqliteWorkTemplatesTableAsync(db);
     }
 
-    private static async Task EnsureWorkTemplatesTableAsync(WfhDiaryDbContext db)
+    private static async Task EnsureSqliteWorkTemplatesTableAsync(WfhDiaryDbContext db)
     {
         const string sql = """
             CREATE TABLE IF NOT EXISTS work_templates (
@@ -45,38 +57,11 @@ public static class DatabaseBootstrap
                 GeofenceRadiusMeters INTEGER NULL
             )
             """;
-        if (db.Database.IsSqlite())
-        {
-            await db.Database.ExecuteSqlRawAsync(sql);
-            return;
-        }
-
-        if (db.Database.IsNpgsql())
-        {
-            await db.Database.ExecuteSqlRawAsync("""
-                CREATE TABLE IF NOT EXISTS work_templates (
-                    "Id" uuid NOT NULL PRIMARY KEY,
-                    "OwnerUserId" text NOT NULL,
-                    "Label" text NOT NULL,
-                    "SortOrder" integer NOT NULL DEFAULT 0,
-                    "StartTimeMinutes" integer NULL,
-                    "FinishTimeMinutes" integer NULL,
-                    "BreakHours" numeric NULL,
-                    "Location" text NULL,
-                    "Description" text NULL,
-                    "IsDefault" boolean NOT NULL DEFAULT false,
-                    "GeofenceLatitude" double precision NULL,
-                    "GeofenceLongitude" double precision NULL,
-                    "GeofenceRadiusMeters" integer NULL
-                )
-                """);
-        }
+        await db.Database.ExecuteSqlRawAsync(sql);
     }
 
     private static async Task EnsureSqliteColumnAsync(WfhDiaryDbContext db, string column, string definition)
     {
-        if (!db.Database.IsSqlite()) return;
-
         try
         {
             await db.Database.ExecuteSqlRawAsync(

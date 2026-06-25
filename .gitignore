@@ -39,3 +39,7 @@ Thumbs.db
 *.swp
 .idea/
 *.log
+
+# Local Azure provisioning output (credentials)
+azure-logs/
+azure-logs.zip

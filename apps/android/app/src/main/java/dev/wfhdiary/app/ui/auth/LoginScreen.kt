@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,14 +29,56 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
+import dev.wfhdiary.app.update.GithubApkReleaseInfo
 
 @Composable
 fun LoginScreen(
     signInBusy: Boolean,
     errorMessage: String,
     onSignInWithGoogle: () -> Unit,
+    updateConfigured: Boolean,
+    updateBusy: Boolean,
+    updateStatus: String,
+    pendingUpdate: GithubApkReleaseInfo?,
+    showUpdateDialog: Boolean,
+    onAutoCheckForUpdate: () -> Unit,
+    onCheckForUpdate: () -> Unit,
+    onDismissUpdateDialog: () -> Unit,
+    onDownloadUpdate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    LaunchedEffect(updateConfigured) {
+        if (updateConfigured) {
+            onAutoCheckForUpdate()
+        }
+    }
+
+    if (showUpdateDialog && pendingUpdate != null) {
+        AlertDialog(
+            onDismissRequest = onDismissUpdateDialog,
+            title = { Text(stringResource(R.string.login_update_dialog_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.login_update_dialog_message,
+                        pendingUpdate.tagName,
+                        pendingUpdate.releaseTitle?.takeIf { it.isNotBlank() } ?: pendingUpdate.assetName,
+                    ),
+                )
+            },
+            confirmButton = {
+                Button(onClick = onDownloadUpdate, enabled = !updateBusy) {
+                    Text(stringResource(R.string.github_update_download_install))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissUpdateDialog) {
+                    Text(stringResource(R.string.login_update_dialog_later))
+                }
+            },
+        )
+    }
+
     Surface(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -81,7 +126,7 @@ fun LoginScreen(
                 Spacer(Modifier.height(40.dp))
                 Button(
                     onClick = onSignInWithGoogle,
-                    enabled = !signInBusy,
+                    enabled = !signInBusy && !updateBusy,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (signInBusy) {
@@ -105,7 +150,31 @@ fun LoginScreen(
                         textAlign = TextAlign.Center,
                     )
                 }
-                Spacer(Modifier.height(48.dp))
+                Spacer(Modifier.height(32.dp))
+                if (updateConfigured) {
+                    if (pendingUpdate != null && !showUpdateDialog) {
+                        TextButton(onClick = onDownloadUpdate, enabled = !updateBusy) {
+                            Text(stringResource(R.string.login_update_download_available, pendingUpdate.tagName))
+                        }
+                    }
+                    TextButton(onClick = onCheckForUpdate, enabled = !updateBusy) {
+                        if (updateBusy) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.size(8.dp))
+                        }
+                        Text(stringResource(R.string.github_update_check))
+                    }
+                    if (updateStatus.isNotBlank()) {
+                        Text(
+                            text = updateStatus,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
                 Text(
                     text = stringResource(
                         R.string.settings_app_version,
