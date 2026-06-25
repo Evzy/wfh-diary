@@ -11,6 +11,7 @@ import dev.wfhdiary.app.data.remote.CreateLeaveRequest
 import dev.wfhdiary.app.data.remote.DayEntryDto
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.util.FinancialYearHelper
+import dev.wfhdiary.app.util.LeavePeriodHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -105,13 +106,23 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun deleteLeave(id: String) {
         viewModelScope.launch {
-            refreshAfterLeaveChange(closeSheet = false) {
+            refreshAfterLeaveChange(closeSheet = false, closeSelectedDay = true) {
                 repo.deleteLeave(id)
             }
         }
     }
 
-    private suspend fun refreshAfterLeaveChange(closeSheet: Boolean, action: suspend () -> Unit) {
+    fun removeLeaveForDate(date: String) {
+        val localDate = LocalDate.parse(date, isoDate)
+        val period = LeavePeriodHelper.coveringPeriod(localDate, _uiState.value.leavePeriods) ?: return
+        deleteLeave(period.id)
+    }
+
+    private suspend fun refreshAfterLeaveChange(
+        closeSheet: Boolean,
+        closeSelectedDay: Boolean = false,
+        action: suspend () -> Unit,
+    ) {
         val state = _uiState.value
         val fyYear = state.fyYear
         val from = state.yearMonth.atDay(1)
@@ -128,6 +139,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
                     leavePeriods = leavePeriods,
                     summary = summary,
                     showLeaveSheet = if (closeSheet) false else it.showLeaveSheet,
+                    selectedDate = if (closeSelectedDay) null else it.selectedDate,
                     error = null,
                 )
             }

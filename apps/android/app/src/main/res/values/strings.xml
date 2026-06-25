@@ -76,6 +76,8 @@
     <string name="day_edit_finish">Finish</string>
     <string name="day_edit_break">Total break (hours)</string>
     <string name="day_edit_delete">Delete entry</string>
+    <string name="day_edit_on_leave">Scheduled leave (%1$s). Remove leave to clear this day.</string>
+    <string name="day_edit_remove_leave">Remove leave</string>
     <string name="day_edit_description">Description</string>
     <string name="quick_add_title">Add time</string>
     <string name="quick_add_save">Save</string>

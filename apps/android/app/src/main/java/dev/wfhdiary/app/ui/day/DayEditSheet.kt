@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -23,12 +24,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.data.remote.DayEntryDto
+import dev.wfhdiary.app.data.remote.LeavePeriodDto
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 
 private fun DayEntryDto?.hasLoggedWork(): Boolean {
     if (this == null) return false
+    if (description.equals("LEAVE", ignoreCase = true)) return false
     return !location.isNullOrBlank() ||
         !startTime.isNullOrBlank() ||
         !finishTime.isNullOrBlank() ||
@@ -36,14 +39,23 @@ private fun DayEntryDto?.hasLoggedWork(): Boolean {
         !description.isNullOrBlank()
 }
 
+private fun leaveRangeLabel(period: LeavePeriodDto): String =
+    if (period.startDate == period.endDate) {
+        period.startDate
+    } else {
+        "${period.startDate} – ${period.endDate}"
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayEditSheet(
     date: String,
     entry: DayEntryDto?,
+    leavePeriod: LeavePeriodDto? = null,
     onDismiss: () -> Unit,
     onSave: (UpsertDayEntryRequest) -> Unit,
     onDelete: (() -> Unit)? = null,
+    onRemoveLeave: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var location by remember(date, entry) { mutableStateOf(entry?.location ?: "") }
@@ -62,6 +74,21 @@ fun DayEditSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(stringResource(R.string.day_edit_title) + " — $date")
+            if (leavePeriod != null) {
+                Text(
+                    stringResource(R.string.day_edit_on_leave, leaveRangeLabel(leavePeriod)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (onRemoveLeave != null) {
+                    OutlinedButton(
+                        onClick = onRemoveLeave,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.day_edit_remove_leave))
+                    }
+                }
+            }
             Text(stringResource(R.string.day_edit_location))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Home", "Office").forEach { loc ->

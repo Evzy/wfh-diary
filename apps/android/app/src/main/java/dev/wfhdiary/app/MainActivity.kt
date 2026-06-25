@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
                             onScheduleLeave = monthViewModel::scheduleLeave,
                             onDeleteLeave = monthViewModel::deleteLeave,
                             onDeleteDay = monthViewModel::deleteDay,
+                            onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
                         )
                     }
                 }

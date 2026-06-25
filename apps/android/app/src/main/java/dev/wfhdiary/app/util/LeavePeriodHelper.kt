@@ -15,4 +15,7 @@ object LeavePeriodHelper {
         val end = LocalDate.parse(period.endDate, iso)
         return !date.isBefore(start) && !date.isAfter(end)
     }
+
+    fun coveringPeriod(date: LocalDate, periods: List<LeavePeriodDto>): LeavePeriodDto? =
+        periods.firstOrNull { isOnLeave(date, it) }
 }

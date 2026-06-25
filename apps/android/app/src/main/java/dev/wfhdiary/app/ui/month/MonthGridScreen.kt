@@ -42,6 +42,7 @@ import dev.wfhdiary.app.ui.day.DayEditSheet
 import dev.wfhdiary.app.ui.leave.LeaveScheduleSheet
 import dev.wfhdiary.app.util.DayBadge
 import dev.wfhdiary.app.util.LeavePeriodHelper
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -67,6 +68,7 @@ fun MonthGridScreen(
     onScheduleLeave: (dev.wfhdiary.app.data.remote.CreateLeaveRequest) -> Unit,
     onDeleteLeave: (String) -> Unit,
     onDeleteDay: (String) -> Unit,
+    onRemoveLeaveForDate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ym = uiState.yearMonth
@@ -75,6 +77,10 @@ fun MonthGridScreen(
     val daysByDate = uiState.days.associateBy { it.date }
     val cells = buildMonthCells(ym, daysByDate, uiState.leavePeriods)
     val selectedEntry = uiState.selectedDate?.let { daysByDate[it] }
+    val selectedLeavePeriod =
+        uiState.selectedDate?.let { date ->
+            LeavePeriodHelper.coveringPeriod(LocalDate.parse(date), uiState.leavePeriods)
+        }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -192,9 +198,13 @@ fun MonthGridScreen(
         DayEditSheet(
             date = uiState.selectedDate,
             entry = selectedEntry,
+            leavePeriod = selectedLeavePeriod,
             onDismiss = { onSelectDate(null) },
             onSave = { req -> onSaveDay(uiState.selectedDate, req) },
             onDelete = { onDeleteDay(uiState.selectedDate) },
+            onRemoveLeave = selectedLeavePeriod?.let {
+                { onRemoveLeaveForDate(uiState.selectedDate) }
+            },
         )
     }
 
