@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +70,7 @@ fun MonthGridScreen(
     onDeleteLeave: (String) -> Unit,
     onDeleteDay: (String) -> Unit,
     onRemoveLeaveForDate: (String) -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ym = uiState.yearMonth
@@ -158,18 +160,25 @@ fun MonthGridScreen(
                     )
                 }
             }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
+            PullToRefreshBox(
+                isRefreshing = uiState.refreshing,
+                onRefresh = onRefresh,
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .fillMaxWidth(),
             ) {
-                items(cells, key = { it.key }) { cell ->
-                    MonthDayCell(
-                        cell = cell,
-                        onClick = { if (cell.inMonth && cell.date != null) onSelectDate(cell.date) },
-                    )
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(7),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp),
+                ) {
+                    items(cells, key = { it.key }) { cell ->
+                        MonthDayCell(
+                            cell = cell,
+                            onClick = { if (cell.inMonth && cell.date != null) onSelectDate(cell.date) },
+                        )
+                    }
                 }
             }
             Button(

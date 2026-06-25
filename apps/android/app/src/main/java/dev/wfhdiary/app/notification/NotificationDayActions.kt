@@ -28,6 +28,7 @@ object NotificationDayActions {
                         startTime = settings.defaultHomeStart,
                         finishTime = settings.defaultHomeFinish,
                         breakHours = settings.defaultHomeBreakHours,
+                        description = settings.defaultHomeDescription,
                         location = "Home",
                     ),
                 )
@@ -39,6 +40,7 @@ object NotificationDayActions {
                         startTime = settings.defaultOfficeStart,
                         finishTime = settings.defaultOfficeFinish,
                         breakHours = settings.defaultOfficeBreakHours,
+                        description = settings.defaultOfficeDescription,
                         location = "Office",
                     ),
                 )

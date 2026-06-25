@@ -10,9 +10,11 @@ public sealed class UserSettingsEntity
     public int DefaultHomeStartMinutes { get; set; } = 8 * 60;
     public int DefaultHomeFinishMinutes { get; set; } = 17 * 60;
     public decimal DefaultHomeBreakHours { get; set; } = 1m;
+    public string? DefaultHomeDescription { get; set; }
     public int DefaultOfficeStartMinutes { get; set; } = 8 * 60;
     public int DefaultOfficeFinishMinutes { get; set; } = 17 * 60;
     public decimal DefaultOfficeBreakHours { get; set; } = 1m;
+    public string? DefaultOfficeDescription { get; set; }
     /// <summary>Bitmask of ISO weekdays (Mon=bit0 … Sun=bit6) when morning reminders are sent.</summary>
     public int NotificationWorkingDaysMask { get; set; } = WorkingDaysMask.Default;
     /// <summary>None, Home, Office, Leave, or Geolocation — applied if the user ignores the morning reminder.</summary>

@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -99,6 +99,26 @@ fun WorkScheduleCustomizeSheet(
                         }
                 },
                 modifier = Modifier.padding(vertical = 8.dp),
+            )
+            OutlinedTextField(
+                value =
+                    when (target) {
+                        WorkScheduleTarget.HOME -> draft.defaultHomeDescription
+                        WorkScheduleTarget.OFFICE -> draft.defaultOfficeDescription
+                    },
+                onValueChange = { value ->
+                    draft =
+                        when (target) {
+                            WorkScheduleTarget.HOME -> draft.copy(defaultHomeDescription = value)
+                            WorkScheduleTarget.OFFICE -> draft.copy(defaultOfficeDescription = value)
+                        }
+                },
+                label = { Text(stringResource(R.string.day_edit_description)) },
+                placeholder = { Text(stringResource(R.string.work_schedule_description_hint)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                minLines = 2,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {

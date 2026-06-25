@@ -407,9 +407,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             defaultHomeStart = form.defaultHomeStart,
             defaultHomeFinish = form.defaultHomeFinish,
             defaultHomeBreakHours = form.defaultHomeBreakHours.toDoubleOrNull(),
+            defaultHomeDescription = form.defaultHomeDescription.ifBlank { null },
             defaultOfficeStart = form.defaultOfficeStart,
             defaultOfficeFinish = form.defaultOfficeFinish,
             defaultOfficeBreakHours = form.defaultOfficeBreakHours.toDoubleOrNull(),
+            defaultOfficeDescription = form.defaultOfficeDescription.ifBlank { null },
         )
 
     private fun settingsFormFromDto(s: dev.wfhdiary.app.data.remote.UserSettingsDto): SettingsFormState =
@@ -425,9 +427,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             defaultHomeStart = s.defaultHomeStart,
             defaultHomeFinish = s.defaultHomeFinish,
             defaultHomeBreakHours = s.defaultHomeBreakHours.toString(),
+            defaultHomeDescription = s.defaultHomeDescription.orEmpty(),
             defaultOfficeStart = s.defaultOfficeStart,
             defaultOfficeFinish = s.defaultOfficeFinish,
             defaultOfficeBreakHours = s.defaultOfficeBreakHours.toString(),
+            defaultOfficeDescription = s.defaultOfficeDescription.orEmpty(),
             homeGeofenceLatitude = s.homeGeofenceLatitude,
             homeGeofenceLongitude = s.homeGeofenceLongitude,
             homeGeofenceRadiusMeters = s.homeGeofenceRadiusMeters,

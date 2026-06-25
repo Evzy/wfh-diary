@@ -37,6 +37,7 @@ fun WorkPresetsSection(
             start = form.defaultHomeStart,
             finish = form.defaultHomeFinish,
             breakHours = form.defaultHomeBreakHours,
+            description = form.defaultHomeDescription,
             onCustomize = onCustomizeHome,
         )
 
@@ -48,6 +49,7 @@ fun WorkPresetsSection(
             start = form.defaultOfficeStart,
             finish = form.defaultOfficeFinish,
             breakHours = form.defaultOfficeBreakHours,
+            description = form.defaultOfficeDescription,
             onCustomize = onCustomizeOffice,
         )
     }

@@ -21,6 +21,7 @@ fun WorkScheduleSummaryRow(
     start: String,
     finish: String,
     breakHours: String,
+    description: String,
     onCustomize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -31,17 +32,26 @@ fun WorkScheduleSummaryRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                stringResource(
-                    R.string.work_schedule_summary,
-                    start,
-                    finish,
-                    breakHours.toDoubleOrNull() ?: 0.0,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(
+                        R.string.work_schedule_summary,
+                        start,
+                        finish,
+                        breakHours.toDoubleOrNull() ?: 0.0,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (description.isNotBlank()) {
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
             TextButton(onClick = onCustomize) {
                 Text(stringResource(R.string.work_schedule_customize))
             }

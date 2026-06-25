@@ -9,6 +9,7 @@ import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.local.DayEntryEntity
 import dev.wfhdiary.app.data.remote.CreateLeaveRequest
 import dev.wfhdiary.app.data.remote.DayEntryDto
+import dev.wfhdiary.app.data.remote.DiarySummaryDto
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.LeavePeriodHelper
@@ -29,39 +30,50 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     val uiState = _uiState.asStateFlow()
 
     private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
+    private val daysCache = mutableMapOf<String, DayEntryDto>()
+    private val summaryByFy = mutableMapOf<Int, DiarySummaryDto>()
 
     init {
-        loadMonth(YearMonth.now())
+        viewModelScope.launch {
+            val now = YearMonth.now()
+            mergeRoomIntoCache(dao.getAll())
+            applyMonth(now)
+            runCatching {
+                val leavePeriods = repo.getLeavePeriods()
+                _uiState.update { it.copy(leavePeriods = leavePeriods) }
+            }
+        }
     }
 
-    fun loadMonth(yearMonth: YearMonth) {
+    fun refreshFromRemote() {
+        if (_uiState.value.refreshing) return
         viewModelScope.launch {
-            val from = yearMonth.atDay(1)
-            val to = yearMonth.atEndOfMonth()
-            val fyYear = FinancialYearHelper.currentFyYear(yearMonth.atDay(15))
-            _uiState.update { it.copy(yearMonth = yearMonth, fyYear = fyYear, loading = true, error = null) }
+            val state = _uiState.value
+            val fyYear = state.fyYear
+            val (fyStart, fyEnd) = FinancialYearHelper.fyRange(fyYear)
+            _uiState.update { it.copy(refreshing = true, error = null) }
             runCatching {
                 repo.getDiary(fyYear)
-                val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
+                val days = repo.getDays(fyYear, fyStart.format(isoDate), fyEnd.format(isoDate))
+                days.forEach { daysCache[it.date] = it }
+                cacheDays(days, fyYear)
                 val leavePeriods = repo.getLeavePeriods()
                 val summary = repo.getSummary(fyYear)
-                cacheDays(days, fyYear)
+                summaryByFy[fyYear] = summary
                 _uiState.update {
                     it.copy(
-                        days = days,
+                        days = daysForMonth(state.yearMonth),
                         leavePeriods = leavePeriods,
                         summary = summary,
-                        loading = false,
+                        refreshing = false,
                         error = null,
                     )
                 }
             }.onFailure { e ->
-                val cached = loadCached(from, to)
                 _uiState.update {
                     it.copy(
-                        days = cached,
-                        loading = false,
-                        error = e.message ?: "Failed to load month",
+                        refreshing = false,
+                        error = e.message ?: "Failed to refresh",
                     )
                 }
             }
@@ -69,19 +81,19 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun showPreviousMonth() {
-        loadMonth(_uiState.value.yearMonth.minusMonths(1))
+        applyMonth(_uiState.value.yearMonth.minusMonths(1))
     }
 
     fun showNextMonth() {
-        loadMonth(_uiState.value.yearMonth.plusMonths(1))
+        applyMonth(_uiState.value.yearMonth.plusMonths(1))
     }
 
     fun showPreviousYear() {
-        loadMonth(_uiState.value.yearMonth.minusMonths(12))
+        applyMonth(_uiState.value.yearMonth.minusMonths(12))
     }
 
     fun showNextYear() {
-        loadMonth(_uiState.value.yearMonth.plusMonths(12))
+        applyMonth(_uiState.value.yearMonth.plusMonths(12))
     }
 
     fun selectDate(date: String?) {
@@ -123,19 +135,14 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         closeSelectedDay: Boolean = false,
         action: suspend () -> Unit,
     ) {
-        val state = _uiState.value
-        val fyYear = state.fyYear
-        val from = state.yearMonth.atDay(1)
-        val to = state.yearMonth.atEndOfMonth()
+        val fyYear = _uiState.value.fyYear
         runCatching {
             action()
             val leavePeriods = repo.getLeavePeriods()
-            val days = repo.getDays(fyYear, from.format(isoDate), to.format(isoDate))
             val summary = repo.getSummary(fyYear)
-            cacheDays(days, fyYear)
+            summaryByFy[fyYear] = summary
             _uiState.update {
                 it.copy(
-                    days = days,
                     leavePeriods = leavePeriods,
                     summary = summary,
                     showLeaveSheet = if (closeSheet) false else it.showLeaveSheet,
@@ -175,14 +182,62 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun refreshDayInState(fyYear: Int, saved: DayEntryDto, date: String) {
+        daysCache[date] = saved
         cacheDays(listOf(saved), fyYear)
         val summary = repo.getSummary(fyYear)
-        val days =
-            _uiState.value.days.toMutableList().also { list ->
-                val idx = list.indexOfFirst { it.date == date }
-                if (idx >= 0) list[idx] = saved else list.add(saved)
-            }.sortedBy { it.date }
-        _uiState.update { it.copy(days = days, summary = summary, selectedDate = null) }
+        summaryByFy[fyYear] = summary
+        _uiState.update {
+            it.copy(
+                days = daysForMonth(it.yearMonth),
+                summary = if (it.fyYear == fyYear) summary else it.summary,
+                selectedDate = null,
+            )
+        }
+    }
+
+    private fun applyMonth(yearMonth: YearMonth) {
+        val fyYear = FinancialYearHelper.currentFyYear(yearMonth.atDay(15))
+        _uiState.update {
+            it.copy(
+                yearMonth = yearMonth,
+                fyYear = fyYear,
+                days = daysForMonth(yearMonth),
+                summary = summaryByFy[fyYear],
+                error = null,
+            )
+        }
+        viewModelScope.launch {
+            val from = yearMonth.atDay(1)
+            val to = yearMonth.atEndOfMonth()
+            val local = loadCached(from, to)
+            if (local.isNotEmpty()) {
+                local.forEach { daysCache[it.date] = it }
+                _uiState.update { state ->
+                    if (state.yearMonth == yearMonth) {
+                        state.copy(days = daysForMonth(yearMonth))
+                    } else {
+                        state
+                    }
+                }
+            }
+        }
+    }
+
+    private fun daysForMonth(yearMonth: YearMonth): List<DayEntryDto> {
+        val from = yearMonth.atDay(1)
+        val to = yearMonth.atEndOfMonth()
+        return daysCache.values
+            .filter { entry ->
+                val date = LocalDate.parse(entry.date, isoDate)
+                !date.isBefore(from) && !date.isAfter(to)
+            }
+            .sortedBy { it.date }
+    }
+
+    private fun mergeRoomIntoCache(entries: List<DayEntryEntity>) {
+        entries.forEach { entity ->
+            daysCache[entity.date] = entity.toDto()
+        }
     }
 
     private suspend fun cacheDays(days: List<DayEntryDto>, fyYear: Int) {
@@ -206,18 +261,19 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun loadCached(from: LocalDate, to: LocalDate): List<DayEntryDto> =
-        dao.getBetween(from.format(isoDate), to.format(isoDate)).map { e ->
-            DayEntryDto(
-                date = e.date,
-                dayName = e.dayName,
-                startTime = e.startTime,
-                finishTime = e.finishTime,
-                breakHours = e.breakHours,
-                totalHours = e.totalHours,
-                description = e.description,
-                location = e.location,
-            )
-        }
+        dao.getBetween(from.format(isoDate), to.format(isoDate)).map { it.toDto() }
+
+    private fun DayEntryEntity.toDto() =
+        DayEntryDto(
+            date = date,
+            dayName = dayName,
+            startTime = startTime,
+            finishTime = finishTime,
+            breakHours = breakHours,
+            totalHours = totalHours,
+            description = description,
+            location = location,
+        )
 
     companion object {
         fun factory(application: Application): ViewModelProvider.Factory =

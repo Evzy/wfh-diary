@@ -18,4 +18,7 @@ interface DayEntryDao {
         """,
     )
     suspend fun getBetween(fromDate: String, toDate: String): List<DayEntryEntity>
+
+    @Query("SELECT * FROM day_entries ORDER BY date")
+    suspend fun getAll(): List<DayEntryEntity>
 }

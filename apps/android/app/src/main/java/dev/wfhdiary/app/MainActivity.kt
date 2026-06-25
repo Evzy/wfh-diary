@@ -199,6 +199,7 @@ private fun MainAppContent(
                 onDeleteLeave = monthViewModel::deleteLeave,
                 onDeleteDay = monthViewModel::deleteDay,
                 onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
+                onRefresh = monthViewModel::refreshFromRemote,
             )
         }
     }

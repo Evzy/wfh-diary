@@ -35,6 +35,8 @@ public static class DatabaseBootstrap
         await EnsureSqliteColumnAsync(db, "MissedNotificationAwayDefault", "TEXT NOT NULL DEFAULT 'Office'");
         await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtHome", "INTEGER NOT NULL DEFAULT 0");
         await EnsureSqliteColumnAsync(db, "GeolocationSkipNotificationAtOffice", "INTEGER NOT NULL DEFAULT 0");
+        await EnsureSqliteColumnAsync(db, "DefaultHomeDescription", "TEXT NULL");
+        await EnsureSqliteColumnAsync(db, "DefaultOfficeDescription", "TEXT NULL");
         await EnsureSqliteWorkTemplatesTableAsync(db);
     }
 

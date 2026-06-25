@@ -12,7 +12,7 @@ data class MonthGridUiState(
     val days: List<DayEntryDto> = emptyList(),
     val leavePeriods: List<LeavePeriodDto> = emptyList(),
     val summary: DiarySummaryDto? = null,
-    val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val selectedDate: String? = null,
     val showLeaveSheet: Boolean = false,

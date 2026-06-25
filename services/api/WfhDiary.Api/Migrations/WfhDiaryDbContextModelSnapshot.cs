@@ -121,6 +121,9 @@ namespace WfhDiary.Api.Migrations
                     b.Property<decimal>("DefaultHomeBreakHours")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("DefaultHomeDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("DefaultHomeFinishMinutes")
                         .HasColumnType("int");
 
@@ -129,6 +132,9 @@ namespace WfhDiary.Api.Migrations
 
                     b.Property<decimal>("DefaultOfficeBreakHours")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DefaultOfficeDescription")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("DefaultOfficeFinishMinutes")
                         .HasColumnType("int");

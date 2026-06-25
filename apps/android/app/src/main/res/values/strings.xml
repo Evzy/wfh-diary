@@ -73,6 +73,7 @@
     <string name="work_presets_section_hint">Default times applied when you choose Home or Office, or when geolocation mode matches a place.</string>
     <string name="work_schedule_times_label">Times</string>
     <string name="work_schedule_summary">%1$s\u2013%2$s, %3$.1f h break</string>
+    <string name="work_schedule_description_hint">Default description for auto-logged days</string>
     <string name="work_schedule_customize">Customize</string>
     <string name="work_schedule_customize_save">Save</string>
     <string name="settings_notification_next">Next system notification: %1$s</string>

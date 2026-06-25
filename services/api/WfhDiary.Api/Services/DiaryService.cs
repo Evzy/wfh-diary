@@ -49,11 +49,19 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         if (req.DefaultHomeFinish is not null && TimeHelpers.ParseTimeString(req.DefaultHomeFinish) is int hf)
             settings.DefaultHomeFinishMinutes = hf;
         if (req.DefaultHomeBreakHours is not null) settings.DefaultHomeBreakHours = req.DefaultHomeBreakHours.Value;
+        if (req.DefaultHomeDescription is not null)
+            settings.DefaultHomeDescription = string.IsNullOrWhiteSpace(req.DefaultHomeDescription)
+                ? null
+                : req.DefaultHomeDescription.Trim();
         if (req.DefaultOfficeStart is not null && TimeHelpers.ParseTimeString(req.DefaultOfficeStart) is int os)
             settings.DefaultOfficeStartMinutes = os;
         if (req.DefaultOfficeFinish is not null && TimeHelpers.ParseTimeString(req.DefaultOfficeFinish) is int of)
             settings.DefaultOfficeFinishMinutes = of;
         if (req.DefaultOfficeBreakHours is not null) settings.DefaultOfficeBreakHours = req.DefaultOfficeBreakHours.Value;
+        if (req.DefaultOfficeDescription is not null)
+            settings.DefaultOfficeDescription = string.IsNullOrWhiteSpace(req.DefaultOfficeDescription)
+                ? null
+                : req.DefaultOfficeDescription.Trim();
         if (req.NotificationWorkingDaysMask is int mask) settings.NotificationWorkingDaysMask = mask;
         if (req.MissedNotificationDefault is not null)
         {
@@ -409,9 +417,11 @@ public sealed class DiaryService(IDbContextFactory<WfhDiaryDbContext> dbFactory)
         TimeHelpers.MinutesToTimeString(s.DefaultHomeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultHomeFinishMinutes),
         s.DefaultHomeBreakHours,
+        s.DefaultHomeDescription,
         TimeHelpers.MinutesToTimeString(s.DefaultOfficeStartMinutes),
         TimeHelpers.MinutesToTimeString(s.DefaultOfficeFinishMinutes),
         s.DefaultOfficeBreakHours,
+        s.DefaultOfficeDescription,
         s.HomeGeofenceLatitude,
         s.HomeGeofenceLongitude,
         s.HomeGeofenceRadiusMeters,
