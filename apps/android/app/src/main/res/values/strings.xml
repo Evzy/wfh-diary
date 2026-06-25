@@ -20,7 +20,7 @@
     <string name="settings_display_name">Display name</string>
     <string name="settings_notification_time">Morning reminder time</string>
     <string name="settings_notification_section_title">Morning reminder (status bar)</string>
-    <string name="settings_notification_time_hint">Posts a system notification at this time on selected days (save to apply). Skipped on leave days.</string>
+    <string name="settings_notification_time_hint">Posts a system notification at this time on selected days. Skipped on leave days.</string>
     <string name="settings_notification_working_days">Reminder days</string>
     <string name="settings_notification_working_days_hint">Selected days get the morning reminder. Unselected days are off (e.g. weekends).</string>
     <string name="settings_notification_working_days_set">Set</string>
@@ -46,7 +46,7 @@
     <string name="settings_geolocation_skip_at_office">At office</string>
     <string name="geolocation_settings_open">Location settings\u2026</string>
     <string name="geolocation_settings_title">Location settings</string>
-    <string name="geolocation_settings_hint">Set home and office geofences, away fallback, and optional silent auto-log when matched.</string>
+    <string name="geolocation_settings_hint">Set home and office geofences, away fallback, and optional silent auto-log when matched. Changes save automatically.</string>
     <string name="geolocation_settings_apply">Apply</string>
     <string name="geolocation_settings_saved">Location settings saved.</string>
     <string name="work_presets_section_title">Home &amp; office presets</string>

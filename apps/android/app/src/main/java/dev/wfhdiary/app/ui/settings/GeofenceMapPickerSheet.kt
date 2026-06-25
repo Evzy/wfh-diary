@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.Circle
@@ -83,19 +82,28 @@ fun GeofenceMapPickerSheet(
             return@ModalBottomSheet
         }
 
-        var loading by remember { mutableStateOf(true) }
+        var resolvingLocation by remember { mutableStateOf(true) }
+        var mapLoaded by remember { mutableStateOf(false) }
         var error by remember { mutableStateOf<String?>(null) }
         var radiusMeters by remember {
             mutableIntStateOf(initialRadiusMeters ?: GeofenceHelper.DEFAULT_RADIUS_METERS)
         }
+        val fallbackLatLng = remember {
+            if (initialLatitude != null && initialLongitude != null) {
+                LatLng(initialLatitude, initialLongitude)
+            } else {
+                LatLng(-33.8688, 151.2093)
+            }
+        }
         var center by remember { mutableStateOf<LatLng?>(null) }
+        var pendingCenter by remember { mutableStateOf<LatLng?>(null) }
 
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(LatLng(-33.8688, 151.2093), 16f)
+            position = CameraPosition.fromLatLngZoom(fallbackLatLng, 16f)
         }
 
         LaunchedEffect(initialLatitude, initialLongitude) {
-            loading = true
+            resolvingLocation = true
             error = null
             runCatching {
                 if (!LocationHelper.hasLocationPermission(context)) {
@@ -110,15 +118,18 @@ fun GeofenceMapPickerSheet(
                             LocationHelper.getCurrentLocation(context)?.let { LatLng(it.latitude, it.longitude) }
                     }
                         ?: error(context.getString(R.string.location_geofence_unavailable))
-                center = start
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(start, 16f),
-                    durationMs = 400,
-                )
+                pendingCenter = start
             }.onFailure { e ->
                 error = e.message.orEmpty()
             }
-            loading = false
+            resolvingLocation = false
+        }
+
+        LaunchedEffect(mapLoaded, pendingCenter) {
+            val target = pendingCenter ?: return@LaunchedEffect
+            if (!mapLoaded) return@LaunchedEffect
+            center = target
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(target, 16f)
         }
 
         LaunchedEffect(cameraPositionState) {
@@ -127,7 +138,7 @@ fun GeofenceMapPickerSheet(
                     old.latitude == new.latitude && old.longitude == new.longitude
                 }
                 .collect { target ->
-                    if (!loading) {
+                    if (!resolvingLocation) {
                         center = target
                     }
                 }
@@ -153,9 +164,7 @@ fun GeofenceMapPickerSheet(
                     .weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
-                if (loading) {
-                    CircularProgressIndicator()
-                } else if (error != null) {
+                if (error != null) {
                     Text(error!!, color = MaterialTheme.colorScheme.error)
                 } else {
                     GoogleMap(
@@ -163,6 +172,7 @@ fun GeofenceMapPickerSheet(
                         cameraPositionState = cameraPositionState,
                         properties = MapProperties(isMyLocationEnabled = LocationHelper.hasLocationPermission(context)),
                         uiSettings = MapUiSettings(zoomControlsEnabled = true, myLocationButtonEnabled = true),
+                        onMapLoaded = { mapLoaded = true },
                     ) {
                         center?.let { mapCenter ->
                             Circle(
@@ -174,6 +184,9 @@ fun GeofenceMapPickerSheet(
                             )
                         }
                     }
+                    if (resolvingLocation) {
+                        CircularProgressIndicator()
+                    }
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
@@ -183,7 +196,7 @@ fun GeofenceMapPickerSheet(
                 }
             }
 
-            if (!loading && error == null) {
+            if (error == null) {
                 Text(
                     stringResource(R.string.location_geofence_radius_label, radiusMeters),
                     style = MaterialTheme.typography.bodySmall,
@@ -220,7 +233,7 @@ fun GeofenceMapPickerSheet(
                         val mapCenter = center ?: return@Button
                         onConfirm(mapCenter.latitude, mapCenter.longitude, radiusMeters)
                     },
-                    enabled = !loading && error == null && center != null,
+                    enabled = !resolvingLocation && error == null && center != null,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.location_geofence_map_save))

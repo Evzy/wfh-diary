@@ -33,7 +33,6 @@ fun GeolocationSettingsSheet(
     geofenceBusy: Boolean,
     statusMessage: String,
     onDismiss: () -> Unit,
-    onApply: () -> Unit,
     onDraftChange: ((GeolocationSettingsDraft) -> GeolocationSettingsDraft) -> Unit,
     onRequestLocationPermission: () -> Unit,
     onPickHomeOnMap: () -> Unit,
@@ -186,17 +185,8 @@ fun GeolocationSettingsSheet(
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.time_picker_cancel))
-                }
-                Button(
-                    onClick = onApply,
-                    enabled = !geofenceBusy,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.geolocation_settings_apply))
-                }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_close))
             }
         }
     }

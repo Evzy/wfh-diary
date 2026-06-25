@@ -19,6 +19,8 @@ import dev.wfhdiary.app.notification.NotificationPermissions
 import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -73,6 +75,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _geolocationDraft = MutableStateFlow<GeolocationSettingsDraft?>(null)
     val geolocationDraft = _geolocationDraft.asStateFlow()
 
+    private var suppressAutoSave = false
+    private var lastPersistedForm: SettingsFormState? = null
+    private var formAutoSaveJob: Job? = null
+    private var geolocationAutoSaveJob: Job? = null
+    private var saveMessageClearJob: Job? = null
+
     init {
         if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
             val auth = FirebaseAuth.getInstance()
@@ -89,70 +97,65 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun refreshSettings() {
         viewModelScope.launch {
             runCatching {
+                suppressAutoSave = true
+                formAutoSaveJob?.cancel()
                 val s = repo.getSettings()
-                _settingsForm.value =
-                    SettingsFormState(
-                        displayName = s.displayName,
-                        notificationTime = s.notificationTime,
-                        notificationWorkingDaysMask = s.notificationWorkingDaysMask,
-                        missedNotificationDefault = s.missedNotificationDefault,
-                        missedNotificationApplyAt = s.missedNotificationApplyAt,
-                        missedNotificationAwayDefault = s.missedNotificationAwayDefault,
-                        geolocationSkipNotificationAtHome = s.geolocationSkipNotificationAtHome,
-                        geolocationSkipNotificationAtOffice = s.geolocationSkipNotificationAtOffice,
-                        defaultHomeStart = s.defaultHomeStart,
-                        defaultHomeFinish = s.defaultHomeFinish,
-                        defaultHomeBreakHours = s.defaultHomeBreakHours.toString(),
-                        defaultOfficeStart = s.defaultOfficeStart,
-                        defaultOfficeFinish = s.defaultOfficeFinish,
-                        defaultOfficeBreakHours = s.defaultOfficeBreakHours.toString(),
-                        homeGeofenceLatitude = s.homeGeofenceLatitude,
-                        homeGeofenceLongitude = s.homeGeofenceLongitude,
-                        homeGeofenceRadiusMeters = s.homeGeofenceRadiusMeters,
-                        officeGeofenceLatitude = s.officeGeofenceLatitude,
-                        officeGeofenceLongitude = s.officeGeofenceLongitude,
-                        officeGeofenceRadiusMeters = s.officeGeofenceRadiusMeters,
-                    )
+                val loaded = settingsFormFromDto(s)
+                _settingsForm.value = loaded
+                lastPersistedForm = loaded
             }
+            suppressAutoSave = false
         }
     }
 
     fun updateForm(transform: (SettingsFormState) -> SettingsFormState) {
         _settingsForm.update { current -> current?.let(transform) }
+        scheduleFormAutoSave()
     }
 
-    fun saveSettings() {
-        val form = _settingsForm.value ?: return
-        viewModelScope.launch {
-            runCatching {
-                val updated =
-                    repo.updateSettings(
-                        UpdateUserSettingsRequest(
-                            displayName = form.displayName,
-                            notificationTime = form.notificationTime,
-                            notificationWorkingDaysMask = form.notificationWorkingDaysMask,
-                            missedNotificationDefault = form.missedNotificationDefault,
-                            missedNotificationApplyAt = form.missedNotificationApplyAt,
-                            missedNotificationAwayDefault = form.missedNotificationAwayDefault,
-                            geolocationSkipNotificationAtHome = form.geolocationSkipNotificationAtHome,
-                            geolocationSkipNotificationAtOffice = form.geolocationSkipNotificationAtOffice,
-                            defaultHomeStart = form.defaultHomeStart,
-                            defaultHomeFinish = form.defaultHomeFinish,
-                            defaultHomeBreakHours = form.defaultHomeBreakHours.toDoubleOrNull(),
-                            defaultOfficeStart = form.defaultOfficeStart,
-                            defaultOfficeFinish = form.defaultOfficeFinish,
-                            defaultOfficeBreakHours = form.defaultOfficeBreakHours.toDoubleOrNull(),
-                        ),
-                    )
-                NotificationScheduler.scheduleNext(
-                    getApplication(),
-                    updated.notificationTime,
-                    updated.notificationWorkingDaysMask,
-                )
-                _saveMessage.value = getApplication<Application>().getString(R.string.settings_saved)
-            }.onFailure { e ->
-                _saveMessage.value = e.message.orEmpty()
+    private fun scheduleFormAutoSave() {
+        if (suppressAutoSave) return
+        formAutoSaveJob?.cancel()
+        formAutoSaveJob =
+            viewModelScope.launch {
+                delay(AUTO_SAVE_DELAY_MS)
+                val form = _settingsForm.value ?: return@launch
+                if (form == lastPersistedForm) return@launch
+                persistForm(form)
             }
+    }
+
+    private suspend fun persistForm(form: SettingsFormState) {
+        val app = getApplication<Application>()
+        runCatching {
+            val updated = repo.updateSettings(formToRequest(form))
+            NotificationScheduler.scheduleNext(
+                app,
+                updated.notificationTime,
+                updated.notificationWorkingDaysMask,
+            )
+            val synced = settingsFormFromDto(updated)
+            lastPersistedForm = synced
+            if (_settingsForm.value == form) {
+                _settingsForm.value = synced
+            } else {
+                scheduleFormAutoSave()
+            }
+            showSaveMessage(app.getString(R.string.settings_saved))
+        }.onFailure { e ->
+            showSaveMessage(e.message.orEmpty(), clearAfterDelay = false)
+        }
+    }
+
+    private fun showSaveMessage(message: String, clearAfterDelay: Boolean = true) {
+        _saveMessage.value = message
+        saveMessageClearJob?.cancel()
+        if (clearAfterDelay) {
+            saveMessageClearJob =
+                viewModelScope.launch {
+                    delay(SAVE_MESSAGE_CLEAR_MS)
+                    _saveMessage.value = ""
+                }
         }
     }
 
@@ -183,8 +186,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun applyWorkScheduleCustomize(updated: SettingsFormState) {
+        formAutoSaveJob?.cancel()
         _settingsForm.value = updated
         _workScheduleCustomize.value = null
+        viewModelScope.launch { persistForm(updated) }
     }
 
     fun openGeolocationSettings() {
@@ -195,44 +200,74 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun dismissGeolocationSettings() {
+        val draft = _geolocationDraft.value
+        geolocationAutoSaveJob?.cancel()
         _geolocationSettingsOpen.value = false
         _geolocationDraft.value = null
         _geofenceMapPicker.value = null
+        if (draft != null) {
+            viewModelScope.launch { persistGeolocationDraft(draft) }
+        }
     }
 
     fun updateGeolocationDraft(transform: (GeolocationSettingsDraft) -> GeolocationSettingsDraft) {
         _geolocationDraft.update { current -> current?.let(transform) }
+        scheduleGeolocationAutoSave()
     }
 
-    fun applyGeolocationSettings() {
-        val draft = _geolocationDraft.value ?: return
-        val app = getApplication<Application>()
+    fun flushPendingSettings() {
+        formAutoSaveJob?.cancel()
+        geolocationAutoSaveJob?.cancel()
         viewModelScope.launch {
-            _geofenceBusy.value = true
-            runCatching {
-                val updated = repo.updateSettings(geolocationRequestFrom(draft))
-                _settingsForm.value =
-                    draft.applyTo(_settingsForm.value ?: SettingsFormState()).let { merged ->
-                        merged.copy(
-                            missedNotificationAwayDefault = updated.missedNotificationAwayDefault,
-                            geolocationSkipNotificationAtHome = updated.geolocationSkipNotificationAtHome,
-                            geolocationSkipNotificationAtOffice = updated.geolocationSkipNotificationAtOffice,
-                            homeGeofenceLatitude = updated.homeGeofenceLatitude,
-                            homeGeofenceLongitude = updated.homeGeofenceLongitude,
-                            homeGeofenceRadiusMeters = updated.homeGeofenceRadiusMeters,
-                            officeGeofenceLatitude = updated.officeGeofenceLatitude,
-                            officeGeofenceLongitude = updated.officeGeofenceLongitude,
-                            officeGeofenceRadiusMeters = updated.officeGeofenceRadiusMeters,
-                        )
-                    }
-                _geolocationSettingsOpen.value = false
-                _geolocationDraft.value = null
-                _geofenceMessage.value = app.getString(R.string.geolocation_settings_saved)
-            }.onFailure { e ->
-                _geofenceMessage.value = e.message.orEmpty()
+            val form = _settingsForm.value
+            if (form != null && form != lastPersistedForm) {
+                persistForm(form)
             }
-            _geofenceBusy.value = false
+            val draft = _geolocationDraft.value
+            if (draft != null && _geolocationSettingsOpen.value) {
+                persistGeolocationDraft(draft)
+            }
         }
+    }
+
+    private fun scheduleGeolocationAutoSave() {
+        geolocationAutoSaveJob?.cancel()
+        geolocationAutoSaveJob =
+            viewModelScope.launch {
+                delay(AUTO_SAVE_DELAY_MS)
+                val draft = _geolocationDraft.value ?: return@launch
+                persistGeolocationDraft(draft)
+            }
+    }
+
+    private suspend fun persistGeolocationDraft(draft: GeolocationSettingsDraft) {
+        val app = getApplication<Application>()
+        _geofenceBusy.value = true
+        runCatching {
+            val updated = repo.updateSettings(geolocationRequestFrom(draft))
+            val synced = settingsFormFromDto(updated)
+            val merged =
+                (_settingsForm.value ?: synced).copy(
+                    missedNotificationAwayDefault = synced.missedNotificationAwayDefault,
+                    geolocationSkipNotificationAtHome = synced.geolocationSkipNotificationAtHome,
+                    geolocationSkipNotificationAtOffice = synced.geolocationSkipNotificationAtOffice,
+                    homeGeofenceLatitude = synced.homeGeofenceLatitude,
+                    homeGeofenceLongitude = synced.homeGeofenceLongitude,
+                    homeGeofenceRadiusMeters = synced.homeGeofenceRadiusMeters,
+                    officeGeofenceLatitude = synced.officeGeofenceLatitude,
+                    officeGeofenceLongitude = synced.officeGeofenceLongitude,
+                    officeGeofenceRadiusMeters = synced.officeGeofenceRadiusMeters,
+                )
+            _settingsForm.value = merged
+            lastPersistedForm = merged
+            if (_geolocationSettingsOpen.value) {
+                _geolocationDraft.value = merged.toGeolocationDraft()
+            }
+            _geofenceMessage.value = app.getString(R.string.geolocation_settings_saved)
+        }.onFailure { e ->
+            _geofenceMessage.value = e.message.orEmpty()
+        }
+        _geofenceBusy.value = false
     }
 
     fun clearGeofenceMessage() {
@@ -381,6 +416,48 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             clearOfficeGeofence = draft.clearOfficeGeofence,
         )
 
+    private fun formToRequest(form: SettingsFormState): UpdateUserSettingsRequest =
+        UpdateUserSettingsRequest(
+            displayName = form.displayName,
+            notificationTime = form.notificationTime,
+            notificationWorkingDaysMask = form.notificationWorkingDaysMask,
+            missedNotificationDefault = form.missedNotificationDefault,
+            missedNotificationApplyAt = form.missedNotificationApplyAt,
+            missedNotificationAwayDefault = form.missedNotificationAwayDefault,
+            geolocationSkipNotificationAtHome = form.geolocationSkipNotificationAtHome,
+            geolocationSkipNotificationAtOffice = form.geolocationSkipNotificationAtOffice,
+            defaultHomeStart = form.defaultHomeStart,
+            defaultHomeFinish = form.defaultHomeFinish,
+            defaultHomeBreakHours = form.defaultHomeBreakHours.toDoubleOrNull(),
+            defaultOfficeStart = form.defaultOfficeStart,
+            defaultOfficeFinish = form.defaultOfficeFinish,
+            defaultOfficeBreakHours = form.defaultOfficeBreakHours.toDoubleOrNull(),
+        )
+
+    private fun settingsFormFromDto(s: dev.wfhdiary.app.data.remote.UserSettingsDto): SettingsFormState =
+        SettingsFormState(
+            displayName = s.displayName,
+            notificationTime = s.notificationTime,
+            notificationWorkingDaysMask = s.notificationWorkingDaysMask,
+            missedNotificationDefault = s.missedNotificationDefault,
+            missedNotificationApplyAt = s.missedNotificationApplyAt,
+            missedNotificationAwayDefault = s.missedNotificationAwayDefault,
+            geolocationSkipNotificationAtHome = s.geolocationSkipNotificationAtHome,
+            geolocationSkipNotificationAtOffice = s.geolocationSkipNotificationAtOffice,
+            defaultHomeStart = s.defaultHomeStart,
+            defaultHomeFinish = s.defaultHomeFinish,
+            defaultHomeBreakHours = s.defaultHomeBreakHours.toString(),
+            defaultOfficeStart = s.defaultOfficeStart,
+            defaultOfficeFinish = s.defaultOfficeFinish,
+            defaultOfficeBreakHours = s.defaultOfficeBreakHours.toString(),
+            homeGeofenceLatitude = s.homeGeofenceLatitude,
+            homeGeofenceLongitude = s.homeGeofenceLongitude,
+            homeGeofenceRadiusMeters = s.homeGeofenceRadiusMeters,
+            officeGeofenceLatitude = s.officeGeofenceLatitude,
+            officeGeofenceLongitude = s.officeGeofenceLongitude,
+            officeGeofenceRadiusMeters = s.officeGeofenceRadiusMeters,
+        )
+
     fun exportXlsx(fyYear: Int, activity: Activity) {
         val app = getApplication<Application>()
         viewModelScope.launch {
@@ -507,6 +584,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     companion object {
+        private const val AUTO_SAVE_DELAY_MS = 500L
+        private const val SAVE_MESSAGE_CLEAR_MS = 2000L
+
         fun factory(application: Application): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

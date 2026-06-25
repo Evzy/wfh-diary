@@ -51,7 +51,6 @@ fun SettingsScreen(
     exportBusy: Boolean,
     exportStatus: String,
     onFormChange: ((SettingsFormState) -> SettingsFormState) -> Unit,
-    onSave: () -> Unit,
     onSendTestNotification: () -> Unit,
     onClearNotificationMessage: () -> Unit,
     onExportClick: () -> Unit,
@@ -75,7 +74,6 @@ fun SettingsScreen(
     geolocationDraft: GeolocationSettingsDraft?,
     onOpenGeolocationSettings: () -> Unit,
     onDismissGeolocationSettings: () -> Unit,
-    onApplyGeolocationSettings: () -> Unit,
     onGeolocationDraftChange: ((GeolocationSettingsDraft) -> GeolocationSettingsDraft) -> Unit,
     geofenceBusy: Boolean,
     geofenceMessage: String,
@@ -164,8 +162,22 @@ fun SettingsScreen(
             stringResource(R.string.settings_app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 16.dp),
         )
+        if (saveMessage.isNotBlank()) {
+            Text(
+                saveMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    if (saveMessage == stringResource(R.string.settings_saved)) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+            )
+        } else {
+            Spacer(Modifier.padding(bottom = 16.dp))
+        }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Text(stringResource(R.string.firebase_signin_section_title), style = MaterialTheme.typography.titleSmall)
@@ -312,12 +324,6 @@ fun SettingsScreen(
                 onCustomizeOffice = onCustomizeOfficeSchedule,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
-            Button(onClick = onSave, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-                Text(stringResource(R.string.settings_save))
-            }
-            if (saveMessage.isNotBlank()) {
-                Text(saveMessage, style = MaterialTheme.typography.bodySmall)
-            }
         }
 
         Button(
@@ -380,7 +386,6 @@ fun SettingsScreen(
                 geofenceBusy = geofenceBusy,
                 statusMessage = geofenceMessage,
                 onDismiss = onDismissGeolocationSettings,
-                onApply = onApplyGeolocationSettings,
                 onDraftChange = onGeolocationDraftChange,
                 onRequestLocationPermission = {
                     locationPermissionLauncher.launch(

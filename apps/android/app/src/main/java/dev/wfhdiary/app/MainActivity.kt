@@ -77,7 +77,6 @@ class MainActivity : ComponentActivity() {
                                 exportBusy = exportBusy,
                                 exportStatus = exportStatus,
                                 onFormChange = settingsViewModel::updateForm,
-                                onSave = settingsViewModel::saveSettings,
                                 onSendTestNotification = settingsViewModel::sendTestNotification,
                                 onClearNotificationMessage = settingsViewModel::clearNotificationMessage,
                                 onExportClick = {
@@ -105,7 +104,6 @@ class MainActivity : ComponentActivity() {
                                 geolocationDraft = geolocationDraft,
                                 onOpenGeolocationSettings = settingsViewModel::openGeolocationSettings,
                                 onDismissGeolocationSettings = settingsViewModel::dismissGeolocationSettings,
-                                onApplyGeolocationSettings = settingsViewModel::applyGeolocationSettings,
                                 onGeolocationDraftChange = settingsViewModel::updateGeolocationDraft,
                                 geofenceBusy = geofenceBusy,
                                 geofenceMessage = geofenceMessage,
@@ -118,7 +116,10 @@ class MainActivity : ComponentActivity() {
                                 onPickOfficeOnMap = settingsViewModel::openOfficeMapPicker,
                                 onDismissGeofenceMapPicker = settingsViewModel::dismissGeofenceMapPicker,
                                 onSaveGeofenceFromMap = settingsViewModel::saveGeofenceFromMap,
-                                onClose = { scope.launch { drawerState.close() } },
+                                onClose = {
+                                    settingsViewModel.flushPendingSettings()
+                                    scope.launch { drawerState.close() }
+                                },
                             )
                         }
                     },
