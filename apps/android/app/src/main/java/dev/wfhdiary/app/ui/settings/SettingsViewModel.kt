@@ -6,11 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.auth.GoogleFirebaseSignIn
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
 import dev.wfhdiary.app.export.XlsxExportHelper
 import dev.wfhdiary.app.util.GeofenceHelper
@@ -32,15 +29,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val wfhApp = application as WfhDiaryApplication
     private val repo = wfhApp.diaryRepository
-
-    private val _firebaseUserLabel = MutableStateFlow<String?>(null)
-    val firebaseUserLabel = _firebaseUserLabel.asStateFlow()
-
-    private val _firebaseSignInBusy = MutableStateFlow(false)
-    val firebaseSignInBusy = _firebaseSignInBusy.asStateFlow()
-
-    private val _firebaseAuthMessage = MutableStateFlow("")
-    val firebaseAuthMessage = _firebaseAuthMessage.asStateFlow()
 
     private val _settingsForm = MutableStateFlow<SettingsFormState?>(null)
     val settingsForm = _settingsForm.asStateFlow()
@@ -82,15 +70,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var saveMessageClearJob: Job? = null
 
     init {
-        if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
-            val auth = FirebaseAuth.getInstance()
-            fun syncLabel() {
-                val u = auth.currentUser
-                _firebaseUserLabel.value = u?.email?.takeIf { it.isNotBlank() } ?: u?.uid
-            }
-            syncLabel()
-            auth.addAuthStateListener { syncLabel() }
-        }
         refreshSettings()
     }
 
@@ -477,28 +456,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             _exportBusy.value = false
         }
-    }
-
-    fun signInWithGoogle(activity: Activity) {
-        val app = getApplication<Application>()
-        if (!BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
-            _firebaseAuthMessage.value = app.getString(R.string.firebase_signin_need_json)
-            return
-        }
-        viewModelScope.launch {
-            _firebaseSignInBusy.value = true
-            _firebaseAuthMessage.value = ""
-            val result = withContext(Dispatchers.Main) { GoogleFirebaseSignIn.signIn(activity) }
-            _firebaseSignInBusy.value = false
-            result.exceptionOrNull()?.let { e ->
-                _firebaseAuthMessage.value = e.message?.trim().orEmpty().ifEmpty { e.javaClass.simpleName }
-            }
-        }
-    }
-
-    fun signOutFirebase() {
-        GoogleFirebaseSignIn.signOut()
-        _firebaseAuthMessage.value = ""
     }
 
     private val _githubUpdateUi = MutableStateFlow(GithubUpdateUiState())

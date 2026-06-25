@@ -54,11 +54,8 @@ fun SettingsScreen(
     onSendTestNotification: () -> Unit,
     onClearNotificationMessage: () -> Unit,
     onExportClick: () -> Unit,
-    firebaseUserLabel: String?,
-    firebaseSignInBusy: Boolean,
-    firebaseAuthMessage: String,
-    onSignInWithGoogle: () -> Unit,
-    onSignOutFirebase: () -> Unit,
+    accountUserLabel: String?,
+    onSignOut: () -> Unit,
     githubUpdateConfigured: Boolean,
     githubUpdateBusy: Boolean,
     githubUpdateStatus: String,
@@ -188,44 +185,22 @@ fun SettingsScreen(
             Spacer(Modifier.padding(bottom = 16.dp))
         }
 
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text(stringResource(R.string.firebase_signin_section_title), style = MaterialTheme.typography.titleSmall)
-        Text(
-            stringResource(R.string.firebase_signin_section_desc),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
         if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
-            firebaseUserLabel?.let {
-                Text(stringResource(R.string.firebase_user_signed_in_as, it))
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Text(stringResource(R.string.settings_account_section_title), style = MaterialTheme.typography.titleSmall)
+            accountUserLabel?.let {
+                Text(
+                    stringResource(R.string.settings_account_signed_in_as, it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onSignInWithGoogle, enabled = !firebaseSignInBusy) {
-                    Text(
-                        if (firebaseSignInBusy) {
-                            stringResource(R.string.firebase_signin_busy)
-                        } else {
-                            stringResource(R.string.firebase_signin_button)
-                        },
-                    )
-                }
-                TextButton(onClick = onSignOutFirebase) {
-                    Text(stringResource(R.string.firebase_signout_button))
-                }
+            TextButton(onClick = onSignOut) {
+                Text(stringResource(R.string.settings_account_sign_out))
             }
-        } else {
-            Text(
-                stringResource(R.string.firebase_signin_need_json),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
         }
-        if (firebaseAuthMessage.isNotBlank()) {
-            Text(firebaseAuthMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
-
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
         form?.let { f ->
             Text(stringResource(R.string.settings_profile_section_title), style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
