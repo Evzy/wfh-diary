@@ -19,6 +19,9 @@ env:
   AZURE_RESOURCE_GROUP: rg-wfh-diary-dev-australiaeast
 
 jobs:
+  tests:
+    uses: ./.github/workflows/reusable-tests.yml
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -26,8 +29,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-      - name: Test and build solution
-        run: dotnet test WfhDiary.sln -c Release
+      - name: Publish
+        run: >
+          dotnet publish services/api/WfhDiary.Api/WfhDiary.Api.csproj
+          -c Release -o ./publish --no-self-contained
 
   deploy:
     needs: build

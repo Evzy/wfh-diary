@@ -1,0 +1,13 @@
+{
+  "displayName": "Test User",
+  "notificationTime": "08:00",
+  "notificationWorkingDaysMask": 31,
+  "missedNotificationDefault": "None",
+  "missedNotificationApplyAt": "12:00",
+  "defaultHomeStart": "08:00",
+  "defaultHomeFinish": "17:00",
+  "defaultHomeBreakHours": 1,
+  "defaultOfficeStart": "08:30",
+  "defaultOfficeFinish": "17:00",
+  "defaultOfficeBreakHours": 1
+}

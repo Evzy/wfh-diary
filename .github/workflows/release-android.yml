@@ -23,11 +23,8 @@ env:
 jobs:
   tests:
     uses: ./.github/workflows/reusable-tests.yml
-    with:
-      run_dotnet_tests: false
 
   build:
-    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

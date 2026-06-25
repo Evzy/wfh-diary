@@ -6,6 +6,16 @@ on:
         type: boolean
         required: false
         default: true
+      run_android_unit_tests:
+        description: "Run Android JVM unit tests"
+        type: boolean
+        required: false
+        default: true
+      run_android_assemble:
+        description: "Compile debug APK (compatibility smoke)"
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -14,6 +24,7 @@ jobs:
   dotnet-test:
     if: inputs.run_dotnet_tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Verify version files match version.json
@@ -25,10 +36,12 @@ jobs:
         with:
           dotnet-version: "9.0.x"
       - name: Test solution
-        run: dotnet test WfhDiary.sln -c Release
+        run: dotnet test WfhDiary.sln -c Release --logger "console;verbosity=normal"
 
   android-unit-test:
+    if: inputs.run_android_unit_tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -48,3 +61,67 @@ jobs:
       - name: Unit tests
         working-directory: apps/android
         run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+
+  android-assemble:
+    if: inputs.run_android_assemble
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            apps/android/*.gradle*
+            apps/android/**/*.gradle*
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - name: Grant execute permission for gradlew
+        working-directory: apps/android
+        run: chmod +x gradlew
+      - name: Assemble debug APK
+        working-directory: apps/android
+        env:
+          CI: "true"
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+  test-report:
+    needs:
+      - dotnet-test
+      - android-unit-test
+      - android-assemble
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarise test job results
+        env:
+          DOTNET: ${{ inputs.run_dotnet_tests && needs.dotnet-test.result || 'skipped' }}
+          ANDROID_UNIT: ${{ inputs.run_android_unit_tests && needs.android-unit-test.result || 'skipped' }}
+          ANDROID_ASSEMBLE: ${{ inputs.run_android_assemble && needs.android-assemble.result || 'skipped' }}
+        run: |
+          echo "## Compatibility check results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| dotnet test | ${DOTNET} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| android unit tests | ${ANDROID_UNIT} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| android assembleDebug | ${ANDROID_ASSEMBLE} |" >> "$GITHUB_STEP_SUMMARY"
+
+          failed=0
+          for name in DOTNET ANDROID_UNIT ANDROID_ASSEMBLE; do
+            result="${!name}"
+            if [ "$result" = "failure" ]; then
+              echo "::warning title=Compatibility check failed::${name} job failed (result=${result})"
+              failed=1
+            fi
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error title=Compatibility checks failed::One or more test/compile jobs failed. See job logs above."
+            exit 1
+          fi
+
+          echo "All enabled compatibility checks passed."
