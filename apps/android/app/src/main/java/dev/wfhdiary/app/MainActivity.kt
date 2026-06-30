@@ -14,12 +14,16 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.wfhdiary.app.ui.auth.AuthViewModel
 import dev.wfhdiary.app.ui.auth.LoginScreen
@@ -119,6 +123,18 @@ private fun MainAppContent(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val activity = LocalContext.current as ComponentActivity
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    monthViewModel.refreshFromRemote(showProgress = false)
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(drawerState.currentValue) {
         if (drawerState.currentValue == DrawerValue.Open) {
@@ -199,7 +215,7 @@ private fun MainAppContent(
                 onDeleteLeave = monthViewModel::deleteLeave,
                 onDeleteDay = monthViewModel::deleteDay,
                 onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
-                onRefresh = monthViewModel::refreshFromRemote,
+                onRefresh = { monthViewModel.refreshFromRemote(showProgress = true) },
             )
         }
     }

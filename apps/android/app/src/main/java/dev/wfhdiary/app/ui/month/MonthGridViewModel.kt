@@ -32,6 +32,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
     private val daysCache = mutableMapOf<String, DayEntryDto>()
     private val summaryByFy = mutableMapOf<Int, DiarySummaryDto>()
+    private var refreshInFlight = false
 
     init {
         viewModelScope.launch {
@@ -45,13 +46,19 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun refreshFromRemote() {
-        if (_uiState.value.refreshing) return
+    fun refreshFromRemote(showProgress: Boolean = false) {
+        if (refreshInFlight) return
         viewModelScope.launch {
+            refreshInFlight = true
             val state = _uiState.value
             val fyYear = state.fyYear
             val (fyStart, fyEnd) = FinancialYearHelper.fyRange(fyYear)
-            _uiState.update { it.copy(refreshing = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    refreshing = showProgress || it.refreshing,
+                    error = null,
+                )
+            }
             runCatching {
                 repo.getDiary(fyYear)
                 val days = repo.getDays(fyYear, fyStart.format(isoDate), fyEnd.format(isoDate))
@@ -77,6 +84,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 }
             }
+            refreshInFlight = false
         }
     }
 
