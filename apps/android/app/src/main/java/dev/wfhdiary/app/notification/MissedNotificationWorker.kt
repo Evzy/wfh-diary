@@ -20,60 +20,97 @@ class MissedNotificationWorker(
                 ?: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         val app = applicationContext as WfhDiaryApplication
 
-        return runCatching {
-            val settings = app.diaryRepository.getSettings()
-            val default = settings.missedNotificationDefault
-            if (!MissedNotificationDefault.isEnabled(default)) {
-                return Result.success()
+        val settings =
+            runCatching {
+                FirebaseTokenHelper.ensureToken(app)
+                app.diaryRepository.getSettings()
+            }.getOrElse { error ->
+                showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
+                return Result.failure()
             }
 
-            val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
-            val leavePeriods = app.diaryRepository.getLeavePeriods()
-            if (LeavePeriodHelper.isOnLeave(localDate, leavePeriods)) {
-                return Result.success()
-            }
+        val default = settings.missedNotificationDefault
+        if (!MissedNotificationDefault.isEnabled(default)) {
+            return Result.success()
+        }
 
-            val fyYear = FinancialYearHelper.currentFyYear(localDate)
-            val entry = app.diaryRepository.getDays(fyYear, date, date).firstOrNull()
-            if (!DayEntryHelper.needsDefault(entry)) {
-                return Result.success()
-            }
-
-            val applyAt = settings.missedNotificationApplyAt
-            if (MissedNotificationDefault.isGeolocation(default)) {
-                val place = GeolocationNotificationHelper.matchingPlace(app, settings)
-                if (place != null) {
-                    GeolocationNotificationHelper.applyPlace(app, date, settings, place)
-                    notifyResult(app, geolocationMatch = place, awayDefault = null, applyAt = applyAt)
-                } else {
-                    val away = settings.missedNotificationAwayDefault
-                    GeolocationNotificationHelper.applyAwayFallback(app, date, settings)
-                    notifyResult(app, geolocationMatch = null, awayDefault = away, applyAt = applyAt)
+        val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
+        val leavePeriods =
+            runCatching { app.diaryRepository.getLeavePeriods() }
+                .getOrElse { error ->
+                    showSettingsFailure(app, date, default, error)
+                    return Result.failure()
                 }
+        if (LeavePeriodHelper.isOnLeave(localDate, leavePeriods)) {
+            return Result.success()
+        }
+
+        val fyYear = FinancialYearHelper.currentFyYear(localDate)
+        val entry =
+            runCatching { app.diaryRepository.getDays(fyYear, date, date).firstOrNull() }
+                .getOrElse { error ->
+                    showSettingsFailure(app, date, default, error)
+                    return Result.failure()
+                }
+        if (!DayEntryHelper.needsDefault(entry)) {
+            return Result.success()
+        }
+
+        val applyAt = settings.missedNotificationApplyAt
+        return runCatching {
+            if (MissedNotificationDefault.isGeolocation(default)) {
+                applyGeolocationFallback(app, date, settings, applyAt)
             } else {
                 NotificationDayActions.apply(app, date, default, settings)
-                notifyResult(app, geolocationMatch = null, awayDefault = default, applyAt = applyAt, fixedDefault = true)
+                DayLogNotificationUpdater.showAutoSuccessDefault(app, default, applyAt)
             }
             Result.success()
-        }.getOrElse { Result.failure() }
+        }.getOrElse { error ->
+            val retry = DayLogRetryPolicy.failureRetryForMissedDefault(default)
+            DayLogNotificationUpdater.showFailure(
+                context = app,
+                action = retry.action,
+                date = date,
+                reason = ApiErrorClassifier.classify(error),
+                retryMode = retry.retryMode,
+                target = DayLogNotificationTarget.DAY_LOG_RESULT,
+            )
+            Result.failure()
+        }
     }
 
-    private fun notifyResult(
+    private suspend fun applyGeolocationFallback(
         app: WfhDiaryApplication,
-        geolocationMatch: dev.wfhdiary.app.util.GeofenceHelper.Place?,
-        awayDefault: String?,
+        date: String,
+        settings: dev.wfhdiary.app.data.remote.UserSettingsDto,
         applyAt: String,
-        fixedDefault: Boolean = false,
+    ) {
+        val place = GeolocationNotificationHelper.matchingPlace(app, settings)
+        if (place != null) {
+            GeolocationNotificationHelper.applyPlace(app, date, settings, place)
+            DayLogNotificationUpdater.showAutoSuccessGeolocationMatch(app, place, applyAt)
+        } else {
+            val away = settings.missedNotificationAwayDefault
+            GeolocationNotificationHelper.applyAwayFallback(app, date, settings)
+            DayLogNotificationUpdater.showAutoSuccessGeolocationAway(app, away, applyAt)
+        }
+    }
+
+    private fun showSettingsFailure(
+        app: WfhDiaryApplication,
+        date: String,
+        action: String,
+        error: Throwable,
     ) {
         if (!NotificationPermissions.canPost(app)) return
-        when {
-            geolocationMatch != null ->
-                AutoLogResultNotifier.showGeolocationMatch(app, geolocationMatch, applyAt)
-            fixedDefault && awayDefault != null ->
-                AutoLogResultNotifier.showDefault(app, awayDefault, applyAt)
-            awayDefault != null ->
-                AutoLogResultNotifier.showGeolocationAway(app, awayDefault, applyAt)
-        }
+        DayLogNotificationUpdater.showFailure(
+            context = app,
+            action = action,
+            date = date,
+            reason = ApiErrorClassifier.classify(error),
+            retryMode = NotificationChannels.RETRY_MODE_MISSED,
+            target = DayLogNotificationTarget.DAY_LOG_RESULT,
+        )
     }
 
     companion object {

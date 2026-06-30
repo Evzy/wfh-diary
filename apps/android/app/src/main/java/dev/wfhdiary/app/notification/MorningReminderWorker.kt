@@ -61,7 +61,28 @@ class MorningReminderWorker(
                 if (place != null &&
                     GeolocationNotificationHelper.shouldSkipNotification(settings, place)
                 ) {
-                    GeolocationNotificationHelper.applyPlace(app, todayStr, settings, place)
+                    val applyResult =
+                        runCatching {
+                            FirebaseTokenHelper.ensureToken(app)
+                            GeolocationNotificationHelper.applyPlace(app, todayStr, settings, place)
+                        }
+                    if (applyResult.isSuccess) {
+                        if (NotificationPermissions.canPost(applicationContext)) {
+                            DayLogNotificationUpdater.showAutoSuccessMorningGeo(applicationContext, place)
+                        }
+                    } else {
+                        val error = applyResult.exceptionOrNull()!!
+                        if (NotificationPermissions.canPost(applicationContext)) {
+                            DayLogNotificationUpdater.showFailure(
+                                context = applicationContext,
+                                action = DayLogNotificationUpdater.actionForPlace(place),
+                                date = todayStr,
+                                reason = ApiErrorClassifier.classify(error),
+                                retryMode = NotificationChannels.RETRY_MODE_APPLY,
+                                target = DayLogNotificationTarget.DAY_LOG_RESULT,
+                            )
+                        }
+                    }
                     reschedule()
                     return Result.success()
                 }
