@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -50,6 +53,8 @@ fun SettingsScreen(
     exportFyYear: Int,
     exportBusy: Boolean,
     exportStatus: String,
+    onPreviousExportFyYear: () -> Unit,
+    onNextExportFyYear: () -> Unit,
     onFormChange: ((SettingsFormState) -> SettingsFormState) -> Unit,
     onSendTestNotification: () -> Unit,
     onClearNotificationMessage: () -> Unit,
@@ -322,6 +327,35 @@ fun SettingsScreen(
             )
         }
 
+        Text(
+            stringResource(R.string.settings_export_section_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onPreviousExportFyYear) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = stringResource(R.string.fy_previous),
+                )
+            }
+            Text(
+                stringResource(R.string.settings_export_fy_label, exportFyYear, exportFyYear + 1),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            IconButton(onClick = onNextExportFyYear) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.fy_next),
+                )
+            }
+        }
         Button(
             onClick = onExportClick,
             enabled = !exportBusy,
@@ -330,7 +364,7 @@ fun SettingsScreen(
             Text(stringResource(R.string.settings_export_xlsx))
         }
         Text(
-            stringResource(R.string.settings_export_fy_hint, exportFyYear, exportFyYear + 1),
+            stringResource(R.string.settings_export_fy_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

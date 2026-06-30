@@ -140,14 +140,15 @@ public sealed class XlsxExportService
     private static void WriteSummary(IXLWorksheet sheet, int lastDataRow)
     {
         var summaryRow = lastDataRow + 2;
-        var range = $"{FirstDataRow}:{lastDataRow}";
+        var hoursRange = $"F{FirstDataRow}:F{lastDataRow}";
+        var locationRange = $"H{FirstDataRow}:H{lastDataRow}";
 
-        WriteSummaryRow(sheet, summaryRow, "Total hours worked", $"SUM(F{range})");
-        WriteSummaryRow(sheet, summaryRow + 1, "Home hours", $"SUMIF(H{range},\"Home\",F{range})");
+        WriteSummaryRow(sheet, summaryRow, "Total hours worked", $"SUM({hoursRange})");
+        WriteSummaryRow(sheet, summaryRow + 1, "Home hours", $"SUMIF({locationRange},\"Home\",{hoursRange})");
         WriteSummaryRow(sheet, summaryRow + 2, "Claimable WFH (Home hours × $0.67)", $"B{summaryRow + 1}*{WfhRate.ToString(System.Globalization.CultureInfo.InvariantCulture)}", currency: true);
-        WriteSummaryRow(sheet, summaryRow + 3, "Office hours", $"SUMIF(H{range},\"Office\",F{range})");
-        WriteSummaryRow(sheet, summaryRow + 4, "Days at home", $"COUNTIF(H{range},\"Home\")", integer: true);
-        WriteSummaryRow(sheet, summaryRow + 5, "Days in office", $"COUNTIF(H{range},\"Office\")", integer: true);
+        WriteSummaryRow(sheet, summaryRow + 3, "Office hours", $"SUMIF({locationRange},\"Office\",{hoursRange})");
+        WriteSummaryRow(sheet, summaryRow + 4, "Days at home", $"COUNTIF({locationRange},\"Home\")", integer: true);
+        WriteSummaryRow(sheet, summaryRow + 5, "Days in office", $"COUNTIF({locationRange},\"Office\")", integer: true);
     }
 
     private static void WriteSummaryRow(

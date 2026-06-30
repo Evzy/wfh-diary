@@ -113,6 +113,7 @@ private fun MainAppContent(
     val notificationMessage by settingsViewModel.notificationMessage.collectAsStateWithLifecycle()
     val exportBusy by settingsViewModel.exportBusy.collectAsStateWithLifecycle()
     val exportStatus by settingsViewModel.exportStatus.collectAsStateWithLifecycle()
+    val exportFyYear by settingsViewModel.exportFyYear.collectAsStateWithLifecycle()
     val githubUpdateUi by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
     val geofenceBusy by settingsViewModel.geofenceBusy.collectAsStateWithLifecycle()
     val geofenceMessage by settingsViewModel.geofenceMessage.collectAsStateWithLifecycle()
@@ -139,6 +140,7 @@ private fun MainAppContent(
     LaunchedEffect(drawerState.currentValue) {
         if (drawerState.currentValue == DrawerValue.Open) {
             settingsViewModel.refreshSettings()
+            settingsViewModel.syncExportFyYear(monthState.fyYear)
         }
     }
 
@@ -151,15 +153,15 @@ private fun MainAppContent(
                     form = settingsForm,
                     saveMessage = saveMessage,
                     notificationMessage = notificationMessage,
-                    exportFyYear = monthState.fyYear,
+                    exportFyYear = exportFyYear,
                     exportBusy = exportBusy,
                     exportStatus = exportStatus,
+                    onPreviousExportFyYear = settingsViewModel::showPreviousExportFyYear,
+                    onNextExportFyYear = settingsViewModel::showNextExportFyYear,
                     onFormChange = settingsViewModel::updateForm,
                     onSendTestNotification = settingsViewModel::sendTestNotification,
                     onClearNotificationMessage = settingsViewModel::clearNotificationMessage,
-                    onExportClick = {
-                        settingsViewModel.exportXlsx(monthState.fyYear, activity)
-                    },
+                    onExportClick = { settingsViewModel.exportXlsx(activity) },
                     accountUserLabel = accountUserLabel,
                     onSignOut = onSignOut,
                     githubUpdateConfigured = GithubApkReleaseUpdater.isConfigured(),

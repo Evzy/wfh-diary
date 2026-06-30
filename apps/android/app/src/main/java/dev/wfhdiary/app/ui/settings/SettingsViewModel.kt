@@ -10,6 +10,7 @@ import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
 import dev.wfhdiary.app.export.XlsxExportHelper
+import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
 import dev.wfhdiary.app.notification.NotificationPermissions
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     enum class GeofenceMapTarget { HOME, OFFICE }
@@ -43,6 +45,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _exportStatus = MutableStateFlow("")
     val exportStatus = _exportStatus.asStateFlow()
+
+    private val _exportFyYear =
+        MutableStateFlow(FinancialYearHelper.currentFyYear(LocalDate.now()))
+    val exportFyYear = _exportFyYear.asStateFlow()
 
     private val _workScheduleCustomize = MutableStateFlow<WorkScheduleTarget?>(null)
     val workScheduleCustomize = _workScheduleCustomize.asStateFlow()
@@ -440,7 +446,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             officeGeofenceRadiusMeters = s.officeGeofenceRadiusMeters,
         )
 
-    fun exportXlsx(fyYear: Int, activity: Activity) {
+    fun syncExportFyYear(calendarFyYear: Int) {
+        _exportFyYear.value = calendarFyYear
+    }
+
+    fun showPreviousExportFyYear() {
+        _exportFyYear.update { it - 1 }
+    }
+
+    fun showNextExportFyYear() {
+        _exportFyYear.update { it + 1 }
+    }
+
+    fun exportXlsx(activity: Activity) {
+        val fyYear = _exportFyYear.value
         val app = getApplication<Application>()
         viewModelScope.launch {
             _exportBusy.value = true

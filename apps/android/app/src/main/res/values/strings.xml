@@ -14,7 +14,9 @@
     <string name="settings_account_sign_out">Sign out</string>
     <string name="settings_account_signed_in_as">Signed in as %1$s</string>
     <string name="settings_export_xlsx">Export financial year (XLSX)</string>
-    <string name="settings_export_fy_hint">Exports FY %1$d–%2$d (the year shown on the calendar).</string>
+    <string name="settings_export_section_title">Export</string>
+    <string name="settings_export_fy_label">Financial year %1$d–%2$d</string>
+    <string name="settings_export_fy_hint">Choose the financial year above, then export. Defaults to the calendar year when you open settings.</string>
     <string name="settings_export_downloading">Downloading spreadsheet…</string>
     <string name="settings_export_failed">Export failed</string>
     <string name="settings_display_name">Display name</string>
