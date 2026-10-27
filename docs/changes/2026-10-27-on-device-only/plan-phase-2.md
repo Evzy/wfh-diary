@@ -484,7 +484,22 @@ if ($typed -ne $ResourceGroup) {
 az group delete --name $ResourceGroup --yes
 if ($LASTEXITCODE -ne 0) { Write-Error "az group delete failed." }
 Write-Host "Deleted $ResourceGroup."
+
+# The GitHub Actions deploy identity lives in Entra ID, outside the resource group.
+$appId = az ad app list --display-name $DeployAppName --query "[0].appId" --output tsv
+if ([string]::IsNullOrWhiteSpace($appId)) {
+    Write-Host "No app registration named '$DeployAppName'. Done."
+    exit 0
+}
+$answer = Read-Host "Also delete the GitHub deploy app registration '$DeployAppName' ($appId)? [y/N]"
+if ($answer -eq "y") {
+    az ad app delete --id $appId
+    if ($LASTEXITCODE -ne 0) { Write-Error "az ad app delete failed." }
+    Write-Host "Deleted app registration $DeployAppName."
+}
 ```
+
+Add `[string]$DeployAppName = "github-wfh-diary-deploy"` to the script's `param(...)` block, and mention the app registration in the header comment.
 
 Verify it parses: `powershell -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseFile('scripts/azure/decommission.ps1',[ref]`$null,[ref]`$null) | Out-Null; 'ok'"` prints `ok`. Do NOT run the script.
 
@@ -551,6 +566,6 @@ $env:SKIP_VERSION_BUMP="1"; git commit -m "docs: phase-2 spec deltas, checklists
 
 1. Install v0.1.25 over v0.1.24 (OTA). Data stays (same Room v2 schema). Check the app opens without sign-in, data is present, a backup is written.
 2. Finish phase-1 gate step 4 and any remaining checks you care about.
-3. Run `scripts/azure/decommission.ps1` (needs `az login`). It lists the resources and asks you to type the resource group name.
+3. Run `scripts/azure/decommission.ps1` (needs `az login`). It lists the resources and asks you to type the resource group name, then offers to delete the `github-wfh-diary-deploy` app registration (Entra ID, outside the resource group).
 4. Delete unused GitHub secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `WFH_FIREBASE_WEB_CLIENT_ID` (`gh secret delete <name>`).
 5. Firebase: optionally disable Authentication in the Firebase console. **Do not delete the Google Cloud/Firebase project if the Maps API key (`WFH_MAPS_API_KEY`) lives in it** — geolocation would stop working.
