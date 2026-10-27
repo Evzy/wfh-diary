@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.UserSettingsUpdate
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -44,7 +44,7 @@ class BackupServiceTest {
     fun tearDown() = db.close()
 
     private suspend fun addDay() {
-        store.upsertDay(2025, "2025-07-01", UpsertDayEntryRequest(location = "Home"))
+        store.upsertDay(2025, "2025-07-01", DayEntryUpdate(location = "Home"))
     }
 
     @Test
@@ -67,7 +67,7 @@ class BackupServiceTest {
     @Test
     fun settings_only_change_still_backs_up() = runBlocking {
         prefs.folderUri = "content://tree"
-        store.updateSettings(UpdateUserSettingsRequest(displayName = "Me"))
+        store.updateSettings(UserSettingsUpdate(displayName = "Me"))
         val outcome = service.backupToFolder()
         assertEquals(BackupOutcome.Success("wfh-diary-backup-2026-10-27.json"), outcome)
         assertTrue(folder.files.getValue("wfh-diary-backup-2026-10-27.json").contains("\"Me\""))
@@ -82,7 +82,7 @@ class BackupServiceTest {
     @Test
     fun writes_todays_file_and_records_success() = runBlocking {
         prefs.folderUri = "content://tree"
-        store.upsertDay(2025, "2025-07-01", UpsertDayEntryRequest("08:00", "17:00", 1.0, null, "Home"))
+        store.upsertDay(2025, "2025-07-01", DayEntryUpdate("08:00", "17:00", 1.0, null, "Home"))
         val outcome = service.backupToFolder()
         assertEquals(BackupOutcome.Success("wfh-diary-backup-2026-10-27.json"), outcome)
         val decoded = BackupCodec.decode(folder.files.getValue("wfh-diary-backup-2026-10-27.json"))

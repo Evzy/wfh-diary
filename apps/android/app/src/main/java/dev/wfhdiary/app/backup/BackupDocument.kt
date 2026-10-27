@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.backup
 
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettings
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
@@ -10,7 +10,7 @@ data class BackupDocument(
     val version: Int = CURRENT_VERSION,
     val exportedAt: String,
     val appVersion: String,
-    val settings: UserSettingsDto,
+    val settings: UserSettings,
     val days: List<BackupDay> = emptyList(),
     val leavePeriods: List<BackupLeavePeriod> = emptyList(),
     val legacy: JsonObject = JsonObject(emptyMap()),

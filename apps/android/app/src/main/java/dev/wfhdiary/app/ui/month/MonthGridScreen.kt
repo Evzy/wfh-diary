@@ -38,8 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.model.DayEntryDto
-import dev.wfhdiary.app.data.model.LeavePeriodDto
+import dev.wfhdiary.app.data.model.DayEntry
+import dev.wfhdiary.app.data.model.LeavePeriod
 import dev.wfhdiary.app.ui.day.DayEditSheet
 import dev.wfhdiary.app.ui.leave.LeaveScheduleSheet
 import dev.wfhdiary.app.util.DayBadge
@@ -64,10 +64,10 @@ fun MonthGridScreen(
     onNextYear: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectDate: (String?) -> Unit,
-    onSaveDay: (String, dev.wfhdiary.app.data.model.UpsertDayEntryRequest) -> Unit,
+    onSaveDay: (String, dev.wfhdiary.app.data.model.DayEntryUpdate) -> Unit,
     onOpenLeaveSheet: () -> Unit,
     onDismissLeaveSheet: () -> Unit,
-    onScheduleLeave: (dev.wfhdiary.app.data.model.CreateLeaveRequest) -> Unit,
+    onScheduleLeave: (dev.wfhdiary.app.data.model.NewLeave) -> Unit,
     onDeleteLeave: (String) -> Unit,
     onDeleteDay: (String) -> Unit,
     onRemoveLeaveForDate: (String) -> Unit,
@@ -299,8 +299,8 @@ private fun MonthDayCell(cell: MonthCell, onClick: () -> Unit) {
 
 private fun buildMonthCells(
     yearMonth: YearMonth,
-    daysByDate: Map<String, DayEntryDto>,
-    leavePeriods: List<LeavePeriodDto>,
+    daysByDate: Map<String, DayEntry>,
+    leavePeriods: List<LeavePeriod>,
 ): List<MonthCell> {
     val first = yearMonth.atDay(1)
     val startOffset = (first.dayOfWeek.value + 6) % 7
@@ -329,7 +329,7 @@ private fun buildMonthCells(
     return result
 }
 
-private fun resolveBadge(entry: DayEntryDto?, onLeave: Boolean): DayBadge {
+private fun resolveBadge(entry: DayEntry?, onLeave: Boolean): DayBadge {
     if (onLeave) return DayBadge.Leave
     if (entry == null) return DayBadge.Empty
     if (entry.description.equals("LEAVE", ignoreCase = true)) return DayBadge.Leave

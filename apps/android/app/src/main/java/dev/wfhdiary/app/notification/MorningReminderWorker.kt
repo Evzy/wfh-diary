@@ -20,7 +20,7 @@ class MorningReminderWorker(
         val todayStr = today.format(iso)
 
         val settings =
-            runCatching { app.diaryRepository.getSettings() }
+            runCatching { app.diaryStore.getSettings() }
                 .getOrNull()
 
         val notificationTime = settings?.notificationTime ?: "08:00"
@@ -37,7 +37,7 @@ class MorningReminderWorker(
 
         val onLeave =
             runCatching {
-                app.diaryRepository.getLeavePeriods().any { period ->
+                app.diaryStore.getLeavePeriods().any { period ->
                     val start = LocalDate.parse(period.startDate, iso)
                     val end = LocalDate.parse(period.endDate, iso)
                     !today.isBefore(start) && !today.isAfter(end)
@@ -54,7 +54,7 @@ class MorningReminderWorker(
         ) {
             val fyYear = dev.wfhdiary.app.util.FinancialYearHelper.currentFyYear(today)
             val entry =
-                runCatching { app.diaryRepository.getDays(fyYear, todayStr, todayStr).firstOrNull() }
+                runCatching { app.diaryStore.getDays(fyYear, todayStr, todayStr).firstOrNull() }
                     .getOrNull()
             if (DayEntryHelper.needsDefault(entry)) {
                 val place = GeolocationNotificationHelper.matchingPlace(app, settings)

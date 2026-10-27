@@ -19,7 +19,7 @@ class NotificationActionWorker(
         val app = applicationContext as WfhDiaryApplication
 
         return runCatching {
-            val settings = app.diaryRepository.getSettings()
+            val settings = app.diaryStore.getSettings()
             NotificationDayActions.apply(app, date, action, settings)
             MissedNotificationScheduler.cancel(applicationContext, date)
             DayLogNotificationUpdater.showManualSuccess(applicationContext, action)

@@ -8,13 +8,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UserSettingsUpdate
 import dev.wfhdiary.app.export.XlsxExportHelper
+import dev.wfhdiary.app.notification.NotificationPermissions
+import dev.wfhdiary.app.notification.NotificationScheduler
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
-import dev.wfhdiary.app.notification.NotificationPermissions
-import dev.wfhdiary.app.notification.NotificationScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -29,7 +29,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     enum class GeofenceMapTarget { HOME, OFFICE }
 
     private val wfhApp = application as WfhDiaryApplication
-    private val repo = wfhApp.diaryRepository
+    private val store = wfhApp.diaryStore
 
     private val _settingsForm = MutableStateFlow<SettingsFormState?>(null)
     val settingsForm = _settingsForm.asStateFlow()
@@ -83,8 +83,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             runCatching {
                 suppressAutoSave = true
                 formAutoSaveJob?.cancel()
-                val s = repo.getSettings()
-                val loaded = settingsFormFromDto(s)
+                val s = store.getSettings()
+                val loaded = settingsFormFromSettings(s)
                 _settingsForm.value = loaded
                 lastPersistedForm = loaded
             }
@@ -112,13 +112,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private suspend fun persistForm(form: SettingsFormState) {
         val app = getApplication<Application>()
         runCatching {
-            val updated = repo.updateSettings(formToRequest(form))
+            val updated = store.updateSettings(formToUpdate(form))
             NotificationScheduler.scheduleNext(
                 app,
                 updated.notificationTime,
                 updated.notificationWorkingDaysMask,
             )
-            val synced = settingsFormFromDto(updated)
+            val synced = settingsFormFromSettings(updated)
             lastPersistedForm = synced
             if (_settingsForm.value == form) {
                 _settingsForm.value = synced
@@ -228,8 +228,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val app = getApplication<Application>()
         _geofenceBusy.value = true
         runCatching {
-            val updated = repo.updateSettings(geolocationRequestFrom(draft))
-            val synced = settingsFormFromDto(updated)
+            val updated = store.updateSettings(geolocationUpdateFrom(draft))
+            val synced = settingsFormFromSettings(updated)
             val merged =
                 (_settingsForm.value ?: synced).copy(
                     missedNotificationAwayDefault = synced.missedNotificationAwayDefault,
@@ -385,8 +385,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _geofenceMessage.value = ""
     }
 
-    private fun geolocationRequestFrom(draft: GeolocationSettingsDraft): UpdateUserSettingsRequest =
-        UpdateUserSettingsRequest(
+    private fun geolocationUpdateFrom(draft: GeolocationSettingsDraft): UserSettingsUpdate =
+        UserSettingsUpdate(
             missedNotificationAwayDefault = draft.missedNotificationAwayDefault,
             geolocationSkipNotificationAtHome = draft.skipNotificationAtHome,
             geolocationSkipNotificationAtOffice = draft.skipNotificationAtOffice,
@@ -400,8 +400,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             clearOfficeGeofence = draft.clearOfficeGeofence,
         )
 
-    private fun formToRequest(form: SettingsFormState): UpdateUserSettingsRequest =
-        UpdateUserSettingsRequest(
+    private fun formToUpdate(form: SettingsFormState): UserSettingsUpdate =
+        UserSettingsUpdate(
             displayName = form.displayName,
             notificationTime = form.notificationTime,
             notificationWorkingDaysMask = form.notificationWorkingDaysMask,
@@ -420,7 +420,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             defaultOfficeDescription = form.defaultOfficeDescription.ifBlank { null },
         )
 
-    private fun settingsFormFromDto(s: dev.wfhdiary.app.data.model.UserSettingsDto): SettingsFormState =
+    private fun settingsFormFromSettings(s: dev.wfhdiary.app.data.model.UserSettings): SettingsFormState =
         SettingsFormState(
             displayName = s.displayName,
             notificationTime = s.notificationTime,
@@ -466,7 +466,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _exportStatus.value = app.getString(R.string.settings_export_downloading)
             runCatching {
                 val (bytes, filename) =
-                    withContext(Dispatchers.IO) { repo.downloadExportXlsx(fyYear) }
+                    withContext(Dispatchers.IO) { store.downloadExportXlsx(fyYear) }
                 withContext(Dispatchers.Main) {
                     XlsxExportHelper.saveAndShare(activity, bytes, filename)
                 }

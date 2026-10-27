@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.model.CreateLeaveRequest
-import dev.wfhdiary.app.data.model.LeavePeriodDto
+import dev.wfhdiary.app.data.model.LeavePeriod
+import dev.wfhdiary.app.data.model.NewLeave
 import dev.wfhdiary.app.ui.time.DatePickerField
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -38,9 +38,9 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LeaveScheduleSheet(
-    leavePeriods: List<LeavePeriodDto>,
+    leavePeriods: List<LeavePeriod>,
     onDismiss: () -> Unit,
-    onSave: (CreateLeaveRequest) -> Unit,
+    onSave: (NewLeave) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -119,7 +119,7 @@ fun LeaveScheduleSheet(
                         return@Button
                     }
                     onSave(
-                        CreateLeaveRequest(
+                        NewLeave(
                             startDate = startDate,
                             endDate = endDate,
                             note = note.takeIf { it.isNotBlank() },
@@ -136,7 +136,7 @@ fun LeaveScheduleSheet(
 
 @Composable
 private fun LeavePeriodRow(
-    period: LeavePeriodDto,
+    period: LeavePeriod,
     onDelete: () -> Unit,
 ) {
     val range =

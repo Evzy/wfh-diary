@@ -21,7 +21,7 @@ class MissedNotificationWorker(
         val app = applicationContext as WfhDiaryApplication
 
         val settings =
-            runCatching { app.diaryRepository.getSettings() }
+            runCatching { app.diaryStore.getSettings() }
                 .getOrElse {
                     showSettingsFailure(app, date, MissedNotificationDefault.HOME)
                     return Result.failure()
@@ -34,7 +34,7 @@ class MissedNotificationWorker(
 
         val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
         val leavePeriods =
-            runCatching { app.diaryRepository.getLeavePeriods() }
+            runCatching { app.diaryStore.getLeavePeriods() }
                 .getOrElse {
                     showSettingsFailure(app, date, default)
                     return Result.failure()
@@ -45,7 +45,7 @@ class MissedNotificationWorker(
 
         val fyYear = FinancialYearHelper.currentFyYear(localDate)
         val entry =
-            runCatching { app.diaryRepository.getDays(fyYear, date, date).firstOrNull() }
+            runCatching { app.diaryStore.getDays(fyYear, date, date).firstOrNull() }
                 .getOrElse {
                     showSettingsFailure(app, date, default)
                     return Result.failure()
@@ -77,7 +77,7 @@ class MissedNotificationWorker(
     private suspend fun applyGeolocationFallback(
         app: WfhDiaryApplication,
         date: String,
-        settings: dev.wfhdiary.app.data.model.UserSettingsDto,
+        settings: dev.wfhdiary.app.data.model.UserSettings,
         applyAt: String,
     ) {
         val place = GeolocationNotificationHelper.matchingPlace(app, settings)

@@ -3,7 +3,7 @@ package dev.wfhdiary.app.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateUserSettingsRequest(
+data class UserSettingsUpdate(
     val displayName: String? = null,
     val notificationTime: String? = null,
     val notificationWorkingDaysMask: Int? = null,

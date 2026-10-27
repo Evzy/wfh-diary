@@ -3,7 +3,7 @@ package dev.wfhdiary.app.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class DiarySummaryDto(
+data class DiarySummary(
     val totalHours: Double = 0.0,
     val homeHours: Double = 0.0,
     val officeHours: Double = 0.0,

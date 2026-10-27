@@ -1,9 +1,9 @@
 package dev.wfhdiary.app.notification
 
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.model.CreateLeaveRequest
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.NewLeave
+import dev.wfhdiary.app.data.model.UserSettings
 import dev.wfhdiary.app.util.FinancialYearHelper
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -15,16 +15,16 @@ object NotificationDayActions {
         app: WfhDiaryApplication,
         date: String,
         action: String,
-        settings: UserSettingsDto,
+        settings: UserSettings,
     ) {
         val localDate = LocalDate.parse(date, iso)
         val fyYear = FinancialYearHelper.currentFyYear(localDate)
         when (action) {
             NotificationChannels.ACTION_HOME, MissedNotificationDefault.HOME ->
-                app.diaryRepository.upsertDay(
+                app.diaryStore.upsertDay(
                     fyYear,
                     date,
-                    UpsertDayEntryRequest(
+                    DayEntryUpdate(
                         startTime = settings.defaultHomeStart,
                         finishTime = settings.defaultHomeFinish,
                         breakHours = settings.defaultHomeBreakHours,
@@ -33,10 +33,10 @@ object NotificationDayActions {
                     ),
                 )
             NotificationChannels.ACTION_OFFICE, MissedNotificationDefault.OFFICE ->
-                app.diaryRepository.upsertDay(
+                app.diaryStore.upsertDay(
                     fyYear,
                     date,
-                    UpsertDayEntryRequest(
+                    DayEntryUpdate(
                         startTime = settings.defaultOfficeStart,
                         finishTime = settings.defaultOfficeFinish,
                         breakHours = settings.defaultOfficeBreakHours,
@@ -45,9 +45,9 @@ object NotificationDayActions {
                     ),
                 )
             NotificationChannels.ACTION_LEAVE, MissedNotificationDefault.LEAVE ->
-                app.diaryRepository.createLeave(
+                app.diaryStore.createLeave(
                     fyYear,
-                    CreateLeaveRequest(startDate = date, endDate = date),
+                    NewLeave(startDate = date, endDate = date),
                 )
             else -> error("Unknown notification action: $action")
         }

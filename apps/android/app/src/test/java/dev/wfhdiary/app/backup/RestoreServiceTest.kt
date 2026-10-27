@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.UserSettings
 import dev.wfhdiary.app.data.store.DiaryRules
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.CancellationException
@@ -31,7 +31,7 @@ class RestoreServiceTest {
     private lateinit var prefs: BackupPreferences
     private lateinit var backup: BackupService
     private val folder = FakeBackupFolder()
-    private var rescheduledWith: UserSettingsDto? = null
+    private var rescheduledWith: UserSettings? = null
     private lateinit var restore: RestoreService
 
     @Before
@@ -62,7 +62,7 @@ class RestoreServiceTest {
 
     @Test
     fun restore_writes_safety_backup_replaces_data_and_reschedules() = runBlocking {
-        store.upsertDay(2025, "2025-08-01", UpsertDayEntryRequest(location = "Office"))
+        store.upsertDay(2025, "2025-08-01", DayEntryUpdate(location = "Office"))
         val outcome = restore.restore(document(listOf(BackupDay("2025-07-01", location = "Home"))))
 
         assertTrue(outcome is RestoreOutcome.Success)
@@ -74,7 +74,7 @@ class RestoreServiceTest {
 
     @Test
     fun invalid_document_is_refused_without_changes() = runBlocking {
-        store.upsertDay(2025, "2025-08-01", UpsertDayEntryRequest(location = "Office"))
+        store.upsertDay(2025, "2025-08-01", DayEntryUpdate(location = "Office"))
         val outcome = restore.restore(document(listOf(BackupDay("2025-02-30"))))
         assertTrue(outcome is RestoreOutcome.Failed)
         assertEquals(listOf("2025-08-01"), store.getDays(2025, null, null).map { it.date })
@@ -85,7 +85,7 @@ class RestoreServiceTest {
     @Test
     fun restore_is_refused_without_a_backup_folder() = runBlocking {
         prefs.folderUri = null
-        store.upsertDay(2025, "2025-08-01", UpsertDayEntryRequest(location = "Office"))
+        store.upsertDay(2025, "2025-08-01", DayEntryUpdate(location = "Office"))
         val outcome = restore.restore(document(emptyList()))
         assertTrue(outcome is RestoreOutcome.Failed)
         assertTrue((outcome as RestoreOutcome.Failed).message.contains("backup folder"))
@@ -96,7 +96,7 @@ class RestoreServiceTest {
     @Test
     fun restore_is_refused_when_safety_write_fails() = runBlocking {
         folder.failWrites = true
-        store.upsertDay(2025, "2025-08-01", UpsertDayEntryRequest(location = "Office"))
+        store.upsertDay(2025, "2025-08-01", DayEntryUpdate(location = "Office"))
         val outcome = restore.restore(document(emptyList()))
         assertTrue(outcome is RestoreOutcome.Failed)
         assertTrue("reason surfaced", (outcome as RestoreOutcome.Failed).message.contains("disk full"))

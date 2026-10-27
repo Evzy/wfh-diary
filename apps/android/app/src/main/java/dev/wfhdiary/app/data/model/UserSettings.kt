@@ -4,7 +4,7 @@ import dev.wfhdiary.app.util.WorkingDaysMask
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserSettingsDto(
+data class UserSettings(
     val displayName: String,
     val notificationTime: String,
     val notificationWorkingDaysMask: Int = WorkingDaysMask.DEFAULT,
