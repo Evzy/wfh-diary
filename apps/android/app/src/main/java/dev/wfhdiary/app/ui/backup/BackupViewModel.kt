@@ -54,12 +54,21 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onFolderChosen(uri: Uri?) {
         if (uri == null) return
-        app.contentResolver.takePersistableUriPermission(
-            uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-        )
+        val label =
+            try {
+                app.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+                DocumentFile.fromTreeUri(app, uri)?.name
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(message = app.getString(R.string.backup_folder_failed, e.message ?: e.javaClass.simpleName))
+                }
+                return
+            }
         prefs.folderUri = uri.toString()
-        prefs.folderLabel = DocumentFile.fromTreeUri(app, uri)?.name
+        prefs.folderLabel = label
         backupNow()
     }
 

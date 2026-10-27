@@ -219,6 +219,7 @@
     <string name="backup_folder_set">Backup folder: %1$s</string>
     <string name="backup_folder_choose">Choose backup folder</string>
     <string name="backup_folder_change">Change folder</string>
+    <string name="backup_folder_failed">Could not use that folder: %1$s</string>
     <string name="backup_last_success">Last backup: %1$s</string>
     <string name="backup_last_never">No backup yet</string>
     <string name="backup_last_error">Last backup failed: %1$s</string>

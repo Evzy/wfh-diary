@@ -17,7 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -155,11 +158,15 @@ private fun MainAppContent(
         }
     }
 
+    var lastHandledRestoreGeneration by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(backupState.restoreGeneration) {
-        if (backupState.restoreGeneration > 0) {
+        val generation = backupState.restoreGeneration
+        if (generation > lastHandledRestoreGeneration) {
             monthViewModel.refreshFromRemote(showProgress = true)
             settingsViewModel.refreshSettings()
         }
+        // Always sync (not just on increase) so a reset counter after process death can't hide later restores.
+        lastHandledRestoreGeneration = generation
     }
 
     ModalNavigationDrawer(

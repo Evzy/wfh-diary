@@ -328,6 +328,7 @@ fun SettingsScreen(
             )
         }
 
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
         backupSection()
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Text(
