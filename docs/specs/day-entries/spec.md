@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-The app keeps one diary per Australian financial year (FY), holding one entry per calendar day with start/finish times, break hours, description and location (Home/Office). All data lives on the phone: `DiaryStore` reads and writes the Room database (only days with data are stored; the grid synthesises empty days), and lets the user read, upsert and clear individual days. The Android app shows days on a month grid and edits them in a bottom sheet or the notification quick-add screen. Out of scope: FY summary totals ([summary-fy](../summary-fy/spec.md)), leave periods (`LEAVE`), templates, notifications, export, backups ([backup](../backup/spec.md)) and authentication (see their own specs).
+The app keeps one diary per Australian financial year (FY), holding one entry per calendar day with start/finish times, break hours, description and location (Home/Office). All data lives on the phone: `DiaryStore` reads and writes the Room database (only days with data are stored; the grid synthesises empty days), and lets the user read, upsert and clear individual days. The Android app shows days on a month grid and edits them in a bottom sheet or the notification quick-add screen. Out of scope: FY summary totals ([summary-fy](../summary-fy/spec.md)), leave periods (`LEAVE`), notifications, export and backups ([backup](../backup/spec.md)) (see their own specs). Templates and authentication are retired.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ Day responses contain `date` (yyyy-MM-dd), `dayName`, `startTime`/`finishTime` (
 
 - **Given** a day with logged times
 - **When** it is returned by list, upsert or clear
-- **Then** the entry has all eight properties and matches the `day-entry.json` contract fixture shape; `dayName` is the English weekday name
+- **Then** the entry (`DayEntryDto`) has all eight properties; `dayName` is the English weekday name
 
 ### DAY-006 — Total hours computation
 
@@ -110,19 +110,18 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 | --- | --- |
 | Data source | `apps/android/app/src/main/java/dev/wfhdiary/app/data/DiaryDataSource.kt` (interface), `data/store/DiaryStore.kt` (local implementation), `data/store/DiaryRules.kt` (pure rules: upsert, replace, total hours, day DTO) |
 | Storage | `data/local/` — Room v2 `DayEntryEntity`, `DayEntryDao`, `WfhDiaryDatabase` (`date` TEXT primary key; only days with data are stored) |
-| DTO / contract | `packages/shared/contracts/day-entry.json`, `diary.json` (shape reused by `data/remote/DayEntryDto.kt`, `DiaryDto.kt`, `UpsertDayEntryRequest.kt`) |
+| Model | `data/model/DayEntryDto.kt`, `DiaryDto.kt`, `UpsertDayEntryRequest.kt` |
 | Android | `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt`, `ui/month/MonthGridUiState.kt`, `ui/day/DayEditSheet.kt`, `ui/BreakHoursField.kt`, `ui/quick/QuickAddActivity.kt`, `util/DayEntryHelper.kt`, `util/DayBadge.kt`, `util/TimeHelpers.kt` |
-| Server (legacy, until phase 2) | The API (`services/api/`) still exists but the app no longer reads or writes diary data through it except for the phase-1 import ([BAK-011](../backup/spec.md)) |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| DAY-001 | `ContractDeserializationTest.diary_fixture_deserializes` (shape only; `DiaryStore.getDiary` itself is untested) |
+| DAY-001 | `untested` |
 | DAY-002 | `DiaryStoreTest.get_days_filters_by_fy_and_range` (unparseable filter untested) |
 | DAY-003 | `DiaryRulesTest.upsert_keeps_unset_fields`, `DiaryRulesTest.upsert_on_missing_day_creates_it`, `DiaryRulesTest.upsert_blank_time_and_location_clear_them`, `DiaryRulesTest.replace_clears_fields_not_supplied`, `DiaryRulesTest.replace_blank_description_becomes_null`, `DiaryStoreTest.upsert_then_partial_upsert_keeps_fields`, `DiaryStoreTest.replace_clears_fields`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
 | DAY-004 | `DiaryStoreTest.upsert_outside_fy_throws` (outside-FY case only; unparseable date untested) |
-| DAY-005 | `DiaryRulesTest.toDto_fills_day_name_and_total`; `ContractDeserializationTest.dayEntry_fixture_deserializes` |
+| DAY-005 | `DiaryRulesTest.toDto_fills_day_name_and_total` |
 | DAY-006 | `TimeHelpersTest.computeTotalHours_subtracts_break`; `DiaryRulesTest.toDto_fills_day_name_and_total` |
 | DAY-007 | `DiaryStoreTest.delete_day_removes_row_and_returns_empty_dto`; `DiaryRulesTest.isEmpty_detects_blank_days` |
 | DAY-008 | `untested` |
@@ -138,11 +137,12 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 - **Overnight shifts unsupported:** finish earlier than start yields 0 hours.
 - **Write semantics differ by caller:** the edit sheet saves with a full replace (`replaceDay`, clears unsupplied fields); quick add and the notification actions use a partial `upsertDay`, so they keep existing fields they do not supply.
 - **No negative-path tests** for unparseable dates (DAY-004) or filter values (DAY-002); ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
-- **Template picker:** "Apply template…" in the day edit sheet and quick-add screen was never implemented ([TODO § C](../../TODO.md#c-work-scenario-templates--partial), items 1 and 3).
+- **Template picker:** "Apply template…" in the day edit sheet and quick-add screen was never implemented ([TODO § C](../../TODO.md#c-work-scenario-templates--dropped), items 1 and 3); templates were dropped.
 - `DayEntryHelper.needsDefault` (tested in `DayEntryHelperTest`) is only used by the morning-reminder and missed-notification workers, so it belongs to the notifications capability and is not specified here.
-- The grid ViewModel keeps its server-era names (`refreshFromRemote`) although it now reloads from the local store; renaming is deferred to phase 2.
+- `DiaryStore.getDiary` (DAY-001) has no direct test since the contract fixture tests were removed in phase 2.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — DAY-001..007 and DAY-010 rewritten as local `DiaryStore` behaviour; the clear-a-field gap is closed ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: On-device-only phase 2 — server row and contract-fixture references removed (DAY-005 no longer cites a fixture; DAY-001 now untested); DTOs live in `data/model/`; grid reload renamed to `MonthGridViewModel.reload` ([change](../../changes/2026-10-27-on-device-only/design.md)).

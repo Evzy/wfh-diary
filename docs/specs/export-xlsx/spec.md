@@ -100,9 +100,7 @@ Tapping "Export financial year (XLSX)" generates the workbook on-device with `Di
 
 | Kind | Location |
 | --- | --- |
-| Workbook | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxWriter.kt` (port of the server `XlsxExportService`), `data/store/DiaryStore.kt` (`downloadExportXlsx`) |
-| DTO / contract | None — binary xlsx; no shared DTO or contract fixture |
-| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs`, `Services/XlsxExportService.cs` (ClosedXML) — no longer used by the app |
+| Workbook | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxWriter.kt` (port of the former server `XlsxExportService`), `data/store/DiaryStore.kt` (`downloadExportXlsx`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxExportHelper.kt` (cache file + share intent), `ui/settings/SettingsViewModel.kt` (`exportXlsx`, export FY state), `ui/settings/SettingsScreen.kt` (Export section), `MainActivity.kt` (drawer sync), `apps/android/app/src/main/res/xml/file_paths.xml` (`exports/` cache path) |
 
 ## Test coverage
@@ -136,3 +134,4 @@ Tapping "Export financial year (XLSX)" generates the workbook on-device with `Di
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — XLSX-001, XLSX-002 and XLSX-011 now describe on-device generation by `XlsxWriter`; XLSX-003..009 content unchanged, coverage mapped to `XlsxWriterTest` ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: On-device-only phase 2 — server interface row removed with the API ([change](../../changes/2026-10-27-on-device-only/design.md)).

@@ -13,7 +13,7 @@ Defines the Australian financial year (1 July – 30 June) used throughout the a
 A date belongs to the FY that starts in its calendar year if it falls in July–December, otherwise to the FY that started the previous year.
 
 - **Given** the dates 2025-06-30, 2025-07-01 and 2026-01-15
-- **When** the current FY year is computed (API or Android)
+- **When** the current FY year is computed
 - **Then** the results are 2024, 2025 and 2025
 
 ### FY-002 — FY date range
@@ -30,7 +30,7 @@ FY `N` runs from 1 July `N` to 30 June `N+1` inclusive, and iterating its days i
 
 - **Given** a user who logged 08:00–17:00 with a 1-hour break at Home on the first day of the FY
 - **When** the app asks `DiaryStore` for that FY's summary
-- **Then** `homeHours` is 8 or more and `claimableWfhAmount` is greater than 0, matching the `diary-summary.json` contract shape
+- **Then** the `DiarySummaryDto` has `homeHours` of 8 or more and `claimableWfhAmount` greater than 0
 
 ### FY-004 — Hours by location
 
@@ -93,32 +93,30 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 | Kind | Location |
 | --- | --- |
 | Summary calculation | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryRules.kt` (`summarize`), `data/store/DiaryStore.kt` (`getSummary`) |
-| DTO / contract | `packages/shared/contracts/diary-summary.json` (shape reused by `data/remote/DiarySummaryDto.kt`) |
+| Model | `data/model/DiarySummaryDto.kt` |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/` — `ui/month/FySummaryGrid.kt`, `ui/month/MonthGridViewModel.kt`, `util/FinancialYearHelper.kt`, `util/WorkingDaysMask.kt` |
-| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Services/SummaryCalculator.cs`, `FinancialYearHelper.cs`, `WorkingDaysMask.cs` — still present but no longer used by the app |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| FY-001 | `FinancialYearHelperTests.CurrentFyYear_july_start`; `FinancialYearHelperTest.currentFyYear_june_uses_prior_calendar_year`; `FinancialYearHelperTest.currentFyYear_july_uses_current_calendar_year` |
-| FY-002 | `FinancialYearHelperTests.FyRange_spans_july_to_june`; `FinancialYearHelperTests.EachDay_includes_end_date`; `FinancialYearHelperTest.fyRange_spans_july_to_june` |
-| FY-003 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryStoreTest.summary_uses_fy_days`; `ContractDeserializationTest.diarySummary_fixture_deserializes` |
-| FY-004 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours`; `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` (legacy server) |
+| FY-001 | `FinancialYearHelperTest.currentFyYear_june_uses_prior_calendar_year`; `FinancialYearHelperTest.currentFyYear_july_uses_current_calendar_year` |
+| FY-002 | `FinancialYearHelperTest.fyRange_spans_july_to_june` (day iteration untested) |
+| FY-003 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryStoreTest.summary_uses_fy_days` |
+| FY-004 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours` |
 | FY-005 | `DiaryRulesTest.summary_matches_server_rules` (day counts asserted there; Android summary display untested) |
-| FY-006 | `DiaryRulesTest.summary_matches_server_rules`; `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` (legacy server) |
-| FY-007 | `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours`; `SummaryCalculatorTests.Compute_logic_check_fails_when_unlocated_hours` (legacy server) |
+| FY-006 | `DiaryRulesTest.summary_matches_server_rules` |
+| FY-007 | `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours` |
 | FY-008 | `WorkingDaysMaskTest.default_mask_is_monday_to_friday`; `WorkingDaysMaskTest.setDay_toggles_single_day`; `WorkingDaysMaskTest.selectedDayLabels_lists_enabled_days` |
 | FY-009 | `untested` |
 | FY-010 | `untested` |
 
 ## Known gaps
 
-- **Fixed 67c/hour rate for every FY:** `DiaryRules.summarize` (and the legacy server `SummaryCalculator`) hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
+- **Fixed 67c/hour rate for every FY:** `DiaryRules.summarize` (like the former server calculator) hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
 - **Banker's rounding:** the claimable amount is rounded half-even (`RoundingMode.HALF_EVEN`, ported from .NET's default `Math.Round`), not away-from-zero.
-- **API `WorkingDaysMask.IsWorkingDay` mis-maps Sunday:** .NET `DayOfWeek.Sunday` is 0, so `1 << -1` tests bit 31 instead of bit 6 (Android's Sunday bit). The API currently only uses `WorkingDaysMask.Default`, so there is no live impact. Suspected unintended; no API test exists for it.
 - **Location matching is untrimmed:** matching is case-insensitive but does not trim, so `"Home "` with whitespace (or other labels, e.g. from quick add's free-text field) is excluded from Home/Office totals and fails the logic check — even though the Android grid trims and badges it `H`.
-- **Android `eachDay`** has no unit test (API equivalent is tested).
+- **`FinancialYearHelper.eachDay`** has no unit test (the API test that covered the equivalent was deleted with the API).
 - **No test** asserts Android summary display/refresh (FY-009, FY-010); Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
 ## Revision log
@@ -126,3 +124,4 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — FY-003 now describes the on-device calculator; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: On-device-only phase 2 — server, contract-fixture and .NET test references removed (FY-002 day iteration now untested); DTO lives in `data/model/` ([change](../../changes/2026-10-27-on-device-only/design.md)).

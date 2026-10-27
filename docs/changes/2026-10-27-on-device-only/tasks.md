@@ -3,11 +3,11 @@
 Phase 1 (this branch, `on-device-only`) keeps the backend running and ships on-device storage, backups, restore and the one-time importer. Phase 2 removes the backend after the phase-1 gate below passes.
 
 - [x] Design approved
-- [ ] Implementation — phase 1 code done (Tasks 1–11); phase 2 pending
-- [x] Tests added/updated and passing (phase 1: `:app:testDebugUnitTest`)
-- [ ] Capability specs updated (requirements, coverage, revision log) — the new `backup` spec and the phase-1 MODIFIED deltas are applied, except `OTA-009`, which is only annotated until its text is updated in phase 2; REMOVED items wait for phase 2
-- [ ] Contract fixtures updated (if DTOs changed) — no DTO change in phase 1; fixtures are copied into Android test resources before phase 2 deletes them
-- [ ] Status set to `shipped` in `design.md` — stays `in-progress` until phase 2 ships
+- [x] Implementation — phase 1 (Tasks 1–11) and phase 2 ([`plan-phase-2.md`](plan-phase-2.md) Tasks 1–5) done; only the manual Azure decommission remains
+- [x] Tests added/updated and passing (`:app:testDebugUnitTest`; .NET tests deleted with the API in phase 2)
+- [x] Capability specs updated (requirements, coverage, revision log) — `backup` spec added, MODIFIED deltas applied (including `OTA-009` at app start), REMOVED deltas applied in phase 2; `auth` and `work-templates` retired
+- [x] Contract fixtures updated (if DTOs changed) — not applicable: `packages/shared/contracts/` and `ContractDeserializationTest` were deleted in phase 2 (the importer was removed first, so the fixtures were not copied into Android test resources); the backup format (`BackupCodecTest`) is now the only serialized contract
+- [x] Status set to `shipped` in `design.md`
 
 ## Phase 1 plan (Android only)
 
@@ -60,11 +60,11 @@ Do steps 2 and 3 **before logging any day on the new build** (the import replace
 
 ## Phase 2 (after the gate passes)
 
-Plan to be written as `plan-phase-2.md` in this folder. Scope per [`design.md`](design.md) § Rollout and § Removed (phase 2).
+Plan: [`plan-phase-2.md`](plan-phase-2.md) (branch `remove-backend`). Scope per [`design.md`](design.md) § Rollout and § Removed (phase 2).
 
-- [ ] `plan-phase-2.md` written and approved
-- [ ] Remove the importer, `data/remote/` Ktor code, Firebase auth, login gate, `ApiErrorClassifier`, `DayLogRetryPolicy` and retry/pending paths; move the automatic update check to app start
-- [ ] Apply REMOVED deltas to specs: `NOTIF-009`, `NOTIF-010`, `OTA-001`, `OTA-002`, `AUTH-001`..`AUTH-011`, `TPL-001`..`TPL-008`, `BAK-011`; update `OTA-009` text
-- [ ] Delete `services/`, `packages/shared/`, `WfhDiary.sln`, deploy/keep-warm workflows and .NET CI jobs; update `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `TODO.md`, `README.md`
+- [x] `plan-phase-2.md` written and approved (`d94cedb`, `ec036e8`)
+- [x] Remove the importer, `data/remote/` Ktor code, Firebase auth, login gate, `ApiErrorClassifier`, `DayLogRetryPolicy` and retry/pending paths; move the automatic update check to app start (Tasks 1–3: `67e3068`, `c1a9c2e`, `cac85ea`, `7c5433d`)
+- [x] Apply REMOVED deltas to specs: `NOTIF-009`, `NOTIF-010`, `OTA-001`, `OTA-002`, `AUTH-001`..`AUTH-011`, `TPL-001`..`TPL-008`, `BAK-011`; update `OTA-009` text (Task 5, the commit that ticks this box)
+- [x] Delete `services/`, `packages/shared/`, `WfhDiary.sln`, deploy/keep-warm workflows and .NET CI jobs; update `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `TODO.md`, `README.md` (Task 4: `939c3d8`, `f7f59a4`)
 - [ ] User runs `scripts/azure/decommission.ps1` after confirming phase 1
-- [ ] Status set to `shipped` in `design.md`
+- [x] Status set to `shipped` in `design.md` (Task 5); version bumped to 0.1.25

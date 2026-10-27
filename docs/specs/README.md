@@ -8,13 +8,15 @@ Living specs describing what WFH Diary does **today**. Each requirement has a st
 | FY summary & working days | `FY` | [summary-fy](summary-fy/spec.md) |
 | Leave periods | `LEAVE` | [leave](leave/spec.md) |
 | User settings | `SET` | [settings](settings/spec.md) |
-| Work templates (presets) | `TPL` | [work-templates](work-templates/spec.md) |
+| Work templates (presets) — **retired** | `TPL` | [work-templates](work-templates/spec.md) |
 | Notifications | `NOTIF` | [notifications](notifications/spec.md) |
 | Geolocation | `GEO` | [geolocation](geolocation/spec.md) |
 | XLSX export | `XLSX` | [export-xlsx](export-xlsx/spec.md) |
-| Authentication | `AUTH` | [auth](auth/spec.md) |
+| Authentication — **retired** | `AUTH` | [auth](auth/spec.md) |
 | OTA updates & versioning | `OTA` | [ota-updates](ota-updates/spec.md) |
 | Backup & restore | `BAK` | [backup](backup/spec.md) |
+
+Retired capabilities were removed by the [on-device-only change](../changes/2026-10-27-on-device-only/design.md); their specs stay so requirement IDs are never reused.
 
 ## Format
 

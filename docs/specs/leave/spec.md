@@ -102,15 +102,14 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 | --- | --- |
 | Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`createLeave`, `getLeavePeriods`, `deleteLeave`), `data/store/DiaryRules.kt` (`leaveDatesInFy`, `leaveDay`, `datesToClearOnLeaveDelete`) |
 | Storage | `data/local/LeavePeriodEntity.kt`, `data/local/LeavePeriodDao.kt` |
-| DTO / contract | `packages/shared/contracts/leave-period.json` (shape reused by `data/remote/LeavePeriodDto.kt`, `CreateLeaveRequest.kt`) |
+| Model | `data/model/LeavePeriodDto.kt`, `data/model/CreateLeaveRequest.kt` |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/leave/LeaveScheduleSheet.kt`, `util/LeavePeriodHelper.kt`, `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt` |
-| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Services/DiaryService.cs`, `Data/LeavePeriodEntity.cs` — no longer used by the app |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| LEAVE-001 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only`; contract: `ContractDeserializationTest.leavePeriod_fixture_deserializes` |
+| LEAVE-001 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only` |
 | LEAVE-002 | `untested` |
 | LEAVE-003 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only` |
 | LEAVE-004 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only`; `DiaryRulesTest.leave_dates_are_limited_to_fy`, `DiaryRulesTest.leave_day_has_only_leave_description` |
@@ -138,3 +137,4 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — LEAVE-001..008 rewritten as local `DiaryStore` behaviour; "404" cases became no-ops ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: On-device-only phase 2 — server and contract-fixture references removed; DTOs live in `data/model/` ([change](../../changes/2026-10-27-on-device-only/design.md)).
