@@ -59,8 +59,6 @@ fun SettingsScreen(
     onSendTestNotification: () -> Unit,
     onClearNotificationMessage: () -> Unit,
     onExportClick: () -> Unit,
-    accountUserLabel: String?,
-    onSignOut: () -> Unit,
     githubUpdateConfigured: Boolean,
     githubUpdateBusy: Boolean,
     githubUpdateStatus: String,
@@ -191,22 +189,6 @@ fun SettingsScreen(
             Spacer(Modifier.padding(bottom = 16.dp))
         }
 
-        if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            Text(stringResource(R.string.settings_account_section_title), style = MaterialTheme.typography.titleSmall)
-            accountUserLabel?.let {
-                Text(
-                    stringResource(R.string.settings_account_signed_in_as, it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-                )
-            }
-            TextButton(onClick = onSignOut) {
-                Text(stringResource(R.string.settings_account_sign_out))
-            }
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        }
         form?.let { f ->
             Text(stringResource(R.string.settings_profile_section_title), style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(

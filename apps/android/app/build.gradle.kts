@@ -9,11 +9,6 @@ plugins {
     alias(libs.plugins.google.devtools.ksp)
 }
 
-private val hasGoogleServicesJson: Boolean = file("google-services.json").exists()
-if (hasGoogleServicesJson) {
-    apply(plugin = "com.google.gms.google-services")
-}
-
 private val localProperties: Properties =
     Properties().apply {
         val f = rootProject.file("local.properties")
@@ -44,27 +39,6 @@ private fun escapeForBuildConfigString(s: String): String =
             }
         }
     }
-
-@Suppress("UNCHECKED_CAST")
-private fun firebaseWebClientIdFromGoogleServicesJson(): String {
-    val f = file("google-services.json")
-    if (!f.exists()) return ""
-    val root =
-        runCatching { JsonSlurper().parse(f) as? Map<*, *> }.getOrNull() ?: return ""
-    val clients = root["client"] as? List<*> ?: return ""
-    for (c in clients) {
-        val clientMap = c as? Map<*, *> ?: continue
-        val oauthClients = clientMap["oauth_client"] as? List<*> ?: continue
-        for (o in oauthClients) {
-            val om = o as? Map<*, *> ?: continue
-            val type = (om["client_type"] as? Number)?.toInt() ?: continue
-            if (type == 3) {
-                return om["client_id"]?.toString()?.trim().orEmpty()
-            }
-        }
-    }
-    return ""
-}
 
 android {
     namespace = "dev.wfhdiary.app"
@@ -106,7 +80,6 @@ android {
         targetSdk = 35
         versionCode = (repoVersion["versionCode"] as Number).toInt()
         versionName = repoVersion["versionName"] as String
-        buildConfigField("boolean", "GOOGLE_SERVICES_CONFIGURED", if (hasGoogleServicesJson) "true" else "false")
         val mapsApiKey = escapeForBuildConfigString(localPropOrEnv("MAPS_API_KEY"))
         buildConfigField("boolean", "GOOGLE_MAPS_CONFIGURED", if (mapsApiKey.isNotEmpty()) "true" else "false")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey.ifEmpty { "MISSING_MAPS_API_KEY" }
@@ -120,11 +93,6 @@ android {
         buildConfigField("String", "UPDATE_GITHUB_OWNER", "\"$updateOwner\"")
         buildConfigField("String", "UPDATE_GITHUB_REPO", "\"$updateRepo\"")
         buildConfigField("String", "UPDATE_GITHUB_TOKEN", "\"$updateToken\"")
-        val firebaseWebClientId =
-            escapeForBuildConfigString(
-                localPropOrEnv("FIREBASE_WEB_CLIENT_ID").ifEmpty { firebaseWebClientIdFromGoogleServicesJson() },
-            )
-        buildConfigField("String", "FIREBASE_WEB_CLIENT_ID", "\"$firebaseWebClientId\"")
     }
 
     buildTypes {
@@ -175,11 +143,6 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.work.runtime.ktx)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services)
-    implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)

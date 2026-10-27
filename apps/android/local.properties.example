@@ -17,10 +17,6 @@ sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
 # debug.keyAlias=wfh_shared_debug
 # debug.keyPassword=...
 #
-# Optional — auto-read from google-services.json when oauth_client is present; set explicitly if that array is empty:
-# FIREBASE_WEB_CLIENT_ID=....apps.googleusercontent.com
-# For CI: GitHub secret WFH_FIREBASE_WEB_CLIENT_ID (same value).
-#
 # Google Maps (Settings → pick home/office on map): enable Maps SDK for Android in Google Cloud Console,
 # create an API key restricted to this app, then:
 # MAPS_API_KEY=AIza...

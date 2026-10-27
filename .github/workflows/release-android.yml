@@ -67,7 +67,6 @@ jobs:
           UPDATE_GITHUB_OWNER: ${{ github.repository_owner }}
           UPDATE_GITHUB_REPO: wfh-diary-releases
           MAPS_API_KEY: ${{ secrets.WFH_MAPS_API_KEY }}
-          FIREBASE_WEB_CLIENT_ID: ${{ secrets.WFH_FIREBASE_WEB_CLIENT_ID }}
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK artifact (manual runs)
