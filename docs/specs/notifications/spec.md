@@ -100,8 +100,8 @@ Settings can show the morning reminder immediately so the user can check that no
 
 | Kind | Location |
 | --- | --- |
-| Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (settings, leave periods and day writes, reached via `WfhDiaryApplication.diaryRepository`) |
-| Model | `apps/android/app/src/main/java/dev/wfhdiary/app/data/model/UserSettingsDto.kt` (`notificationTime`, `notificationWorkingDaysMask`, `missedNotificationDefault`, `missedNotificationApplyAt`) |
+| Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (settings, leave periods and day writes, reached via `WfhDiaryApplication.diaryStore`) |
+| Model | `apps/android/app/src/main/java/dev/wfhdiary/app/data/model/UserSettings.kt` (`notificationTime`, `notificationWorkingDaysMask`, `missedNotificationDefault`, `missedNotificationApplyAt`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogNotificationUpdater`, `NotificationPermissions`) |
 
 ## Test coverage
@@ -139,3 +139,4 @@ Settings can show the morning reminder immediately so the user can check that no
 - 2026-10-27: On-device-only phase 1 — NOTIF-005 and NOTIF-008 now describe local writes; NOTIF-009/010 kept until phase 2 ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: Workers no longer fetch a Firebase ID token before local writes, so notification actions work offline; `FirebaseTokenHelper` removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — NOTIF-005/008 failures post a "Couldn't save entry" notification with Open app only (no pending state); NOTIF-009/010 removed with `ApiErrorClassifier` and `DayLogRetryPolicy` ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: Internal model classes renamed (`UserSettingsDto` → `UserSettings`; `WfhDiaryApplication.diaryRepository` → `diaryStore`), no behaviour change.

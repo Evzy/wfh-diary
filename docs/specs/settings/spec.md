@@ -58,11 +58,11 @@ A home or office geofence is only updated when latitude, longitude and radius ar
 
 ### SET-007 — Settings shape is the backup schema
 
-The settings object (`UserSettingsDto`) is the `settings` object of the backup document ([BAK-001](../backup/spec.md#bak-001--backup-document-v1)); its serialized field names are part of the backup format, and backup validation of that object replaces the former contract requirement.
+The settings object (`UserSettings`) is the `settings` object of the backup document ([BAK-001](../backup/spec.md#bak-001--backup-document-v1)); its serialized field names are part of the backup format, and backup validation of that object replaces the former contract requirement.
 
 - **Given** stored settings
 - **When** they are read or included in a backup
-- **Then** the JSON includes every `UserSettingsDto` property under its existing field name, and a backup round-trips the settings unchanged
+- **Then** the JSON includes every `UserSettings` property under its existing field name, and a backup round-trips the settings unchanged
 
 ### SET-008 — Android auto-save
 
@@ -118,7 +118,7 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 | --- | --- |
 | Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`getSettings`, `updateSettings`), `data/store/DiaryRules.kt` (`defaultSettings`, `applySettingsUpdate`) |
 | Storage | `data/local/SettingsEntity.kt`, `data/local/SettingsDao.kt` (single row `id = 1`; settings JSON plus raw `legacyJson`) |
-| Model | `data/model/UserSettingsDto.kt`, `data/model/UpdateUserSettingsRequest.kt`; backup schema: [BAK-001](../backup/spec.md#bak-001--backup-document-v1) |
+| Model | `data/model/UserSettings.kt`, `data/model/UserSettingsUpdate.kt`; backup schema: [BAK-001](../backup/spec.md#bak-001--backup-document-v1) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/settings/` — `SettingsScreen.kt`, `SettingsViewModel.kt`, `SettingsFormState.kt`, `WorkPresetsSection.kt`, `WorkScheduleCustomizeSheet.kt`, `WorkScheduleSummaryRow.kt`, `WorkingDaysSelector.kt`, `MissedNotificationDefaultSelector.kt`, `SettingsInfoIcon.kt`, `SettingsSectionTitleRow.kt` |
 
 ## Test coverage
@@ -152,3 +152,4 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — SET-001, SET-002, SET-007 and SET-008 rewritten for the single local settings row; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — SET-003..007 and SET-009 reworded for local saves (no server responses or contract fixture); DTOs live in `data/model/`; server interface row removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: Internal model classes renamed (`UserSettingsDto` → `UserSettings`, `UpdateUserSettingsRequest` → `UserSettingsUpdate`), no behaviour change.

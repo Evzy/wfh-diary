@@ -33,7 +33,7 @@ Not yet implemented beyond the tests listed above. Use `./gradlew :app:testDebug
 | Subject | Cases |
 | --- | --- |
 | `MonthGridViewModel` | load month, tap day emits edit state, summary from `DiaryStore` [DAY-010, DAY-011, FY-010] |
-| `DayEditViewModel` | save builds correct `UpsertDayEntryRequest` [DAY-011] |
+| `DayEditViewModel` | save builds correct `DayEntryUpdate` [DAY-011] |
 | `SettingsViewModel` | defaults load/save [SET-008] |
 
 ### Notifications

@@ -30,7 +30,7 @@ FY `N` runs from 1 July `N` to 30 June `N+1` inclusive, and iterating its days i
 
 - **Given** a user who logged 08:00–17:00 with a 1-hour break at Home on the first day of the FY
 - **When** the app asks `DiaryStore` for that FY's summary
-- **Then** the `DiarySummaryDto` has `homeHours` of 8 or more and `claimableWfhAmount` greater than 0
+- **Then** the `DiarySummary` has `homeHours` of 8 or more and `claimableWfhAmount` greater than 0
 
 ### FY-004 — Hours by location
 
@@ -93,7 +93,7 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 | Kind | Location |
 | --- | --- |
 | Summary calculation | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryRules.kt` (`summarize`), `data/store/DiaryStore.kt` (`getSummary`) |
-| Model | `data/model/DiarySummaryDto.kt` |
+| Model | `data/model/DiarySummary.kt` |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/` — `ui/month/FySummaryGrid.kt`, `ui/month/MonthGridViewModel.kt`, `util/FinancialYearHelper.kt`, `util/WorkingDaysMask.kt` |
 
 ## Test coverage
@@ -124,4 +124,4 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — FY-003 now describes the on-device calculator; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — server, contract-fixture and .NET test references removed (FY-002 day iteration now untested); DTO lives in `data/model/` ([change](../../changes/2026-10-27-on-device-only/design.md)).
-- 2026-10-27: FY-002 coverage added (`FinancialYearHelperTest.fy_day_iteration_includes_both_endpoints`).
+- 2026-10-27: FY-002 coverage added (`FinancialYearHelperTest.fy_day_iteration_includes_both_endpoints`). Internal model classes renamed (`DiarySummaryDto` → `DiarySummary`), no behaviour change.
