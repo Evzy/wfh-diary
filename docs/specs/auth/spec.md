@@ -114,15 +114,15 @@ Signing out from Settings signs out of Firebase (when configured) and clears any
 | --- | --- |
 | AUTH-001 | `AuthGateTests.Settings_with_debug_user_header_succeeds_in_dev_mode` |
 | AUTH-002 | `AuthGateTests.Settings_without_auth_returns_unauthorized_in_dev_mode` |
-| AUTH-003 | untested |
-| AUTH-004 | untested |
+| AUTH-003 | `untested` |
+| AUTH-004 | `untested` |
 | AUTH-005 | `AuthGateTests.Health_does_not_require_auth` (dev mode only) |
-| AUTH-006 | untested |
-| AUTH-007 | untested |
-| AUTH-008 | untested |
-| AUTH-009 | untested |
-| AUTH-010 | untested |
-| AUTH-011 | untested |
+| AUTH-006 | `untested` |
+| AUTH-007 | `untested` |
+| AUTH-008 | `untested` |
+| AUTH-009 | `untested` |
+| AUTH-010 | `untested` |
+| AUTH-011 | `untested` |
 
 ## Known gaps
 
@@ -137,3 +137,4 @@ Signing out from Settings signs out of Firebase (when configured) and clears any
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

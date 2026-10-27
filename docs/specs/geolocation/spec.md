@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-On Android, the user can save a Home geofence and an Office geofence (latitude, longitude and radius). When the missed-notification default is `Geolocation`, the app checks the phone's location once, at the moment a default is due. A match applies the Home or Office defaults; no match applies an "away" fallback. Each place can also be set to skip the morning reminder and log automatically. The reminder and missed-default pipeline is specified in `docs/specs/notifications/spec.md`. Storage of these settings fields is specified in `docs/specs/settings/spec.md`. Template geofence fields are specified in `docs/specs/work-templates/spec.md`. Out of scope: continuous background geofence monitoring, logging on arrival, and matching against template geofences (see Known gaps).
+On Android, the user can save a Home geofence and an Office geofence (latitude, longitude and radius). When the missed-notification default is `Geolocation`, the app checks the phone's location once, at the moment a default is due. A match applies the Home or Office defaults; no match applies an "away" fallback. Each place can also be set to skip the morning reminder and log automatically. The reminder and missed-default pipeline is specified in [notifications](../notifications/spec.md). Storage of these settings fields is specified in [settings](../settings/spec.md). Template geofence fields are specified in [work-templates](../work-templates/spec.md). Out of scope: continuous background geofence monitoring, logging on arrival, and matching against template geofences (see Known gaps).
 
 ## Requirements
 
@@ -50,11 +50,11 @@ The map picker lets the user place a geofence centre and choose a radius between
 
 ### GEO-006 — Clear geofence
 
-Clearing Home or Office removes all three of that geofence's fields on the server.
+Tapping Clear for Home or Office asks the server to remove that geofence. Server semantics: [SET-006](../settings/spec.md#set-006--geofence-set-requires-all-three-fields-clear-wins).
 
 - **Given** a configured home or office geofence
 - **When** the user taps Clear and the draft is saved
-- **Then** the request sends `clearHomeGeofence` or `clearOfficeGeofence` as `true` and the API sets that latitude, longitude and radius to null. A request that sets only some of the three fields, without clear, leaves the stored geofence unchanged
+- **Then** the request sends `clearHomeGeofence` or `clearOfficeGeofence` as `true`. The app only treats a geofence as set when latitude, longitude and radius are all present (GEO-002), so it never relies on a partial set
 
 ### GEO-007 — Geolocation settings auto-save
 
@@ -70,7 +70,7 @@ When the missed default is `Geolocation`, a matching place applies its defaults;
 
 - **Given** `missedNotificationDefault` is `Geolocation` and the day still needs an entry (NOTIF-007)
 - **When** the missed-default job runs
-- **Then** matching runs only if at least one geofence is fully configured and a location is available (GEO-003). A match on `HOME` or `OFFICE` applies that place's default times, and the auto-log notification names the place. With no match (including no configured geofence or no location), `missedNotificationAwayDefault` (`Home`, `Office` or `Leave`; the API stores `Office` for any other value) is applied, and the notification names the fallback. On failure, Retry re-runs the whole missed-default job, including the location check
+- **Then** matching runs only if at least one geofence is fully configured and a location is available (GEO-003). A match on `HOME` or `OFFICE` applies that place's default times, and the auto-log notification names the place. With no match (including no configured geofence or no location), `missedNotificationAwayDefault` (stored as described in [SET-004](../settings/spec.md#set-004--mode-fields-fall-back-on-unknown-values)) is applied, and the notification names the fallback. On failure, Retry re-runs the whole missed-default job, including the location check
 
 ### GEO-009 — Skip morning reminder at a known place
 
@@ -105,7 +105,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | GEO-003 | `untested` |
 | GEO-004 | `untested` |
 | GEO-005 | `untested` |
-| GEO-006 | `SettingsFlowTests.Settings_home_geofence_set_and_clear` (API; office and partial-field cases untested) |
+| GEO-006 | `untested` (server clear is covered under SET-006) |
 | GEO-007 | `untested` |
 | GEO-008 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker` (retry policy only; worker untested) |
 | GEO-009 | `DayLogNotificationUpdaterActionTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
@@ -123,3 +123,4 @@ The geolocation sheet asks for foreground location first, then background locati
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

@@ -112,15 +112,15 @@ When updates are configured, Settings offers **Check for update** and, once a re
 | --- | --- |
 | OTA-001 | `HealthTests.Health_returns_ok`, `AuthGateTests.Health_does_not_require_auth` |
 | OTA-002 | `VersionEndpointTests.Version_returns_name_and_code` |
-| OTA-003 | untested |
-| OTA-004 | untested |
-| OTA-005 | untested |
-| OTA-006 | untested |
-| OTA-007 | untested |
-| OTA-008 | untested |
-| OTA-009 | untested |
-| OTA-010 | untested |
-| OTA-011 | untested |
+| OTA-003 | `untested` |
+| OTA-004 | `untested` |
+| OTA-005 | `untested` |
+| OTA-006 | `untested` |
+| OTA-007 | `untested` |
+| OTA-008 | `untested` |
+| OTA-009 | `untested` |
+| OTA-010 | `untested` |
+| OTA-011 | `untested` |
 
 ## Known gaps
 
@@ -137,3 +137,4 @@ When updates are configured, Settings offers **Check for update** and, once a re
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

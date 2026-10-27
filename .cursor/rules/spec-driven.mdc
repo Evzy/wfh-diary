@@ -10,8 +10,9 @@ This repo is spec-driven. Read `AGENTS.md` and `docs/CONSTITUTION.md` when start
 Before changing behaviour in `services/`, `apps/`, or `packages/`:
 
 1. Find the affected capability spec(s) via `docs/specs/README.md` and read them.
-2. If the change adds, modifies, or removes specified behaviour, it needs a change folder in `docs/changes/YYYY-MM-DD-<slug>/` with `design.md` status `approved`. If none exists, propose one (status `proposed`) and get user approval before implementing.
+2. If the change adds, modifies, or removes specified behaviour, it needs a change folder in `docs/changes/YYYY-MM-DD-<slug>/` whose `design.md` status is `approved` or `in-progress` before implementation may proceed. If none exists, propose one (status `proposed`) and get user approval before implementing. Set the status to `in-progress` when starting the plan.
 3. Refactors, dependency bumps, and fixes that do not change specified behaviour skip the change folder.
+4. A bug fix that exposes a spec gap updates the capability spec directly (Revision log entry, no change folder).
 
 After implementing:
 

@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Reusable work-day presets via the per-user **work templates** API (`/v1/work-templates`: label, times, break, location, description, default flag and optional geofence). Out of scope: the built-in Home and Office presets, which are default-schedule fields on user settings (see [settings](../settings/spec.md)), geofence capture and matching (see `geolocation` spec), and applying presets from notifications (see `notifications` spec). The Android app currently has no UI that reads or writes `/v1/work-templates` (see Known gaps).
+Reusable work-day presets via the per-user **work templates** API (`/v1/work-templates`: label, times, break, location, description, default flag and optional geofence). Out of scope: the built-in Home and Office presets, which are default-schedule fields on user settings (see [settings](../settings/spec.md)), geofence capture and matching (see [geolocation](../geolocation/spec.md)), and the built-in Home/Office presets applied from notifications (NOTIF-005 in [notifications](../notifications/spec.md)). Template quick actions from notifications are not implemented (see Known gaps). The Android app currently has no UI that reads or writes `/v1/work-templates` (see Known gaps).
 
 ## Requirements
 
@@ -86,13 +86,14 @@ The `work-template.json` contract fixture deserializes into both the API and And
 | Requirement | Tests |
 | --- | --- |
 | TPL-001 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (ordering and per-user scoping untested) |
-| TPL-002 | untested |
+| TPL-002 | `untested` |
 | TPL-003 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (default sort order and blank-to-null untested) |
-| TPL-004 | untested |
-| TPL-005 | untested |
-| TPL-006 | untested |
+| TPL-004 | `untested` |
+| TPL-005 | `untested` |
+| TPL-006 | `untested` |
 | TPL-007 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (`404` path untested) |
 | TPL-008 | `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.workTemplate_fixture_deserializes` |
+
 ## Known gaps
 
 - **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the template-management strings (e.g. `work_templates_manage`, `work_templates_add`) are unused. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 describe Settings → **Manage templates** and missed-notification geofence → apply template as shipped; neither was found in the current code.
@@ -109,3 +110,4 @@ The `work-template.json` contract fixture deserializes into both the API and And
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

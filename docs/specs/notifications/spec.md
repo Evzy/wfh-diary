@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-On Android, the app shows a morning reminder on working days. The reminder has quick actions that log today as Home, Office or Leave. If the reminder is ignored, a configured "missed notification" default is applied automatically. Each background log attempt reports its result in a notification: pending, success, or failure with Retry. Geofence matching, the Geolocation missed default and skipping the reminder at a known place are specified in `docs/specs/geolocation/spec.md`. Storage of the settings fields (notification time, working-days mask, missed default, apply-at time) is specified in `docs/specs/settings/spec.md`. Out of scope: server push (FCM), and template quick actions on the reminder (see Known gaps).
+On Android, the app shows a morning reminder on working days. The reminder has quick actions that log today as Home, Office or Leave. If the reminder is ignored, a configured "missed notification" default is applied automatically. Each background log attempt reports its result in a notification: pending, success, or failure with Retry. Geofence matching, the Geolocation missed default and skipping the reminder at a known place are specified in [geolocation](../geolocation/spec.md). Storage of the settings fields (notification time, working-days mask, missed default, apply-at time) is specified in [settings](../settings/spec.md). Out of scope: server push (FCM), and template quick actions on the reminder (see Known gaps).
 
 ## Requirements
 
@@ -138,9 +138,10 @@ Settings can show the morning reminder immediately so the user can check that no
 - Suspected unintended: if `MissedNotificationWorker` can't load settings, its failure notification always names `Home` as the action, whatever the configured default is.
 - Suspected unintended: missed-default scheduling depends on notification permission (NOTIF-011), so users who block notifications never get automatic logging.
 - Suspected unintended: a manual quick action (NOTIF-005) upserts the day even if it already has an entry, overwriting existing times. The missed default checks for this case; the quick action does not.
-- Suspected unintended: when a retried automatic failure (ID 1002) re-runs the original action and succeeds, the success notification goes to ID 1001. The ongoing pending notification in ID 1002 is never cleared.
+- Suspected unintended: when a retried automatic failure (ID 1002) re-runs the original action and succeeds, the success notification goes to ID 1001. The ongoing pending notification in ID 1002 is never cleared. The same happens when a retry re-runs the missed-default job and it becomes a no-op because the default is now `None`, the date is on leave, or the day is already logged (`MissedNotificationWorker.kt:33-35`, `44-46`, `55-57`): the worker returns without posting, leaving the ongoing pending notification in ID 1002.
 - `NotificationChannels.ACTION_ADD_TIME` is defined but never used (Add time opens the quick-add activity directly). `NotificationActionWorker.SOURCE_AUTO_APPLY` is never enqueued by production code.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

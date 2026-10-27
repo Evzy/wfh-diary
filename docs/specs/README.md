@@ -23,3 +23,4 @@ Copy [`_template.md`](_template.md). Rules:
 - Specs describe implemented behaviour. Aspirations and suspected bugs go in **Known gaps**.
 - Every requirement appears in **Test coverage**, even if `untested`.
 - Every edit adds a **Revision log** line.
+- Update **Last updated** on every edit.

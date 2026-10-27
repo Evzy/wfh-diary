@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Per-user preferences stored by the API and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions, shown in the **Home & office presets** section. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see `geolocation` spec), the work-template API (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see `notifications` spec), XLSX export and OTA updates, which share the Settings screen but have their own specs.
+Per-user preferences stored by the API and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions, shown in the **Home & office presets** section. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see [geolocation](../geolocation/spec.md)), the work-template API (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see [notifications](../notifications/spec.md)), XLSX export ([export-xlsx](../export-xlsx/spec.md)) and OTA updates ([ota-updates](../ota-updates/spec.md)), which share the Settings screen but have their own specs.
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Home and Office default descriptions are trimmed, and a whitespace-only value cl
 
 ### SET-006 — Geofence set requires all three fields; clear wins
 
-A home or office geofence is only updated when latitude, longitude and radius are all supplied, and `clearHomeGeofence` / `clearOfficeGeofence` set to `true` nulls all three, taking precedence over supplied values.
+A home or office geofence is only updated when latitude, longitude and radius are all supplied, and `clearHomeGeofence` / `clearOfficeGeofence` set to `true` nulls all three, taking precedence over supplied values. This requirement owns the server-side geofence semantics; the app's Clear action is [GEO-006](../geolocation/spec.md#geo-006--clear-geofence).
 
 - **Given** existing settings
 - **When** the user sends all three geofence fields, or sends the clear flag
@@ -129,17 +129,17 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 | --- | --- |
 | SET-001 | `SettingsFlowTests.Settings_default_missed_notification_values` (checks missed default, apply-at and mask only) |
 | SET-002 | `SettingsFlowTests.Settings_update_missed_notification_persists` |
-| SET-003 | untested |
+| SET-003 | `untested` |
 | SET-004 | `SettingsFlowTests.Settings_invalid_missed_notification_default_falls_back_to_none` (away-default fallback untested) |
-| SET-005 | untested |
+| SET-005 | `untested` |
 | SET-006 | `SettingsFlowTests.Settings_home_geofence_set_and_clear` (partial-set and office cases untested) |
 | SET-007 | `ApiContractTests.Live_settings_response_matches_contract_properties` (hard-coded property list, not the fixture), `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.userSettings_fixture_deserializes` |
-| SET-008 | untested |
-| SET-009 | untested |
-| SET-010 | untested |
-| SET-011 | untested |
-| SET-012 | untested |
-| SET-013 | untested |
+| SET-008 | `untested` |
+| SET-009 | `untested` |
+| SET-010 | `untested` |
+| SET-011 | `untested` |
+| SET-012 | `untested` |
+| SET-013 | `untested` |
 
 ## Known gaps
 
@@ -151,3 +151,4 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

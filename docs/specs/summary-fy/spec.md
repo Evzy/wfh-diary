@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Defines the Australian financial year (1 July – 30 June) used throughout the app, the per-FY summary of logged hours (total, Home, Office, day counts, claimable WFH amount at the fixed rate, and a consistency check), how the Android app shows that summary under the month grid, and the working-days bitmask used to decide which weekdays count as working days. Out of scope: how individual day hours are entered or computed ([day-entries](../day-entries/spec.md)), how the mask drives notifications (notifications spec), and the XLSX export's own summary formulas.
+Defines the Australian financial year (1 July – 30 June) used throughout the app, the per-FY summary of logged hours (total, Home, Office, day counts, claimable WFH amount at the fixed rate, and a consistency check), how the Android app shows that summary under the month grid, and the working-days bitmask used to decide which weekdays count as working days. Out of scope: how individual day hours are entered or computed ([day-entries](../day-entries/spec.md)), how the mask drives notifications ([notifications](../notifications/spec.md)), and the XLSX export's own summary formulas ([export-xlsx](../export-xlsx/spec.md)).
 
 ## Requirements
 
@@ -123,3 +123,4 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

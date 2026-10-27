@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Lets a user schedule leave as a date range (with an optional note), which marks the covered diary days as `LEAVE` so they are excluded from work hours, and later remove it again. Covers the leave API, the Android **Schedule leave** sheet, the month-grid leave badge and removing leave from the day edit sheet. Out of scope: the morning-notification **Leave** action and the missed-notification worker skipping leave days (see `notifications` spec), and how leave days are counted in the FY summary (see `summary-fy` spec).
+Lets a user schedule leave as a date range (with an optional note), which marks the covered diary days as `LEAVE` so they are excluded from work hours, and later remove it again. Covers the leave API, the Android **Schedule leave** sheet, the month-grid leave badge and removing leave from the day edit sheet. Out of scope: the morning-notification **Leave** action and the missed-notification worker skipping leave days (see [notifications](../notifications/spec.md)), and how leave days are counted in the FY summary (see [summary-fy](../summary-fy/spec.md)).
 
 ## Requirements
 
@@ -110,14 +110,14 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 | Requirement | Tests |
 | --- | --- |
 | LEAVE-001 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them`; contract: `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.leavePeriod_fixture_deserializes` |
-| LEAVE-002 | untested |
-| LEAVE-003 | untested |
+| LEAVE-002 | `untested` |
+| LEAVE-003 | `untested` |
 | LEAVE-004 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (FY-boundary skip untested) |
 | LEAVE-005 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (ordering and per-user scoping untested) |
 | LEAVE-006 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` |
 | LEAVE-007 | `LeaveFlowTests.Delete_leave_preserves_days_covered_by_another_period` |
 | LEAVE-008 | `LeaveFlowTests.Delete_leave_unknown_id_returns_not_found` (foreign-owner case untested) |
-| LEAVE-009 | untested |
+| LEAVE-009 | `untested` |
 | LEAVE-010 | `LeavePeriodHelperTest.isOnLeave_true_for_date_in_range`, `LeavePeriodHelperTest.isOnLeave_false_outside_range`, `LeavePeriodHelperTest.isOnLeave_includes_start_and_end_dates` (helper only; badge rendering untested) |
 | LEAVE-011 | `LeavePeriodHelperTest.coveringPeriod_returns_matching_period`, `LeavePeriodHelperTest.coveringPeriod_null_when_not_on_leave` (helper only; ViewModel flow untested) |
 
@@ -137,3 +137,4 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

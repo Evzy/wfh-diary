@@ -18,6 +18,6 @@ Every behaviour change gets a folder `docs/changes/YYYY-MM-DD-<slug>/`. Copy [`_
 
 In `design.md`, list changes per spec:
 
-- **ADDED** `DAY-012` — <statement + Given/When/Then>
-- **MODIFIED** `DAY-004` — <new statement; note what changed>
-- **REMOVED** `DAY-007` — <reason>
+- **ADDED** `DAY-012` — `<statement + Given/When/Then>`
+- **MODIFIED** `DAY-004` — `<new statement; note what changed>`
+- **REMOVED** `DAY-007` — `<reason>`

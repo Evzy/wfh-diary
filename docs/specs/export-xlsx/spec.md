@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Produces an MGIS-style "Working from Home Diary" spreadsheet for one Australian financial year (1 July – 30 June) from the caller's day entries, and lets the Android user pick a financial year in Settings, download the workbook, and share it via the system share sheet. The workbook contains one row per calendar day, an Excel formula per worked day, and a formula-driven summary block (total, home and office hours, claimable WFH amount at $0.67/hour, day counts). Out of scope: editing or importing spreadsheets, other file formats (CSV/PDF), server-side storage of exports, and the in-app FY summary (see the FY summary spec).
+Produces an MGIS-style "Working from Home Diary" spreadsheet for one Australian financial year (1 July – 30 June) from the caller's day entries, and lets the Android user pick a financial year in Settings, download the workbook, and share it via the system share sheet. The workbook contains one row per calendar day, an Excel formula per worked day, and a formula-driven summary block (total, home and office hours, claimable WFH amount at $0.67/hour, day counts). Out of scope: editing or importing spreadsheets, other file formats (CSV/PDF), server-side storage of exports, and the in-app FY summary (see [summary-fy](../summary-fy/spec.md)).
 
 ## Requirements
 
@@ -136,3 +136,4 @@ Tapping "Export financial year (XLSX)" downloads `GET /v1/diaries/{fy}/export.xl
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).

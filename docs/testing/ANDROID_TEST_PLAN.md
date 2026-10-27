@@ -6,7 +6,7 @@ Companion: [`TEST_STRATEGY.md`](TEST_STRATEGY.md) · **Backlog:** [`../TODO.md`]
 
 ## Phase 1 (current)
 
-No JVM tests yet. Manual smoke: sign-in, month grid, edit day, export download. [AUTH-010, DAY-008, DAY-011, XLSX-011]
+JVM tests for pure helpers exist under `apps/android/app/src/test` (e.g. `GeofenceHelperTest`, `ApiErrorClassifierTest`); see each spec's Test coverage. Manual smoke: sign-in, month grid, edit day, export download. [AUTH-010, DAY-008, DAY-011, XLSX-011]
 
 ## Phase 2 — strong unit testing (deferred)
 
@@ -35,7 +35,7 @@ Implement after Compose UI + sync ship. Use `./gradlew :app:testDebugUnitTest`.
 | --- | --- |
 | Home action | applies default home times + location Home [NOTIF-005] |
 | Office action | applies default office times [NOTIF-005] |
-| Leave range | suppresses WorkManager until end date [NOTIF-003] |
+| Leave range | reminder worker still runs but shows no reminder through the end date [NOTIF-003] |
 | Skip when on leave | no notification fired [NOTIF-003, NOTIF-007] |
 
 ### Repository (fake Ktor)
@@ -48,6 +48,6 @@ Implement after Compose UI + sync ship. Use `./gradlew :app:testDebugUnitTest`.
 
 | Subject | Cases |
 | --- | --- |
-| Geofence check | inside radius → Office; outside → Home defaults [GEO-001, GEO-002, GEO-008] |
+| Geofence check | inside radius → that place's defaults (Office wins if both); no match → away fallback (default Office) [GEO-001, GEO-002, GEO-008] |
 
 Suggested package: `dev.wfhdiary.app` under `app/src/test/java/...` mirroring production package layout.
