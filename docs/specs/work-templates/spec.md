@@ -96,7 +96,7 @@ The `work-template.json` contract fixture deserializes into both the API and And
 
 ## Known gaps
 
-- **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the template-management strings (e.g. `work_templates_manage`, `work_templates_add`) are unused. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 describe Settings → **Manage templates** and missed-notification geofence → apply template as shipped; neither was found in the current code.
+- **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the template-management strings (e.g. `work_templates_manage`, `work_templates_add`) are unused. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 previously listed Settings → **Manage templates** and missed-notification geofence → apply template as shipped (now annotated as not implemented); neither was found in the current code.
 - Backlog from [TODO § C](../../TODO.md#c-work-scenario-templates--partial):
   1. Day edit sheet — "Apply template…" dropdown/chips.
   2. Morning notification — optional template quick actions.
