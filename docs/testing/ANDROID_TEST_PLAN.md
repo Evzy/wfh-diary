@@ -54,17 +54,20 @@ Suggested package: `dev.wfhdiary.app` under `app/src/test/java/...` mirroring pr
 
 ## Backup & restore (on-device)
 
-Manual checks for the [on-device-only change](../changes/2026-10-27-on-device-only/design.md) phase-1 gate. Results are recorded in that change's [`tasks.md`](../changes/2026-10-27-on-device-only/tasks.md#phase-1-gate-manual-on-phone). Automated coverage is listed in each spec's Test coverage table ([`backup`](../specs/backup/spec.md)). Phase 2 may only be planned once steps 2–4 pass.
+Manual checks for the [on-device-only change](../changes/2026-10-27-on-device-only/design.md) phase-1 gate. Results are recorded in that change's [`tasks.md`](../changes/2026-10-27-on-device-only/tasks.md#phase-1-gate-manual-on-phone). Automated coverage is listed in each spec's Test coverage table ([`backup`](../specs/backup/spec.md)). Phase 2 may only be planned once steps 2–5 pass. Do steps 2 and 3 before logging any day on the new build (the import replaces everything on the phone; notification actions count as logging).
 
-1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected.
+1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected. Restore and import are disabled until a folder is chosen.
 2. Settings → Backup & restore → **Choose backup folder**; pick a folder that syncs off the phone (e.g. Google Drive-synced or Documents). A `wfh-diary-backup-YYYY-MM-DD.json` file appears immediately. [BAK-002, BAK-005]
-3. **Import from old server** → confirm → confirm the replace summary. The month grid shows historic days for several FYs, Settings shows your name and geofences, and a backup file is updated. [BAK-011, BAK-009]
-4. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. [XLSX-003..XLSX-009]
-5. Edit a day; within about 10–15 minutes the backup file's modified time changes. [BAK-003]
-6. Clear a field in the edit sheet (e.g. remove the description) and save; it stays cleared after reopening. [DAY-010]
-7. **Share backup…** opens the share sheet with a `.json` file. [BAK-007]
-8. **Restore from file…** with the backup → confirm. Data is unchanged and a `wfh-diary-pre-restore-*.json` file exists. [BAK-009]
-9. Restore a non-backup file (any other JSON): it is refused with a message. [BAK-008]
-10. Morning notification and "Home"/"Office" actions still log days. [NOTIF-005]
-11. Revoke the folder (move or delete it) and tap **Back up now**. A failure message shows and the month-grid banner appears. [BAK-006]
-12. Leave the phone for a day with a folder set and no edits; the daily job writes a backup. [BAK-004]
+3. **Import from old server** → confirm → the replace summary shows the current phone counts (0 days, 0 leave periods) → confirm. The month grid shows historic days for several FYs, Settings shows your name and geofences, and the result message says the backup was written. [BAK-011, BAK-009]
+4. Drive folder overwrite check: after another backup the same day (e.g. **Back up now**), the day's file in the Drive folder has a new size or modified time, and the file opens as valid JSON. [BAK-005]
+5. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. [XLSX-003..XLSX-009]
+6. Edit a day; within about 10–15 minutes the backup file's modified time changes. [BAK-003]
+7. Leave the phone for more than 24 hours with a folder set and no edits; the daily job writes a new day's backup. [BAK-004]
+8. Clear a field in the edit sheet (e.g. remove the description) and save; it stays cleared after reopening. [DAY-010]
+9. **Share backup…** opens the share sheet with a `.json` file. [BAK-007]
+10. **Restore from file…** with the backup → the summary shows current phone counts → confirm. Data is unchanged, a `wfh-diary-pre-restore-*.json` file exists in the folder, and the message says a backup was written. [BAK-009]
+11. Restore a non-backup file (any other JSON): it is refused with a message. [BAK-008]
+12. Morning notification and "Home"/"Office" actions still log days. [NOTIF-005]
+13. Airplane mode notification action: turn on airplane mode, tap "Home" or "Office" on the morning notification; the day is logged and a success notification shows. [NOTIF-005]
+14. Revoke the folder (move or delete it) and tap **Back up now**. A failure message shows and the month-grid banner appears. [BAK-006]
+15. Restore the post-import backup on a fresh install: uninstall (or clear app data), install, choose the same folder, **Restore from file…** with the backup written after step 3. Days, leave periods and settings match. [BAK-009, BAK-010]

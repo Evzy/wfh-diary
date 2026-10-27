@@ -82,17 +82,19 @@ Device-local state that is **not** part of backups (backup folder URI, last back
 
 ### Restore
 
+0. Restore (and import) are disabled until a backup folder is chosen.
 1. Pick a file (`ACTION_OPEN_DOCUMENT`).
 2. Parse and validate: format/version; every date `yyyy-MM-dd`; times `HH:mm`; `breakHours` ≥ 0; leave `startDate ≤ endDate` (swap if reversed, matching LEAVE-003).
-3. Show summary (days, leave periods, settings present, `exportedAt`) and confirm.
-4. Write a safety backup of current data (to the folder if set, else app cache + share prompt offered).
+3. Show summary (days, leave periods, settings present, `exportedAt`, and the day and leave-period counts currently on the phone that will be replaced) and confirm.
+4. Write a safety backup of current data to the backup folder. If that write fails, refuse the restore with the reason; there is no cache fallback.
 5. Replace all tables in one Room transaction. Reschedule notifications.
+6. Run "Back up now" and report whether that backup was written.
 
 ### One-time import (phase 1 only)
 
 - Settings → **Import from old server** (visible only in phase-1 builds).
-- Uses the existing Ktor client/auth. Fetches settings, leave periods, work templates, and `GET /v1/diaries/{fy}/days` for FY 2020 through the current FY, keeping only days with any non-null field.
-- Builds an in-memory backup v1 document and runs it through Restore steps 2–5 (with summary/confirm). Then immediately runs "Back up now".
+- Uses the existing Ktor client/auth. Fetches settings, leave periods, work templates, and `GET /v1/diaries/{fy}/days` for FY 2020 through the next FY (current + 1, so leave already booked after 1 July is kept), keeping only days with any non-null field.
+- Builds an in-memory backup v1 document and runs it through Restore steps 2–6 (with summary/confirm), so the follow-up "Back up now" result is reported.
 - Any HTTP failure aborts with nothing written; the user can retry.
 
 ### Rollout
@@ -117,9 +119,9 @@ Device-local state that is **not** part of backups (backup folder URI, last back
 - **ADDED** `BAK-006` — Backup status and warning. Given backup state, then Settings shows last success/error, and the month grid shows a warning when no folder is set, the last attempt failed, or the last success is older than 3 days.
 - **ADDED** `BAK-007` — Manual backup and share. Given Settings → Backup, when "Back up now" or "Share backup…" is tapped, then a backup is written to the folder or shared via the share sheet.
 - **ADDED** `BAK-008` — Restore validation. Given a selected file, when it has the wrong `format`, an unsupported `version`, or invalid dates/times/break hours, then restore is refused with a message and no data changes.
-- **ADDED** `BAK-009` — Restore replaces all data safely. Given a valid file, when the user confirms the summary, then a safety backup of current data is written first and all tables are replaced in one transaction; notifications are rescheduled.
+- **ADDED** `BAK-009` — Restore replaces all data safely. Given a valid file, when the user confirms the summary, then a safety backup of current data is written to the backup folder first and all tables are replaced in one transaction; notifications are rescheduled. Restore requires a chosen backup folder and is refused if the safety backup cannot be written.
 - **ADDED** `BAK-010` — Legacy passthrough. Given a backup with `legacy` content, when restored and later backed up, then `legacy` is preserved unchanged.
-- **ADDED** `BAK-011` — One-time server import (phase 1 only; REMOVED in phase 2). Given the old API is reachable, when "Import from old server" is confirmed, then settings, leave periods, templates (into `legacy`), and non-empty days for FY 2020..current are imported via the restore path and a backup is written; any fetch failure writes nothing.
+- **ADDED** `BAK-011` — One-time server import (phase 1 only; REMOVED in phase 2). Given the old API is reachable, when "Import from old server" is confirmed, then settings, leave periods, templates (into `legacy`), and non-empty days for FY 2020..current + 1 are imported via the restore path and a backup is written; any fetch failure writes nothing.
 
 ### Modified
 

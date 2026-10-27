@@ -110,7 +110,7 @@ Settings can show the morning reminder immediately so the user can check that no
 | --- | --- |
 | Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (settings, leave periods and day writes, reached via `WfhDiaryApplication.diaryRepository`) |
 | DTO / contract | `packages/shared/contracts/user-settings.json` (`notificationTime`, `notificationWorkingDaysMask`, `missedNotificationDefault`, `missedNotificationApplyAt`; shape reused by `data/remote/UserSettingsDto.kt`) |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogRetryPolicy`, `DayLogNotificationUpdater`, `ApiErrorClassifier`, `NotificationPermissions`, `FirebaseTokenHelper`) |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogRetryPolicy`, `DayLogNotificationUpdater`, `ApiErrorClassifier`, `NotificationPermissions`) |
 
 ## Test coverage
 
@@ -132,9 +132,9 @@ Settings can show the morning reminder immediately so the user can check that no
 ## Known gaps
 
 - Backlog ([`TODO.md`](../../TODO.md) § C): optional work-template quick actions on the morning reminder. Template UI was never implemented, and templates are dropped by the on-device-only change.
-- **Server-era failure handling remains until phase 2.** Writes are now local, so the failure classification and Retry paths (NOTIF-009, NOTIF-010), `ApiErrorClassifier` and `FirebaseTokenHelper.ensureToken` calls in the workers are vestigial. They are deliberately left in place for phase 2, which removes them with the importer and Firebase sign-in.
+- **Server-era failure handling remains until phase 2.** Writes are now local, so the failure classification and Retry paths (NOTIF-009, NOTIF-010) and `ApiErrorClassifier` are vestigial. They are deliberately left in place for phase 2, which removes them with the importer and Firebase sign-in. The workers no longer fetch a Firebase token, so notification actions work offline.
 - Backlog ([`TODO.md`](../../TODO.md) § B): ViewModel and repository tests. No worker, receiver or scheduler code has automated tests; coverage above comes from pure helpers only.
-- Suspected unintended: `MorningReminderWorker` fetches settings without first calling `FirebaseTokenHelper.ensureToken`. If that fetch fails (for example with an expired token), the reminder is still shown using the 08:00 and Mon–Fri fallbacks, but no missed default is scheduled (NOTIF-006 needs settings).
+- Suspected unintended: if `MorningReminderWorker` can't load settings (now a local Room read), the reminder is still shown using the 08:00 and Mon–Fri fallbacks, but no missed default is scheduled (NOTIF-006 needs settings).
 - Suspected unintended: in `MorningReminderWorker`, a failed leave-period fetch is treated as "not on leave" (`getOrDefault(false)`), so the reminder can appear on a leave day.
 - Suspected unintended: if `MissedNotificationWorker` can't load settings, its failure notification always names `Home` as the action, whatever the configured default is.
 - Suspected unintended: missed-default scheduling depends on notification permission (NOTIF-011), so users who block notifications never get automatic logging.
@@ -147,3 +147,4 @@ Settings can show the morning reminder immediately so the user can check that no
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — NOTIF-005 and NOTIF-008 now describe local writes; NOTIF-009/010 kept until phase 2 ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: Workers no longer fetch a Firebase ID token before local writes, so notification actions work offline; `FirebaseTokenHelper` removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
