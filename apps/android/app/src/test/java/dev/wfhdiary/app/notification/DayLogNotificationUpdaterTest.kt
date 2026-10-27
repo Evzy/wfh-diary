@@ -2,10 +2,13 @@ package dev.wfhdiary.app.notification
 
 import android.Manifest
 import android.app.Application
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import dev.wfhdiary.app.util.GeofenceHelper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,7 +44,7 @@ class DayLogNotificationUpdaterTest {
         assertEquals("Open app", posted.actions[0].title.toString())
         assertEquals(
             "Couldn\u2019t log Home. Open the app to log it.",
-            posted.extras.getCharSequence("android.text").toString(),
+            posted.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
     }
 
@@ -56,5 +59,20 @@ class DayLogNotificationUpdaterTest {
 
         val posted = shadowOf(manager).getNotification(DayLogNotificationUpdater.DAY_LOG_RESULT_ID)
         assertEquals(1, posted.actions.size)
+        assertEquals("Open app", posted.actions[0].title.toString())
+        assertEquals(NotificationChannels.AUTO_LOG_RESULT, posted.channelId)
+        assertNull(shadowOf(manager).getNotification(DayLogNotificationUpdater.MORNING_REMINDER_ID))
+    }
+
+    @Test
+    fun actionForPlace_maps_home_and_office() {
+        assertEquals(
+            MissedNotificationDefault.HOME,
+            DayLogNotificationUpdater.actionForPlace(GeofenceHelper.Place.HOME),
+        )
+        assertEquals(
+            MissedNotificationDefault.OFFICE,
+            DayLogNotificationUpdater.actionForPlace(GeofenceHelper.Place.OFFICE),
+        )
     }
 }

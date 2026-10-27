@@ -108,7 +108,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | GEO-006 | `DiaryRulesTest.settings_geofence_requires_all_fields_and_clear_wins` (store rule only; the Clear button flow is untested) |
 | GEO-007 | `untested` |
 | GEO-008 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker` (retry policy only; worker untested) |
-| GEO-009 | `DayLogNotificationUpdaterActionTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
+| GEO-009 | `DayLogNotificationUpdaterTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
 | GEO-010 | `untested` |
 
 ## Known gaps
@@ -127,3 +127,4 @@ The geolocation sheet asks for foreground location first, then background locati
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — GEO-006 now clears the local settings row ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: GEO-009 coverage test moved to DayLogNotificationUpdaterTest (on-device-only phase 2).
