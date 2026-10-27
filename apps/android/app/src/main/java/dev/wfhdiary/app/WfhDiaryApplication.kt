@@ -1,7 +1,12 @@
 package dev.wfhdiary.app
 
 import android.app.Application
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
+import dev.wfhdiary.app.backup.BackupPreferences
+import dev.wfhdiary.app.backup.BackupScheduler
+import dev.wfhdiary.app.backup.BackupService
+import dev.wfhdiary.app.backup.SafBackupFolder
 import dev.wfhdiary.app.data.DiaryDataSource
 import dev.wfhdiary.app.data.auth.FirebaseIdTokenHolder
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
@@ -60,6 +65,17 @@ class WfhDiaryApplication : Application() {
 
     val diaryStore: DiaryStore by lazy { DiaryStore(database) }
 
+    val backupPreferences: BackupPreferences by lazy { BackupPreferences(this) }
+
+    val backupService: BackupService by lazy {
+        BackupService(
+            store = diaryStore,
+            prefs = backupPreferences,
+            appVersion = BuildConfig.VERSION_NAME,
+            openFolder = { uri -> SafBackupFolder(this, Uri.parse(uri)) },
+        )
+    }
+
     val diaryRepository: DiaryDataSource
         get() = diaryStore
 
@@ -94,6 +110,10 @@ class WfhDiaryApplication : Application() {
         }
         database = WfhDiaryDatabase.getInstance(this)
         NotificationChannels.create(this)
+        BackupScheduler.ensureDaily(this)
+        authSyncScope.launch {
+            diaryStore.changes.collect { BackupScheduler.scheduleAfterChange(this@WfhDiaryApplication) }
+        }
         authSyncScope.launch {
             runCatching {
                 val settings = diaryRepository.getSettings()

@@ -213,4 +213,5 @@
     <string name="location_geofence_map_coords">%1$.5f, %2$.5f</string>
     <string name="location_geofence_radius_label">Radius: %1$d m</string>
     <string name="location_geofence_maps_not_configured">Add MAPS_API_KEY to apps/android/local.properties and rebuild to enable the map picker (see docs/FIREBASE_SETUP.md).</string>
+    <string name="backup_share">Share backup…</string>
 </resources>
