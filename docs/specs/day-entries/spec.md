@@ -119,7 +119,7 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 | --- | --- |
 | DAY-001 | `DiaryFlowTests.Upsert_day_and_summary_work` (indirect: uses returned `FyStartDate`); `ApiContractTests.Fixture_deserializes_to_shared_dto`; `ContractDeserializationTest.diary_fixture_deserializes` |
 | DAY-002 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (indirect: asserts 3 days for a 3-day `from`/`to` range) |
-| DAY-003 | `DiaryFlowTests.Upsert_day_and_summary_work`; `TimeHelpersTests.ParseTimeString_valid`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
+| DAY-003 | Partial: `DiaryFlowTests.Upsert_day_and_summary_work` (indirect: only asserts summary values); `TimeHelpersTests.ParseTimeString_valid`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
 | DAY-004 | `untested` |
 | DAY-005 | `ApiContractTests.Live_day_upsert_response_matches_contract_properties`; `ApiContractTests.Fixture_deserializes_to_shared_dto`; `ContractDeserializationTest.dayEntry_fixture_deserializes` |
 | DAY-006 | `TimeHelpersTests.ComputeTotalHours_subtracts_break`; `TimeHelpersTest.computeTotalHours_subtracts_break` |
@@ -134,7 +134,10 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 
 - **Blank fields can't be cleared from Android:** the app's JSON client omits null fields (`encodeDefaults = false`) and the API treats a missing field as "leave unchanged", so clearing start/finish/description in the edit sheet (or quick add) does not clear it on the server. Only Delete clears a day. Suspected unintended.
 - **Invalid times silently clear a field:** a non-null but unparseable `startTime`/`finishTime` (e.g. `"8am"`) is stored as null instead of returning 400. Suspected unintended.
-- **Location is free text:** the API accepts any location string, and quick add uses a free-text field; values like `"Home "` or `"WFH"` are stored but never count as Home/Office in the summary or grid badge.
+- **Location is free text:** the API accepts any location string, and quick add uses a free-text field. Values like `"WFH"` are stored but never count as Home/Office. Untrimmed values like `"Home "` are inconsistent: the grid trims and shows `H`, but the summary does not trim, so they are excluded from WFH totals.
+- **Partial-upsert semantics untested:** no test asserts that omitted fields keep their values, that a blank location becomes null, or that times are echoed back as `HH:mm`.
+- **Culture-sensitive date parsing:** day routes and `from`/`to` filters use `DateOnly.TryParse` (current culture), so non-ISO strings may be accepted despite the "Use yyyy-MM-dd." error message.
+- **Clear-day 404 effectively unreachable:** every FY date row is pre-created with the diary (DAY-001), so `DELETE` on an in-range date always finds a row.
 - **Overnight shifts unsupported:** finish earlier than start yields 0 hours.
 - **`dayName` depends on server culture:** `ToDto` formats `dddd` with the current culture rather than invariant culture.
 - **No negative-path tests** for DAY-004 or 404 on clear; `DiaryService` in-memory tests and Android ViewModel/repository tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).

@@ -116,7 +116,7 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 - **Fixed 67c/hour rate for every FY:** `SummaryCalculator` hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
 - **Banker's rounding:** `Math.Round(home * 0.67, 2)` uses .NET's default midpoint-to-even rounding, not away-from-zero.
 - **API `WorkingDaysMask.IsWorkingDay` mis-maps Sunday:** .NET `DayOfWeek.Sunday` is 0, so `1 << -1` tests bit 31 instead of bit 6 (Android's Sunday bit). The API currently only uses `WorkingDaysMask.Default`, so there is no live impact. Suspected unintended; no API test exists for it.
-- **Location matching is exact:** `Home `/`home ` with whitespace or other labels (e.g. from quick add's free-text field) are excluded from Home/Office totals and cause the logic check to fail.
+- **Location matching is untrimmed:** matching is case-insensitive but does not trim, so `"Home "` with whitespace (or other labels, e.g. from quick add's free-text field) is excluded from Home/Office totals and fails the logic check — even though the Android grid trims and badges it `H`.
 - **Android `eachDay`** has no unit test (API equivalent is tested).
 - **No test** asserts `daysAtHome`/`daysInOffice` (FY-005) or Android summary display/refresh; Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
