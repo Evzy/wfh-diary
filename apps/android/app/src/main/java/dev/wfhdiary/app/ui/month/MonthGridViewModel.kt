@@ -59,6 +59,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             runCatching {
                 repo.getDiary(fyYear)
                 val days = repo.getDays(fyYear, fyStart.format(isoDate), fyEnd.format(isoDate))
+                daysCache.keys.removeAll { it >= fyStart.format(isoDate) && it <= fyEnd.format(isoDate) }
                 days.forEach { daysCache[it.date] = it }
                 val leavePeriods = repo.getLeavePeriods()
                 val summary = repo.getSummary(fyYear)
@@ -164,7 +165,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             val localDate = LocalDate.parse(date, isoDate)
             val fyYear = FinancialYearHelper.currentFyYear(localDate)
             runCatching {
-                val saved = repo.upsertDay(fyYear, date, request)
+                val saved = repo.replaceDay(fyYear, date, request)
                 refreshDayInState(fyYear, saved, date)
             }.onFailure { e ->
                 _uiState.update { it.copy(error = e.message) }
@@ -208,6 +209,25 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
                 summary = summaryByFy[fyYear],
                 error = null,
             )
+        }
+        viewModelScope.launch {
+            val from = yearMonth.atDay(1).format(isoDate)
+            val to = yearMonth.atEndOfMonth().format(isoDate)
+            val monthDays =
+                runCatching {
+                    FinancialYearHelper.fyYearsCovering(yearMonth).flatMap { fy -> repo.getDays(fy, from, to) }
+                }.getOrNull() ?: return@launch
+            daysCache.keys.removeAll { it in from..to }
+            monthDays.forEach { daysCache[it.date] = it }
+            val summary = runCatching { repo.getSummary(fyYear) }.getOrNull()
+            if (summary != null) summaryByFy[fyYear] = summary
+            _uiState.update { state ->
+                if (state.yearMonth == yearMonth) {
+                    state.copy(days = daysForMonth(yearMonth), summary = summaryByFy[fyYear] ?: state.summary)
+                } else {
+                    state
+                }
+            }
         }
     }
 

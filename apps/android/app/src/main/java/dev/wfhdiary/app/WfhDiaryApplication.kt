@@ -2,9 +2,11 @@ package dev.wfhdiary.app
 
 import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
+import dev.wfhdiary.app.data.DiaryDataSource
 import dev.wfhdiary.app.data.auth.FirebaseIdTokenHolder
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
 import dev.wfhdiary.app.data.remote.DiaryRepository
+import dev.wfhdiary.app.data.store.DiaryStore
 import dev.wfhdiary.app.notification.NotificationChannels
 import dev.wfhdiary.app.notification.NotificationScheduler
 import io.ktor.client.HttpClient
@@ -56,7 +58,13 @@ class WfhDiaryApplication : Application() {
         }
     }
 
-    val diaryRepository: DiaryRepository by lazy {
+    val diaryStore: DiaryStore by lazy { DiaryStore(database) }
+
+    val diaryRepository: DiaryDataSource
+        get() = diaryStore
+
+    /** Old server API; used only by the one-time importer in phase 1. */
+    val remoteDiaryRepository: DiaryRepository by lazy {
         DiaryRepository(httpClient) { resolveApiBaseUrl() }
     }
 
