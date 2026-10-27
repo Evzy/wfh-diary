@@ -101,7 +101,7 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 | Requirement | Tests |
 | --- | --- |
 | FY-001 | `FinancialYearHelperTest.currentFyYear_june_uses_prior_calendar_year`; `FinancialYearHelperTest.currentFyYear_july_uses_current_calendar_year` |
-| FY-002 | `FinancialYearHelperTest.fyRange_spans_july_to_june` (day iteration untested) |
+| FY-002 | `FinancialYearHelperTest.fyRange_spans_july_to_june`; `FinancialYearHelperTest.fy_day_iteration_includes_both_endpoints` |
 | FY-003 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryStoreTest.summary_uses_fy_days` |
 | FY-004 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours` |
 | FY-005 | `DiaryRulesTest.summary_matches_server_rules` (day counts asserted there; Android summary display untested) |
@@ -116,7 +116,6 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 - **Fixed 67c/hour rate for every FY:** `DiaryRules.summarize` (like the former server calculator) hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
 - **Banker's rounding:** the claimable amount is rounded half-even (`RoundingMode.HALF_EVEN`, ported from .NET's default `Math.Round`), not away-from-zero.
 - **Location matching is untrimmed:** matching is case-insensitive but does not trim, so `"Home "` with whitespace (or other labels, e.g. from quick add's free-text field) is excluded from Home/Office totals and fails the logic check — even though the Android grid trims and badges it `H`.
-- **`FinancialYearHelper.eachDay`** has no unit test (the API test that covered the equivalent was deleted with the API).
 - **No test** asserts Android summary display/refresh (FY-009, FY-010); Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
 ## Revision log
@@ -125,3 +124,4 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — FY-003 now describes the on-device calculator; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — server, contract-fixture and .NET test references removed (FY-002 day iteration now untested); DTO lives in `data/model/` ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: FY-002 coverage added (`FinancialYearHelperTest.fy_day_iteration_includes_both_endpoints`).

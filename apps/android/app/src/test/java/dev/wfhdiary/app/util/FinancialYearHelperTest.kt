@@ -28,4 +28,16 @@ class FinancialYearHelperTest {
         assertEquals(listOf(2024), FinancialYearHelper.fyYearsCovering(YearMonth.of(2025, 6)))
         assertEquals(listOf(2025), FinancialYearHelper.fyYearsCovering(YearMonth.of(2025, 7)))
     }
+
+    @Test
+    fun fy_day_iteration_includes_both_endpoints() {
+        val days = FinancialYearHelper.eachDay(LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 3)).toList()
+        assertEquals(3, days.size)
+        assertEquals(LocalDate.of(2025, 7, 3), days.last())
+
+        val (start, end) = FinancialYearHelper.fyRange(2025)
+        val fyDays = FinancialYearHelper.eachDay(start, end).toList()
+        assertEquals(365, fyDays.size)
+        assertEquals(LocalDate.of(2026, 6, 30), fyDays.last())
+    }
 }

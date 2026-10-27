@@ -48,6 +48,15 @@ class DiaryStoreTest {
     private val homeDay = UpsertDayEntryRequest("08:00", "17:00", 1.0, null, "Home")
 
     @Test
+    fun diary_range_derived_without_storing_days() = runBlocking {
+        val diary = store.getDiary(2025)
+        assertEquals(2025, diary.fyYear)
+        assertEquals("2025-07-01", diary.fyStartDate)
+        assertEquals("2026-06-30", diary.fyEndDate)
+        assertEquals(LocalCounts(0, 0), store.localCounts())
+    }
+
+    @Test
     fun upsert_then_partial_upsert_keeps_fields() = runBlocking {
         store.upsertDay(2025, "2025-07-01", homeDay)
         val saved = store.upsertDay(2025, "2025-07-01", UpsertDayEntryRequest(description = "Notes"))
