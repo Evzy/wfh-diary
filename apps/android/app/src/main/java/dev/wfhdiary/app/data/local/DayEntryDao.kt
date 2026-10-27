@@ -8,7 +8,13 @@ import androidx.room.Query
 @Dao
 interface DayEntryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: DayEntryEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(entries: List<DayEntryEntity>)
+
+    @Query("SELECT * FROM day_entries WHERE date = :date")
+    suspend fun get(date: String): DayEntryEntity?
 
     @Query(
         """
@@ -21,4 +27,10 @@ interface DayEntryDao {
 
     @Query("SELECT * FROM day_entries ORDER BY date")
     suspend fun getAll(): List<DayEntryEntity>
+
+    @Query("DELETE FROM day_entries WHERE date = :date")
+    suspend fun delete(date: String)
+
+    @Query("DELETE FROM day_entries")
+    suspend fun deleteAll()
 }
