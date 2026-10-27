@@ -3,6 +3,7 @@ package dev.wfhdiary.app.util
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
+import java.time.YearMonth
 
 class FinancialYearHelperTest {
     @Test
@@ -20,5 +21,11 @@ class FinancialYearHelperTest {
         val (start, end) = FinancialYearHelper.fyRange(2025)
         assertEquals(LocalDate.of(2025, 7, 1), start)
         assertEquals(LocalDate.of(2026, 6, 30), end)
+    }
+
+    @Test
+    fun fyYearsCovering_june_and_july() {
+        assertEquals(listOf(2024), FinancialYearHelper.fyYearsCovering(YearMonth.of(2025, 6)))
+        assertEquals(listOf(2025), FinancialYearHelper.fyYearsCovering(YearMonth.of(2025, 7)))
     }
 }

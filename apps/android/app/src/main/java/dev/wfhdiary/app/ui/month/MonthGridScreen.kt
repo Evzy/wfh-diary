@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -71,6 +72,8 @@ fun MonthGridScreen(
     onDeleteDay: (String) -> Unit,
     onRemoveLeaveForDate: (String) -> Unit,
     onRefresh: () -> Unit,
+    backupWarning: String? = null,
+    onBackupWarningClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val ym = uiState.yearMonth
@@ -129,6 +132,23 @@ fun MonthGridScreen(
                     )
                 },
         ) {
+            if (backupWarning != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clickable(onClick = onBackupWarningClick),
+                ) {
+                    Text(
+                        backupWarning,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

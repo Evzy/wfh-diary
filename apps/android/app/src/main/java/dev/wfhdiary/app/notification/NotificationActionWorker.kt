@@ -25,7 +25,6 @@ class NotificationActionWorker(
         val app = applicationContext as WfhDiaryApplication
 
         return runCatching {
-            FirebaseTokenHelper.ensureToken(app)
             val settings = app.diaryRepository.getSettings()
             NotificationDayActions.apply(app, date, action, settings)
             MissedNotificationScheduler.cancel(applicationContext, date)

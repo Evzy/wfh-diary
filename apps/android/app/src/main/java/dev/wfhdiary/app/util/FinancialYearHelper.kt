@@ -11,4 +11,7 @@ object FinancialYearHelper {
 
     fun eachDay(start: LocalDate, end: LocalDate): Sequence<LocalDate> =
         generateSequence(start) { d -> if (d < end) d.plusDays(1) else null }
+
+    fun fyYearsCovering(yearMonth: java.time.YearMonth): List<Int> =
+        listOf(currentFyYear(yearMonth.atDay(1)), currentFyYear(yearMonth.atEndOfMonth())).distinct()
 }

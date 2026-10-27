@@ -21,13 +21,11 @@ class MissedNotificationWorker(
         val app = applicationContext as WfhDiaryApplication
 
         val settings =
-            runCatching {
-                FirebaseTokenHelper.ensureToken(app)
-                app.diaryRepository.getSettings()
-            }.getOrElse { error ->
-                showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
-                return Result.failure()
-            }
+            runCatching { app.diaryRepository.getSettings() }
+                .getOrElse { error ->
+                    showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
+                    return Result.failure()
+                }
 
         val default = settings.missedNotificationDefault
         if (!MissedNotificationDefault.isEnabled(default)) {

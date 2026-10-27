@@ -14,6 +14,7 @@ Living specs describing what WFH Diary does **today**. Each requirement has a st
 | XLSX export | `XLSX` | [export-xlsx](export-xlsx/spec.md) |
 | Authentication | `AUTH` | [auth](auth/spec.md) |
 | OTA updates & versioning | `OTA` | [ota-updates](ota-updates/spec.md) |
+| Backup & restore | `BAK` | [backup](backup/spec.md) |
 
 ## Format
 

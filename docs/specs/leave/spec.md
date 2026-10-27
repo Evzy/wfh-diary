@@ -4,73 +4,73 @@
 
 ## Purpose & scope
 
-Lets a user schedule leave as a date range (with an optional note), which marks the covered diary days as `LEAVE` so they are excluded from work hours, and later remove it again. Covers the leave API, the Android **Schedule leave** sheet, the month-grid leave badge and removing leave from the day edit sheet. Out of scope: the morning-notification **Leave** action and the missed-notification worker skipping leave days (see [notifications](../notifications/spec.md)), and how leave days are counted in the FY summary (see [summary-fy](../summary-fy/spec.md)).
+Lets a user schedule leave as a date range (with an optional note), which marks the covered diary days as `LEAVE` so they are excluded from work hours, and later remove it again. Leave periods are stored on the phone (Room table `leave_periods`) and handled by `DiaryStore`. Covers the leave rules, the Android **Schedule leave** sheet, the month-grid leave badge and removing leave from the day edit sheet. Out of scope: the morning-notification **Leave** action and the missed-notification worker skipping leave days (see [notifications](../notifications/spec.md)), and how leave days are counted in the FY summary (see [summary-fy](../summary-fy/spec.md)).
 
 ## Requirements
 
 ### LEAVE-001 — Create leave period
 
-`POST /v1/diaries/{fyYear}/leave` stores a leave period owned by the caller and returns it with `200`.
+`DiaryStore.createLeave` stores a leave period with a new id and returns it.
 
-- **Given** an authenticated user
-- **When** they post `{ startDate, endDate, note }` with `yyyy-MM-dd` dates
-- **Then** the response is `200` with a `LeavePeriodDto` containing a new `id`, the start and end dates and the note as sent
+- **Given** the app
+- **When** it creates leave with `{ startDate, endDate, note }` using `yyyy-MM-dd` dates
+- **Then** a `LeavePeriodDto` is returned containing a new `id`, the start and end dates and the note (trimmed; blank becomes null)
 
 ### LEAVE-002 — Reject malformed dates
 
-Creating leave with an unparseable start or end date is rejected with `400`.
+Creating leave with an unparseable start or end date is refused with an `IllegalArgumentException`.
 
-- **Given** an authenticated user
-- **When** they post leave where `startDate` or `endDate` is not a valid date
-- **Then** the response is `400` with `{ error: "Invalid date format. Use yyyy-MM-dd." }` and nothing is stored
+- **Given** the app
+- **When** it creates leave where `startDate` or `endDate` is not a valid `yyyy-MM-dd` date
+- **Then** `IllegalArgumentException("Invalid date: …")` is thrown and nothing is stored
 
 ### LEAVE-003 — Reversed range is swapped
 
-If the end date is before the start date, the API swaps them rather than rejecting the request.
+If the end date is before the start date, the store swaps them rather than rejecting the request.
 
-- **Given** an authenticated user
-- **When** they post leave with `startDate` later than `endDate`
+- **Given** the app
+- **When** it creates leave with `startDate` later than `endDate`
 - **Then** the stored period runs from the earlier date to the later date
 
 ### LEAVE-004 — Mark covered days as leave
 
-Creating leave overwrites each covered day in the requested financial year's diary to a blank `LEAVE` day.
+Creating leave overwrites each covered day in the requested financial year to a blank `LEAVE` day.
 
-- **Given** a diary for `fyYear` with entries in the leave range
-- **When** leave is created for that range
+- **Given** stored days with entries in the leave range
+- **When** leave is created for that range and `fyYear`
 - **Then** each covered day inside that FY has start, finish, break and location cleared and description set to `LEAVE`; days outside the FY are not touched
 
 ### LEAVE-005 — List leave periods
 
-`GET /v1/leave-periods` returns all of the caller's leave periods across every financial year, ordered by start date.
+`DiaryStore.getLeavePeriods` returns all leave periods across every financial year, ordered by start date.
 
-- **Given** a user with leave periods (and other users with their own)
-- **When** they request `GET /v1/leave-periods`
-- **Then** only their own periods are returned, sorted by `startDate` ascending
+- **Given** stored leave periods
+- **When** the app lists them
+- **Then** all periods are returned, sorted by `startDate` ascending
 
 ### LEAVE-006 — Delete leave clears marked days
 
-Deleting a leave period removes it and clears the `LEAVE` days it covered in all of the caller's diaries.
+Deleting a leave period removes it and clears the `LEAVE` days it covered, in every financial year.
 
 - **Given** a leave period whose days are marked `LEAVE`
-- **When** the user calls `DELETE /v1/leave-periods/{id}`
-- **Then** the response is `204`, the period is no longer listed, and covered days whose description is `LEAVE` (case-insensitive) are cleared to empty
+- **When** the app deletes the period
+- **Then** the period is no longer listed, and covered days whose description is `LEAVE` (case-insensitive) are cleared to empty (their rows are deleted)
 
 ### LEAVE-007 — Delete preserves days covered by other leave
 
-Days that are also covered by another of the caller's leave periods keep their `LEAVE` marking when one period is deleted.
+Days that are also covered by another leave period keep their `LEAVE` marking when one period is deleted.
 
 - **Given** two overlapping leave periods
 - **When** one of them is deleted
 - **Then** days inside the remaining period still have description `LEAVE`
 
-### LEAVE-008 — Delete unknown or foreign leave returns 404
+### LEAVE-008 — Delete unknown leave is a no-op
 
-Deleting a leave id that does not exist or belongs to another user returns `404` and changes nothing.
+Deleting a leave id that does not exist changes nothing and raises no error.
 
-- **Given** a leave id that is unknown or owned by a different user
-- **When** the caller sends `DELETE /v1/leave-periods/{id}`
-- **Then** the response is `404`
+- **Given** a leave id that is unknown
+- **When** the app deletes it
+- **Then** nothing changes and no error is raised
 
 ### LEAVE-009 — Schedule leave sheet
 
@@ -100,41 +100,41 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 
 | Kind | Location |
 | --- | --- |
-| API | `POST /v1/diaries/{fyYear}/leave`, `GET /v1/leave-periods`, `DELETE /v1/leave-periods/{id}` — `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| Data | `services/api/WfhDiary.Api/Data/LeavePeriodEntity.cs` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/CreateLeaveRequest.cs`, `packages/shared/WfhDiary.Shared/Dtos/LeavePeriodDto.cs`, `packages/shared/contracts/leave-period.json` |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/leave/LeaveScheduleSheet.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/util/LeavePeriodHelper.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/ui/month/MonthGridScreen.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/ui/month/MonthGridViewModel.kt` |
+| Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`createLeave`, `getLeavePeriods`, `deleteLeave`), `data/store/DiaryRules.kt` (`leaveDatesInFy`, `leaveDay`, `datesToClearOnLeaveDelete`) |
+| Storage | `data/local/LeavePeriodEntity.kt`, `data/local/LeavePeriodDao.kt` |
+| DTO / contract | `packages/shared/contracts/leave-period.json` (shape reused by `data/remote/LeavePeriodDto.kt`, `CreateLeaveRequest.kt`) |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/leave/LeaveScheduleSheet.kt`, `util/LeavePeriodHelper.kt`, `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt` |
+| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Services/DiaryService.cs`, `Data/LeavePeriodEntity.cs` — no longer used by the app |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| LEAVE-001 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them`; contract: `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.leavePeriod_fixture_deserializes` |
+| LEAVE-001 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only`; contract: `ContractDeserializationTest.leavePeriod_fixture_deserializes` |
 | LEAVE-002 | `untested` |
-| LEAVE-003 | `untested` |
-| LEAVE-004 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (FY-boundary skip untested) |
-| LEAVE-005 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (ordering and per-user scoping untested) |
-| LEAVE-006 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` |
-| LEAVE-007 | `LeaveFlowTests.Delete_leave_preserves_days_covered_by_another_period` |
-| LEAVE-008 | `LeaveFlowTests.Delete_leave_unknown_id_returns_not_found` (foreign-owner case untested) |
+| LEAVE-003 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only` |
+| LEAVE-004 | `DiaryStoreTest.create_leave_swaps_dates_and_marks_fy_days_only`; `DiaryRulesTest.leave_dates_are_limited_to_fy`, `DiaryRulesTest.leave_day_has_only_leave_description` |
+| LEAVE-005 | `WfhDiaryDatabaseTest.leave_ordered_by_start` |
+| LEAVE-006 | `DiaryStoreTest.delete_leave_clears_only_uncovered_leave_days` |
+| LEAVE-007 | `DiaryStoreTest.delete_leave_clears_only_uncovered_leave_days`; `DiaryRulesTest.dates_to_clear_skip_other_periods` |
+| LEAVE-008 | `untested` |
 | LEAVE-009 | `untested` |
 | LEAVE-010 | `LeavePeriodHelperTest.isOnLeave_true_for_date_in_range`, `LeavePeriodHelperTest.isOnLeave_false_outside_range`, `LeavePeriodHelperTest.isOnLeave_includes_start_and_end_dates` (helper only; badge rendering untested) |
 | LEAVE-011 | `LeavePeriodHelperTest.coveringPeriod_returns_matching_period`, `LeavePeriodHelperTest.coveringPeriod_null_when_not_on_leave` (helper only; ViewModel flow untested) |
 
 ## Known gaps
 
-- **Cross-FY leave is only partly marked (suspected bug).** Creation only marks days inside the `fyYear` in the URL, and Android always passes the FY currently on screen, so a period spanning 30 June / 1 July leaves the other FY's days unmarked. Deletion, by contrast, clears days in all of the user's diaries.
+- **Cross-FY leave is only partly marked (suspected bug).** Creation only marks days inside the `fyYear` it is called with, and Android always passes the FY currently on screen, so a period spanning 30 June / 1 July leaves the other FY's days unmarked. Deletion, by contrast, clears days in all financial years.
 - **Creating leave destroys existing day data.** Covered days are overwritten with no warning, and deleting the leave clears them to empty rather than restoring what was there before.
-- **Date format not enforced.** `DateOnly.TryParse` in `DiaryService.CreateLeaveAsync` is culture-sensitive, so `yyyy-MM-dd` is requested but other formats the server culture accepts (e.g. `1/7/2025`) also succeed, and may be read differently on servers with other cultures.
 - **No validation of range against the FY.** A period entirely outside `fyYear` is still stored (and listed) while marking no days.
-- **Overlapping and duplicate periods are allowed;** there is no update endpoint, so changing a period means delete and re-create.
+- **Overlapping and duplicate periods are allowed;** there is no update operation, so changing a period means delete and re-create.
 - **Delete clears manual `LEAVE` text.** Any covered day whose description is `LEAVE` is cleared, even if the user typed it by hand.
 - **Stale grid after delete (suspected bug).** After a leave change the ViewModel refreshes leave periods and summary but not the day list, so cells whose cached entry still says `LEAVE` keep the Leave badge until the next full refresh.
 - **Removing leave from one day deletes the whole period** (LEAVE-011); there is no way to shorten a period.
-- Android `DiaryRepository.deleteLeave` does not inspect the response, so a `404` is not surfaced to the user.
-- `DiaryService` in-memory service tests and Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
+- Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — LEAVE-001..008 rewritten as local `DiaryStore` behaviour; "404" cases became no-ops ([change](../../changes/2026-10-27-on-device-only/design.md)).

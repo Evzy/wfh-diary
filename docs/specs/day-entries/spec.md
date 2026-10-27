@@ -4,41 +4,41 @@
 
 ## Purpose & scope
 
-Each user has one diary per Australian financial year (FY), holding one entry per calendar day with start/finish times, break hours, description and location (Home/Office). The API creates diaries on demand and lets the user read, upsert and clear individual days; the Android app shows them on a month grid, edits them in a bottom sheet or the notification quick-add screen, and caches them locally. Out of scope: FY summary totals ([summary-fy](../summary-fy/spec.md)), leave periods (`LEAVE`), templates, notifications, export and authentication (see their own specs).
+The app keeps one diary per Australian financial year (FY), holding one entry per calendar day with start/finish times, break hours, description and location (Home/Office). All data lives on the phone: `DiaryStore` reads and writes the Room database (only days with data are stored; the grid synthesises empty days), and lets the user read, upsert and clear individual days. The Android app shows days on a month grid and edits them in a bottom sheet or the notification quick-add screen. Out of scope: FY summary totals ([summary-fy](../summary-fy/spec.md)), leave periods (`LEAVE`), templates, notifications, export, backups ([backup](../backup/spec.md)) and authentication (see their own specs).
 
 ## Requirements
 
-### DAY-001 — Diary created on first access, per user
+### DAY-001 — Diary range available on demand
 
-A user's diary for an FY is created on first access, pre-populated with one empty day entry for every date from 1 July to 30 June, and is only visible to that user.
+The diary for any FY is available without setup: `DiaryStore` derives its range (1 July to 30 June) on demand, stores only days that have data, and keeps no per-user data.
 
-- **Given** an authenticated user with no diary for FY 2025
-- **When** they call `GET /v1/diaries/2025`
-- **Then** the response is 200 with `{ fyYear: 2025, fyStartDate: "2025-07-01", fyEndDate: "2026-06-30" }`, 365 empty day rows exist for that user, and other users' diaries are unaffected
+- **Given** no stored days for FY 2025
+- **When** the app asks `DiaryStore` for diary 2025
+- **Then** it gets `{ fyYear: 2025, fyStartDate: "2025-07-01", fyEndDate: "2026-06-30" }`, and no day rows are created
 
 ### DAY-002 — List days with optional date range
 
-Listing days returns the user's entries for the FY ordered by date, filtered by optional inclusive `from`/`to` dates; unparseable filter values are ignored.
+Listing days returns the stored entries for the FY ordered by date, filtered by optional inclusive `from`/`to` dates (clamped to the FY); an unparseable filter value is refused with an `IllegalArgumentException`.
 
-- **Given** a diary for FY 2025
-- **When** the user calls `GET /v1/diaries/2025/days?from=2025-07-01&to=2025-07-03`
-- **Then** the response is 200 with exactly the three entries for 1–3 July in date order
+- **Given** stored entries for FY 2025
+- **When** the app lists days for 2025 with `from=2025-07-01` and `to=2025-07-03`
+- **Then** exactly the stored entries for 1–3 July are returned in date order (days without data are not returned)
 
 ### DAY-003 — Partial upsert of a day
 
-Upserting a day only changes the fields present (non-null) in the request; times accept `HH:mm` or `H:mm`, and a blank location is stored as null.
+Upserting a day only changes the fields present (non-null) in the request; times accept `HH:mm` or `H:mm`, and a blank location is stored as null. The edit sheet saves with a full replace instead, which clears any field not supplied (null or blank), so clearing a field works.
 
 - **Given** a day in the FY with existing values
-- **When** the user calls `PUT /v1/diaries/{fy}/days/{date}` with `{ startTime: "8:00", finishTime: "17:00", breakHours: 1, location: "Home" }`
-- **Then** the response is 200 with the updated entry (`startTime: "08:00"`), and fields omitted from the request keep their previous values
+- **When** the app upserts `{ startTime: "8:00", finishTime: "17:00", breakHours: 1, location: "Home" }` for that date
+- **Then** the returned entry has `startTime: "08:00"`, fields omitted from the request keep their previous values, and a day whose fields all end up empty is deleted rather than stored
 
 ### DAY-004 — Date validation on day writes
 
-Day upsert and clear reject an unparseable date or a date outside the requested FY with 400.
+Day upsert, replace and clear refuse an unparseable date or a date outside the requested FY with an `IllegalArgumentException`; the ViewModel shows its message and nothing is written.
 
-- **Given** a diary for FY 2025
-- **When** the user calls `PUT` or `DELETE /v1/diaries/2025/days/{date}` with `date` = `not-a-date` or `2026-07-01`
-- **Then** the response is 400 with `{ error: "Invalid date. Use yyyy-MM-dd." }` or `{ error: "Date outside financial year." }` respectively
+- **Given** FY 2025
+- **When** the app upserts, replaces or clears a day with `date` = `not-a-date` or `2026-07-01`
+- **Then** `IllegalArgumentException` is thrown with the message `Invalid date: not-a-date` or `Date 2026-07-01 is outside financial year 2025.` respectively, and no row changes
 
 ### DAY-005 — Day entry response shape
 
@@ -46,29 +46,29 @@ Day responses contain `date` (yyyy-MM-dd), `dayName`, `startTime`/`finishTime` (
 
 - **Given** a day with logged times
 - **When** it is returned by list, upsert or clear
-- **Then** the JSON has all eight properties and matches the `day-entry.json` contract fixture
+- **Then** the entry has all eight properties and matches the `day-entry.json` contract fixture shape; `dayName` is the English weekday name
 
 ### DAY-006 — Total hours computation
 
 A day's `totalHours` is finish minus start minus break hours, floored at 0, and is 0 when start or finish is missing.
 
 - **Given** start 08:00, finish 17:00, break 1
-- **When** total hours are computed (API or Android helper)
+- **When** total hours are computed (`DiaryRules.totalHours` using `TimeHelpers`)
 - **Then** the result is 8
 
 ### DAY-007 — Clear a day
 
-Deleting a day nulls its start, finish, break, description and location and returns the cleared entry; a missing row returns 404.
+Clearing a day deletes its stored row and returns an empty entry (start, finish, break, description and location all null); clearing a day with no row is a no-op that returns the same empty entry.
 
 - **Given** a day logged at the Office 09:00–17:00
-- **When** the user calls `DELETE /v1/diaries/{fy}/days/{date}`
-- **Then** the response is 200 with `startTime`, `finishTime` and `location` all null
+- **When** the app clears that date
+- **Then** the stored row is gone and the returned entry has `startTime`, `finishTime` and `location` all null
 
 ### DAY-008 — Month grid display
 
 The Android home screen shows a Monday-first calendar for the selected month, badging each day `L` (on a leave period or description `LEAVE`), `H` (Home) or `O` (Office), with the FY end year as the title.
 
-- **Given** cached entries for July 2025 with one Home day and one leave day
+- **Given** stored entries for July 2025 with one Home day and one leave day
 - **When** the month grid renders
 - **Then** those cells are coloured and badged `H` and `L`, other days are blank, and the title reads `2026`
 
@@ -80,21 +80,21 @@ The user moves between months with arrow buttons or a horizontal swipe, and by 1
 - **When** the user taps the next-month arrow or swipes left
 - **Then** July 2025 is shown and the FY switches to 2025
 
-### DAY-010 — Sync and local cache
+### DAY-010 — Local store is the source of truth
 
-On app resume or pull-to-refresh the app fetches the whole displayed FY from the API, stores it in the local Room cache, and shows cached entries when a month is opened before any refresh completes.
+Room is the single source of truth for diary data: on app resume or pull-to-refresh the grid reloads the displayed FY from `DiaryStore`, there is no sync or cache staleness, and what was saved (including a cleared field) is what the grid and the reopened edit sheet show.
 
-- **Given** entries cached from a previous session
-- **When** the app starts offline
-- **Then** the grid shows the cached entries, and a failed refresh shows an error message instead of clearing them
+- **Given** days saved in an earlier session, with the description of one of them cleared in the edit sheet
+- **When** the app starts (online or offline) or the user pulls to refresh
+- **Then** the grid shows the stored entries, the cleared description stays cleared after reopening the sheet, and a failed read shows an error message instead of clearing the grid
 
 ### DAY-011 — Day edit sheet
 
-Tapping a day opens a sheet with Home/Office chips, start/finish pickers (defaulting to 08:00/17:00), a 0.25-hour break stepper (minimum 0) and a description; Save upserts to the FY containing that date, updates the grid and closes the sheet.
+Tapping a day opens a sheet with Home/Office chips, start/finish pickers (defaulting to 08:00/17:00), a 0.25-hour break stepper (minimum 0) and a description; Save writes to the FY containing that date, updates the grid and closes the sheet.
 
 - **Given** the month grid
 - **When** the user taps 15 July, picks Home, 08:00–16:30, break 0.5, and taps Save
-- **Then** the day is upserted to FY 2025, the cell shows `H`, and the sheet closes; a Delete button (clear day) is only shown when the day has logged work and is not `LEAVE`
+- **Then** the day is written to FY 2025, the cell shows `H`, and the sheet closes; a Delete button (clear day) is only shown when the day has logged work and is not `LEAVE`
 
 ### DAY-012 — Quick add from notification
 
@@ -108,43 +108,41 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 
 | Kind | Location |
 | --- | --- |
-| API | `GET /v1/diaries/{fyYear}`, `GET /v1/diaries/{fyYear}/days?from&to`, `PUT` / `DELETE /v1/diaries/{fyYear}/days/{date}` — `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs`, `services/api/WfhDiary.Api/Services/TimeHelpers.cs` |
-| Data | `services/api/WfhDiary.Api/Data/DiaryEntity.cs`, `services/api/WfhDiary.Api/Data/DayEntryEntity.cs` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/DiaryDto.cs`, `DayEntryDto.cs`, `UpsertDayEntryRequest.cs`; `packages/shared/contracts/diary.json`, `day-entry.json` |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/` — `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt`, `ui/month/MonthGridUiState.kt`, `ui/day/DayEditSheet.kt`, `ui/BreakHoursField.kt`, `ui/quick/QuickAddActivity.kt`, `data/local/` (Room cache), `data/remote/DiaryRepository.kt`, `util/DayEntryHelper.kt`, `util/DayBadge.kt`, `util/TimeHelpers.kt` |
+| Data source | `apps/android/app/src/main/java/dev/wfhdiary/app/data/DiaryDataSource.kt` (interface), `data/store/DiaryStore.kt` (local implementation), `data/store/DiaryRules.kt` (pure rules: upsert, replace, total hours, day DTO) |
+| Storage | `data/local/` — Room v2 `DayEntryEntity`, `DayEntryDao`, `WfhDiaryDatabase` (`date` TEXT primary key; only days with data are stored) |
+| DTO / contract | `packages/shared/contracts/day-entry.json`, `diary.json` (shape reused by `data/remote/DayEntryDto.kt`, `DiaryDto.kt`, `UpsertDayEntryRequest.kt`) |
+| Android | `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt`, `ui/month/MonthGridUiState.kt`, `ui/day/DayEditSheet.kt`, `ui/BreakHoursField.kt`, `ui/quick/QuickAddActivity.kt`, `util/DayEntryHelper.kt`, `util/DayBadge.kt`, `util/TimeHelpers.kt` |
+| Server (legacy, until phase 2) | The API (`services/api/`) still exists but the app no longer reads or writes diary data through it except for the phase-1 import ([BAK-011](../backup/spec.md)) |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| DAY-001 | `DiaryFlowTests.Upsert_day_and_summary_work` (indirect: uses returned `FyStartDate`); `ApiContractTests.Fixture_deserializes_to_shared_dto`; `ContractDeserializationTest.diary_fixture_deserializes` |
-| DAY-002 | `LeaveFlowTests.Create_leave_marks_days_and_delete_clears_them` (indirect: asserts 3 days for a 3-day `from`/`to` range) |
-| DAY-003 | Partial: `DiaryFlowTests.Upsert_day_and_summary_work` (indirect: only asserts summary values); `TimeHelpersTests.ParseTimeString_valid`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
-| DAY-004 | `untested` |
-| DAY-005 | `ApiContractTests.Live_day_upsert_response_matches_contract_properties`; `ApiContractTests.Fixture_deserializes_to_shared_dto`; `ContractDeserializationTest.dayEntry_fixture_deserializes` |
-| DAY-006 | `TimeHelpersTests.ComputeTotalHours_subtracts_break`; `TimeHelpersTest.computeTotalHours_subtracts_break` |
-| DAY-007 | `DiaryFlowTests.Clear_day_removes_times_and_location` |
+| DAY-001 | `ContractDeserializationTest.diary_fixture_deserializes` (shape only; `DiaryStore.getDiary` itself is untested) |
+| DAY-002 | `DiaryStoreTest.get_days_filters_by_fy_and_range` (unparseable filter untested) |
+| DAY-003 | `DiaryRulesTest.upsert_keeps_unset_fields`, `DiaryRulesTest.upsert_on_missing_day_creates_it`, `DiaryRulesTest.upsert_blank_time_and_location_clear_them`, `DiaryRulesTest.replace_clears_fields_not_supplied`, `DiaryRulesTest.replace_blank_description_becomes_null`, `DiaryStoreTest.upsert_then_partial_upsert_keeps_fields`, `DiaryStoreTest.replace_clears_fields`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
+| DAY-004 | `DiaryStoreTest.upsert_outside_fy_throws` (outside-FY case only; unparseable date untested) |
+| DAY-005 | `DiaryRulesTest.toDto_fills_day_name_and_total`; `ContractDeserializationTest.dayEntry_fixture_deserializes` |
+| DAY-006 | `TimeHelpersTest.computeTotalHours_subtracts_break`; `DiaryRulesTest.toDto_fills_day_name_and_total` |
+| DAY-007 | `DiaryStoreTest.delete_day_removes_row_and_returns_empty_dto`; `DiaryRulesTest.isEmpty_detects_blank_days` |
 | DAY-008 | `untested` |
 | DAY-009 | `untested` |
-| DAY-010 | `untested` |
+| DAY-010 | `DiaryStoreTest.replace_clears_fields` (store half); manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) (step "clear a field") |
 | DAY-011 | `untested` |
 | DAY-012 | `untested` |
 
 ## Known gaps
 
-- **Blank fields can't be cleared from Android:** the app's JSON client omits null fields (`encodeDefaults = false`) and the API treats a missing field as "leave unchanged", so clearing start/finish/description in the edit sheet (or quick add) does not clear it on the server. Only Delete clears a day. Suspected unintended.
-- **Invalid times silently clear a field:** a non-null but unparseable `startTime`/`finishTime` (e.g. `"8am"`) is stored as null instead of returning 400. Suspected unintended.
-- **Location is free text:** the API accepts any location string, and quick add uses a free-text field. Values like `"WFH"` are stored but never count as Home/Office. Untrimmed values like `"Home "` are inconsistent: the grid trims and shows `H`, but the summary does not trim, so they are excluded from WFH totals.
-- **Partial-upsert semantics untested:** no test asserts that omitted fields keep their values, that a blank location becomes null, or that times are echoed back as `HH:mm`.
-- **Culture-sensitive date parsing:** day routes and `from`/`to` filters use `DateOnly.TryParse` (current culture), so non-ISO strings may be accepted despite the "Use yyyy-MM-dd." error message.
-- **Clear-day 404 effectively unreachable:** every FY date row is pre-created with the diary (DAY-001), so `DELETE` on an in-range date always finds a row.
+- **Invalid times silently clear a field:** a non-null but unparseable `startTime`/`finishTime` (e.g. `"8am"`) is stored as null instead of being refused. Suspected unintended.
+- **Location is free text:** `DiaryStore` accepts any location string, and quick add uses a free-text field. Values like `"WFH"` are stored but never count as Home/Office. Untrimmed values like `"Home "` are inconsistent: the grid trims and shows `H`, but the summary does not trim, so they are excluded from WFH totals.
 - **Overnight shifts unsupported:** finish earlier than start yields 0 hours.
-- **`dayName` depends on server culture:** `ToDto` formats `dddd` with the current culture rather than invariant culture.
-- **No negative-path tests** for DAY-004 or 404 on clear; `DiaryService` in-memory tests and Android ViewModel/repository tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
-- **No offline writes:** saves and deletes require the network; the Room cache is read-only between refreshes.
-- **Template picker:** "Apply template…" in the day edit sheet and quick-add screen is backlog ([TODO § C](../../TODO.md#c-work-scenario-templates--partial), items 1 and 3).
+- **Write semantics differ by caller:** the edit sheet saves with a full replace (`replaceDay`, clears unsupplied fields); quick add and the notification actions use a partial `upsertDay`, so they keep existing fields they do not supply.
+- **No negative-path tests** for unparseable dates (DAY-004) or filter values (DAY-002); ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
+- **Template picker:** "Apply template…" in the day edit sheet and quick-add screen was never implemented ([TODO § C](../../TODO.md#c-work-scenario-templates--partial), items 1 and 3).
 - `DayEntryHelper.needsDefault` (tested in `DayEntryHelperTest`) is only used by the morning-reminder and missed-notification workers, so it belongs to the notifications capability and is not specified here.
+- The grid ViewModel keeps its server-era names (`refreshFromRemote`) although it now reloads from the local store; renaming is deferred to phase 2.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — DAY-001..007 and DAY-010 rewritten as local `DiaryStore` behaviour; the clear-a-field gap is closed ([change](../../changes/2026-10-27-on-device-only/design.md)).

@@ -88,6 +88,7 @@ fun SettingsScreen(
     onPickOfficeOnMap: () -> Unit,
     onDismissGeofenceMapPicker: () -> Unit,
     onSaveGeofenceFromMap: (SettingsViewModel.GeofenceMapTarget, Double, Double, Int) -> Unit,
+    backupSection: @Composable () -> Unit = {},
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -327,6 +328,9 @@ fun SettingsScreen(
             )
         }
 
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        backupSection()
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Text(
             stringResource(R.string.settings_export_section_title),
             style = MaterialTheme.typography.titleSmall,

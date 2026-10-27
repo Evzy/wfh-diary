@@ -50,11 +50,11 @@ The map picker lets the user place a geofence centre and choose a radius between
 
 ### GEO-006 — Clear geofence
 
-Tapping Clear for Home or Office asks the server to remove that geofence. Server semantics: [SET-006](../settings/spec.md#set-006--geofence-set-requires-all-three-fields-clear-wins).
+Tapping Clear for Home or Office removes that geofence from the local settings row. Semantics (clear wins, all-three-fields rule) are in [SET-006](../settings/spec.md#set-006--geofence-set-requires-all-three-fields-clear-wins), applied locally by `DiaryStore.updateSettings`.
 
 - **Given** a configured home or office geofence
 - **When** the user taps Clear and the draft is saved
-- **Then** the request sends `clearHomeGeofence` or `clearOfficeGeofence` as `true`. The app only treats a geofence as set when latitude, longitude and radius are all present (GEO-002), so it never relies on a partial set
+- **Then** the settings update carries `clearHomeGeofence` or `clearOfficeGeofence` as `true`, and the stored latitude, longitude and radius all become null. The app only treats a geofence as set when latitude, longitude and radius are all present (GEO-002), so it never relies on a partial set
 
 ### GEO-007 — Geolocation settings auto-save
 
@@ -92,8 +92,8 @@ The geolocation sheet asks for foreground location first, then background locati
 
 | Kind | Location |
 | --- | --- |
-| API | `GET/PUT /v1/settings` — `services/api/WfhDiary.Api/Endpoints/SettingsEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/UserSettingsDto.cs`, `packages/shared/WfhDiary.Shared/Dtos/UpdateUserSettingsRequest.cs` (`Home*`/`Office*Geofence*`, `Clear*Geofence`, `MissedNotificationAwayDefault`, `GeolocationSkipNotificationAt*`), `packages/shared/WfhDiary.Shared/Dtos/WorkTemplateDto.cs` (`Geofence*`) |
+| Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`getSettings`, `updateSettings`), `data/store/DiaryRules.kt` (`applySettingsUpdate`: geofence rules) |
+| DTO / contract | `packages/shared/contracts/user-settings.json` (`home*`/`office*Geofence*`, `clear*Geofence`, `missedNotificationAwayDefault`, `geolocationSkipNotificationAt*`; shape reused by `data/remote/UserSettingsDto.kt`, `UpdateUserSettingsRequest.kt`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/util/GeofenceHelper.kt`, `util/LocationHelper.kt`, `notification/GeolocationNotificationHelper.kt`, `ui/settings/GeolocationSettingsSheet.kt`, `ui/settings/GeolocationSettingsDraft.kt`, `ui/settings/GeofenceMapPickerSheet.kt`, `ui/settings/WorkLocationsSection.kt`, `ui/settings/SettingsViewModel.kt` |
 
 ## Test coverage
@@ -105,7 +105,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | GEO-003 | `untested` |
 | GEO-004 | `untested` |
 | GEO-005 | `untested` |
-| GEO-006 | `untested` (server clear is covered under SET-006) |
+| GEO-006 | `DiaryRulesTest.settings_geofence_requires_all_fields_and_clear_wins` (store rule only; the Clear button flow is untested) |
 | GEO-007 | `untested` |
 | GEO-008 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker` (retry policy only; worker untested) |
 | GEO-009 | `DayLogNotificationUpdaterActionTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
@@ -118,9 +118,12 @@ The geolocation sheet asks for foreground location first, then background locati
 - Suspected unintended: the API doesn't validate geofence values (latitude and longitude range, or radius). The 50–500 m radius limit exists only in the map picker slider.
 - Suspected unintended: the sheet asks for background location (GEO-010), but location lookups only check foreground permission. `LocationHelper.canCheckLocationInBackground` and `canUseGeofencing` are never called, so on Android 10 and later the worker's location request may fail without background permission and quietly fall back to the away default.
 - Suspected unintended: `MorningReminderWorker` treats a failed day-entry fetch (null) as "needs entry", so skip-at-place (GEO-009) could auto-log over an existing entry.
+- **GEO-007 wording still describes the server.** It says `PUT /v1/settings` is sent after 500 ms; the app now saves the same debounced update locally through `DiaryStore.updateSettings`. Left as is because the design did not list GEO-007 as modified.
+- Template geofence matching was never implemented (see above); templates are dropped by the on-device-only change, so this gap is closed by removal rather than by a fix.
 - The map picker uses Sydney CBD (-33.8688, 151.2093) as the starting camera position until the real location resolves.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — GEO-006 now clears the local settings row ([change](../../changes/2026-10-27-on-device-only/design.md)).

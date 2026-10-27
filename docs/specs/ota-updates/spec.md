@@ -80,6 +80,8 @@ When updates are configured, the login screen triggers one automatic update chec
 - **When** the login screen is shown
 - **Then** an automatic check runs once. The pending release can be downloaded from the dialog or a "download available" button. The app version and code are shown at the bottom.
 
+**Target (on-device-only change, lands in phase 2 with the login-gate removal; not yet implemented):** the automatic check runs once at app start, with no login screen. Until then the check still runs only on the login screen, which the phase-1 build keeps.
+
 ### OTA-010 — Manual check from Settings
 
 When updates are configured, Settings offers **Check for update** and, once a release is pending, **Download and install**, showing busy state and status text.
@@ -124,6 +126,7 @@ When updates are configured, Settings offers **Check for update** and, once a re
 
 ## Known gaps
 
+- **OTA-009 is behind the on-device-only design.** The design modifies OTA-009 to run the automatic check at app start, but the phase-1 code keeps the Firebase login gate and its `checkOnLoginIfNeeded` call, so the requirement text above still describes the login screen. Update the text when phase 2 ships.
 - **Suspected unintended — `/v1/version` needs auth in verified mode.** Because the path is under `/v1/`, the Firebase Bearer middleware requires a token once Firebase is on. `CI_CD.md` shows an unauthenticated `curl` to it.
 - **Suspected unintended — releases are not gated on tests.** In `release-android.yml` the `build` job has no `needs: tests`, so an APK can be published even when the reusable test job fails.
 - **Risk — the GitHub token ends up in the APK.** `UPDATE_GITHUB_TOKEN`, if set, is compiled into `BuildConfig` and sent on both the release query and the APK download.
@@ -138,3 +141,4 @@ When updates are configured, Settings offers **Check for update** and, once a re
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — OTA-009 annotated with its phase-2 target (app-start check); behaviour unchanged in this phase ([change](../../changes/2026-10-27-on-device-only/design.md)).
