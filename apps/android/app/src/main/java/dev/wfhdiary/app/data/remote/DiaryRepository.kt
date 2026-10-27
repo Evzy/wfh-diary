@@ -34,6 +34,7 @@ class DiaryRepository(
             setBody(request)
         }.body()
 
+    /** Server API has no full-replace endpoint; delegates to partial upsert (importer-only; removed with backend). */
     override suspend fun replaceDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
         upsertDay(fyYear, date, request)
 

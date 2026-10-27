@@ -125,6 +125,23 @@ class DiaryStoreTest {
     }
 
     @Test
+    fun update_settings_preserves_legacy() = runBlocking {
+        val legacy = JsonObject(mapOf("workTemplates" to JsonPrimitive("keep")))
+        store.replaceAll(
+            BackupDocument(
+                exportedAt = "2026-10-27T09:00:00Z",
+                appVersion = "test",
+                settings = DiaryRules.defaultSettings(),
+                legacy = legacy,
+            ),
+        )
+        store.updateSettings(UpdateUserSettingsRequest(displayName = "Changed"))
+        val exported = store.exportDocument("test", "2026-10-27T09:00:00Z")
+        assertEquals(legacy, exported.legacy)
+        assertEquals("Changed", exported.settings.displayName)
+    }
+
+    @Test
     fun export_contains_xlsx_bytes_and_filename() = runBlocking {
         val (bytes, name) = store.downloadExportXlsx(2025)
         assertEquals("WFH-Diary-2025-2026.xlsx", name)
