@@ -1,6 +1,6 @@
 # On-device only (remove backend) — design
 
-**Status:** proposed · **Date:** 2026-10-27 · **Touches specs:** [day-entries](../../specs/day-entries/spec.md), [summary-fy](../../specs/summary-fy/spec.md), [leave](../../specs/leave/spec.md), [settings](../../specs/settings/spec.md), [export-xlsx](../../specs/export-xlsx/spec.md), [notifications](../../specs/notifications/spec.md), [ota-updates](../../specs/ota-updates/spec.md), [auth](../../specs/auth/spec.md), [work-templates](../../specs/work-templates/spec.md), [geolocation](../../specs/geolocation/spec.md), new `backup`
+**Status:** approved · **Date:** 2026-10-27 · **Touches specs:** [day-entries](../../specs/day-entries/spec.md), [summary-fy](../../specs/summary-fy/spec.md), [leave](../../specs/leave/spec.md), [settings](../../specs/settings/spec.md), [export-xlsx](../../specs/export-xlsx/spec.md), [notifications](../../specs/notifications/spec.md), [ota-updates](../../specs/ota-updates/spec.md), [auth](../../specs/auth/spec.md), [work-templates](../../specs/work-templates/spec.md), [geolocation](../../specs/geolocation/spec.md), new `backup`
 
 ## Problem
 
@@ -69,7 +69,7 @@ Device-local state that is **not** part of backups (backup folder URI, last back
 }
 ```
 
-- Unknown fields are ignored on read; `legacy` is carried through restore → next backup unchanged (stored as a raw JSON blob in a `legacy_blob` key/value row).
+- Unknown fields are ignored on read; `legacy` is carried through restore → next backup unchanged (stored in `settings.legacyJson`).
 - Readers reject `format` ≠ `wfh-diary-backup` or `version` > supported.
 
 ### Automatic backup
@@ -112,7 +112,7 @@ Device-local state that is **not** part of backups (backup folder URI, last back
 - **ADDED** `BAK-001` — Backup document v1. Given app data, when a backup is produced, then it is JSON with `format`, `version: 1`, `exportedAt`, `appVersion`, `settings`, `days` (only non-empty days), `leavePeriods`, and `legacy`.
 - **ADDED** `BAK-002` — Choose backup folder. Given Settings → Backup, when the user picks a folder, then its URI permission is persisted and used for automatic backups.
 - **ADDED** `BAK-003` — Automatic backup after changes. Given a folder is set, when data changes, then a backup is written about 10 minutes after the last change.
-- **ADDED** `BAK-004` — Daily backup. Given a folder is set, when a day passes, then a backup is written even without changes.
+- **ADDED** `BAK-004` — Daily backup. Given a folder is set, when the 24-hour periodic job runs, then a backup is written even without changes.
 - **ADDED** `BAK-005` — File naming and retention. Given backups in the folder, when a backup is written, then it is named `wfh-diary-backup-YYYY-MM-DD.json`, overwrites same-day, and only the newest 30 such files are kept.
 - **ADDED** `BAK-006` — Backup status and warning. Given backup state, then Settings shows last success/error, and the month grid shows a warning when no folder is set, the last attempt failed, or the last success is older than 3 days.
 - **ADDED** `BAK-007` — Manual backup and share. Given Settings → Backup, when "Back up now" or "Share backup…" is tapped, then a backup is written to the folder or shared via the share sheet.
