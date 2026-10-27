@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import dev.wfhdiary.app.backup.BackupPreferences
 import dev.wfhdiary.app.backup.BackupScheduler
 import dev.wfhdiary.app.backup.BackupService
+import dev.wfhdiary.app.backup.RestoreService
 import dev.wfhdiary.app.backup.SafBackupFolder
 import dev.wfhdiary.app.data.DiaryDataSource
 import dev.wfhdiary.app.data.auth.FirebaseIdTokenHolder
@@ -74,6 +75,12 @@ class WfhDiaryApplication : Application() {
             appVersion = BuildConfig.VERSION_NAME,
             openFolder = { uri -> SafBackupFolder(this, Uri.parse(uri)) },
         )
+    }
+
+    val restoreService: RestoreService by lazy {
+        RestoreService(diaryStore, backupService, cacheDir) { settings ->
+            NotificationScheduler.scheduleNext(this, settings.notificationTime, settings.notificationWorkingDaysMask)
+        }
     }
 
     val diaryRepository: DiaryDataSource
