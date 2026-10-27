@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">WFH Diary</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Diary preferences and account</string>
+    <string name="settings_subtitle">Diary preferences and backups</string>
     <string name="settings_app_version">Version %1$s (build %2$d)</string>
     <string name="settings_close">Close</string>
     <string name="cd_open_settings">Open settings</string>
@@ -112,17 +112,11 @@
     <string name="notification_action_office">Office</string>
     <string name="notification_action_leave">Leave</string>
     <string name="notification_action_add_time">Add time</string>
-    <string name="notification_action_retry">Retry</string>
     <string name="notification_action_open_app">Open app</string>
-    <string name="notification_log_pending_title">Logging %1$s…</string>
-    <string name="notification_log_pending_text">Saving today\u2019s entry\u2026</string>
     <string name="notification_log_success_title">WFH Diary</string>
     <string name="notification_log_success_manual">Logged as %1$s for today.</string>
     <string name="notification_log_failure_title">Couldn\u2019t save entry</string>
-    <string name="notification_log_failure_server">Couldn\u2019t log %1$s \u2014 server is waking up. Tap Retry in a moment.</string>
-    <string name="notification_log_failure_database">Couldn\u2019t log %1$s \u2014 database is connecting. Tap Retry.</string>
-    <string name="notification_log_failure_sign_in">Couldn\u2019t log %1$s \u2014 sign in required. Open the app.</string>
-    <string name="notification_log_failure_generic">Couldn\u2019t log %1$s. Tap Retry or open the app.</string>
+    <string name="notification_log_failure_local">Couldn\u2019t log %1$s. Open the app to log it.</string>
     <string name="notification_auto_log_morning_geo">Logged as %1$s using geolocation (morning reminder skipped).</string>
     <string name="month_summary_home">Home %1$.1f h</string>
     <string name="month_summary_claimable">Claimable $%1$.2f</string>

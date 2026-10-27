@@ -19,25 +19,6 @@ object DayLogNotificationUpdater {
     const val MORNING_REMINDER_ID = MorningReminderNotifier.NOTIFICATION_ID
     const val DAY_LOG_RESULT_ID = 1002
 
-    fun showPending(
-        context: Context,
-        action: String,
-        target: DayLogNotificationTarget = DayLogNotificationTarget.MORNING_REMINDER,
-    ) {
-        if (!NotificationPermissions.canPost(context)) return
-        val label = actionLabel(context, action)
-        val notificationId = notificationIdFor(target)
-        val builder =
-            NotificationCompat.Builder(context, channelFor(target))
-                .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
-                .setContentTitle(context.getString(R.string.notification_log_pending_title, label))
-                .setContentText(context.getString(R.string.notification_log_pending_text))
-                .setOngoing(true)
-                .setProgress(0, 0, true)
-                .setAutoCancel(false)
-        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
-    }
-
     fun showManualSuccess(context: Context, action: String) {
         if (!NotificationPermissions.canPost(context)) return
         val label = actionLabel(context, action)
@@ -117,43 +98,23 @@ object DayLogNotificationUpdater {
         context: Context,
         action: String,
         date: String,
-        reason: DayLogFailureReason,
-        retryMode: String,
         target: DayLogNotificationTarget,
     ) {
         if (!NotificationPermissions.canPost(context)) return
-        val label = actionLabel(context, action)
-        val message =
-            when (reason) {
-                DayLogFailureReason.SERVER_WAKING ->
-                    context.getString(R.string.notification_log_failure_server, label)
-                DayLogFailureReason.DATABASE_TIMEOUT ->
-                    context.getString(R.string.notification_log_failure_database, label)
-                DayLogFailureReason.SIGN_IN_REQUIRED ->
-                    context.getString(R.string.notification_log_failure_sign_in, label)
-                DayLogFailureReason.GENERIC ->
-                    context.getString(R.string.notification_log_failure_generic, label)
-            }
-        val notificationId = notificationIdFor(target)
+        val message = context.getString(R.string.notification_log_failure_local, actionLabel(context, action))
         val builder =
             NotificationCompat.Builder(context, channelFor(target))
                 .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
                 .setContentTitle(context.getString(R.string.notification_log_failure_title))
                 .setContentText(message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-                .setOngoing(false)
-                .setAutoCancel(false)
-                .addAction(
-                    0,
-                    context.getString(R.string.notification_action_retry),
-                    retryPendingIntent(context, date, action, retryMode, target, notificationId),
-                )
+                .setAutoCancel(true)
                 .addAction(
                     0,
                     context.getString(R.string.notification_action_open_app),
                     openAppPendingIntent(context, date),
                 )
-        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+        NotificationManagerCompat.from(context).notify(notificationIdFor(target), builder.build())
     }
 
     fun actionForPlace(place: GeofenceHelper.Place): String =
@@ -199,31 +160,6 @@ object DayLogNotificationUpdater {
             DayLogNotificationTarget.MORNING_REMINDER -> NotificationChannels.MORNING_REMINDER
             DayLogNotificationTarget.DAY_LOG_RESULT -> NotificationChannels.AUTO_LOG_RESULT
         }
-
-    private fun retryPendingIntent(
-        context: Context,
-        date: String,
-        action: String,
-        retryMode: String,
-        target: DayLogNotificationTarget,
-        requestCodeSalt: Int,
-    ): PendingIntent {
-        val targetKey = DayLogRetryPolicy.notificationTargetKey(target)
-        val intent =
-            Intent(context, NotificationActionReceiver::class.java).apply {
-                this.action = NotificationChannels.ACTION_RETRY
-                putExtra(NotificationChannels.EXTRA_DATE, date)
-                putExtra(NotificationChannels.EXTRA_ACTION, action)
-                putExtra(NotificationChannels.EXTRA_RETRY_MODE, retryMode)
-                putExtra(NotificationChannels.EXTRA_NOTIFICATION_TARGET, targetKey)
-            }
-        return PendingIntent.getBroadcast(
-            context,
-            ("retry-$retryMode-$action-$date-$requestCodeSalt").hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
 
     private fun openAppPendingIntent(context: Context, date: String): PendingIntent {
         val intent =
