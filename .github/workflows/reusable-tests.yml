@@ -1,11 +1,6 @@
 on:
   workflow_call:
     inputs:
-      run_dotnet_tests:
-        description: "Run dotnet test WfhDiary.sln"
-        type: boolean
-        required: false
-        default: true
       run_android_unit_tests:
         description: "Run Android JVM unit tests"
         type: boolean
@@ -21,23 +16,6 @@ permissions:
   contents: read
 
 jobs:
-  dotnet-test:
-    if: inputs.run_dotnet_tests
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify version files match version.json
-        shell: bash
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 -SyncOnly
-          git diff --exit-code version.json services/api/WfhDiary.Api/AppVersion.cs services/api/WfhDiary.Api/WfhDiary.Api.csproj
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "9.0.x"
-      - name: Test solution
-        run: dotnet test WfhDiary.sln -c Release --logger "console;verbosity=normal"
-
   android-unit-test:
     if: inputs.run_android_unit_tests
     runs-on: ubuntu-latest
@@ -90,7 +68,6 @@ jobs:
 
   test-report:
     needs:
-      - dotnet-test
       - android-unit-test
       - android-assemble
     if: always()
@@ -98,7 +75,6 @@ jobs:
     steps:
       - name: Summarise test job results
         env:
-          DOTNET: ${{ inputs.run_dotnet_tests && needs.dotnet-test.result || 'skipped' }}
           ANDROID_UNIT: ${{ inputs.run_android_unit_tests && needs.android-unit-test.result || 'skipped' }}
           ANDROID_ASSEMBLE: ${{ inputs.run_android_assemble && needs.android-assemble.result || 'skipped' }}
         run: |
@@ -106,12 +82,11 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| dotnet test | ${DOTNET} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| android unit tests | ${ANDROID_UNIT} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| android assembleDebug | ${ANDROID_ASSEMBLE} |" >> "$GITHUB_STEP_SUMMARY"
 
           failed=0
-          for name in DOTNET ANDROID_UNIT ANDROID_ASSEMBLE; do
+          for name in ANDROID_UNIT ANDROID_ASSEMBLE; do
             result="${!name}"
             if [ "$result" = "failure" ]; then
               echo "::warning title=Compatibility check failed::${name} job failed (result=${result})"

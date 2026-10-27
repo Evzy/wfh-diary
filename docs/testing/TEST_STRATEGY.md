@@ -1,37 +1,32 @@
 # Testing strategy
 
-**Last updated:** 2026-06-24
+**Last updated:** 2026-10-27
 
 ## Approach
 
-Testing is **docs-driven**: behavior is described in [`API_TEST_PLAN.md`](API_TEST_PLAN.md) and [`ANDROID_TEST_PLAN.md`](ANDROID_TEST_PLAN.md) before or alongside implementation. Prefer **fast unit tests** over broad UI tests for this app — most logic is time math, summary aggregation, and sync payloads.
+Testing is **docs-driven**: behaviour is described in the [capability specs](../specs/README.md) and [`ANDROID_TEST_PLAN.md`](ANDROID_TEST_PLAN.md) before or alongside implementation. Prefer **fast unit tests** over broad UI tests — most logic is time math, FY summaries, backup encoding and notification decisions.
 
-## Current coverage
+Run from `apps/android/`: `./gradlew :app:testDebugUnitTest`. CI runs the same suite plus `assembleDebug` on every PR.
 
-| Layer | What runs today | Target |
+## Layers
+
+| Layer | What runs | Examples |
 | --- | --- | --- |
-| API | 3 integration tests via `WebApplicationFactory` | Full plan below |
-| Android | None | JVM unit tests per plan |
-| Export | Smoke: response is non-empty xlsx | Golden-file cell assertions |
+| JVM unit tests | Pure helpers and rules, table-driven with named cases | `TimeHelpersTest`, `FinancialYearHelperTest`, `DiaryRulesTest`, `GeofenceHelperTest`, `BackupCodecTest`, `BackupRetentionTest`, `XlsxWriterTest` |
+| Robolectric tests | Room, `DiaryStore`, backup/restore services and notification updates against a real in-memory database and Android framework | `WfhDiaryDatabaseTest`, `DiaryStoreTest`, `BackupServiceTest`, `RestoreServiceTest`, `DayLogNotificationUpdaterTest` |
+| Manual | Device checks from [`ANDROID_TEST_PLAN.md`](ANDROID_TEST_PLAN.md) before release (notifications, backups to a real folder, OTA install, map picker) | — |
 
-## Phases
+Robolectric tests use `@Config(sdk = [34], application = Application::class)` and `runBlocking`.
 
-### Phase 1 — Ship (minimum)
+## Principles
 
-Keep existing smoke tests green in CI. Manual operability checklist before release (see [`OPERABILITY_CHECKLIST.md`](OPERABILITY_CHECKLIST.md)).
-
-### Phase 2 — Strong unit testing (end improvement)
-
-Implement after core Android + CI ship. Goal: **change time/summary/export logic with confidence** without manual spreadsheet checks every time.
-
-**Principles:**
-
-1. **Pure functions first** — `TimeHelpers`, `SummaryCalculator`, Android time utilities get table-driven tests with named cases.
-2. **One assertion theme per test** — e.g. `Leave_day_has_zero_hours_and_leave_description`, not mega-tests.
-3. **Golden file for xlsx only** — binary export compared at known cells (B3 name, F24 formula, N14, O14), not full file diff.
-4. **Fakes over mocks** — in-memory SQLite for API service tests; fake HTTP client for Android repository tests.
+1. **Pure functions first** — time, FY and summary helpers get table-driven tests with named cases.
+2. **One assertion theme per test** — e.g. `leave_day_has_zero_hours_and_grey_location`, not mega-tests.
+3. **Backup format is the contract** — `BackupCodecTest` covers every `BackupDocument` version the app can read ([CONSTITUTION](../CONSTITUTION.md) principle 5).
+4. **Fakes over mocks** — in-memory Room, `FakeBackupFolder` for backup storage.
 5. **CI gate** — PR blocked if tests fail; no `--no-verify`.
 
 ## Revision log
 
+- 2026-10-27: On-device only — removed API, contract and .NET test layers; documented JVM + Robolectric layers.
 - 2026-06-24: Initial strategy; Phase 2 marked as post-ship improvement per product backlog.
