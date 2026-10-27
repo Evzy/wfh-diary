@@ -86,7 +86,7 @@ When updates are configured, Settings offers **Check for update** and, once a re
 
 - **Given** the user opens Settings in the main app
 - **When** they tap **Check for update**
-- **Then** a manual check runs (OTA-008) and its status is shown. If owner/repo are not configured, the check reports a "not configured" status instead.
+- **Then** a manual check runs (OTA-008) and its status is shown. If owner/repo are not configured, the section shows a "not configured" note and no check button.
 
 ### OTA-011 — Download and install
 
@@ -128,7 +128,9 @@ When updates are configured, Settings offers **Check for update** and, once a re
 - **Suspected unintended — releases are not gated on tests.** In `release-android.yml` the `build` job has no `needs: tests`, so an APK can be published even when the reusable test job fails.
 - **Risk — the GitHub token ends up in the APK.** `UPDATE_GITHUB_TOKEN`, if set, is compiled into `BuildConfig` and sent on both the release query and the APK download.
 - **Comparison ignores `versionCode` and pre-release suffixes.** An `UNKNOWN` comparison is treated like an available update and auto-prompts.
-- Published APKs are **debug** builds signed with a shared debug key. The download has no checksum or signature check beyond the Android installer.
+- Published APKs are **debug** builds. They are signed with the shared debug key when `WFH_SHARED_DEBUG_KEYSTORE_B64` is set, and with the CI runner's default debug key otherwise. The download has no checksum or signature check beyond the Android installer.
+- `ReleaseVersionCompare` drops non-numeric dot-components before comparing by position, so `1.x.3` compares as `1.3.0`.
+- `AppUpdateViewModel.checkForUpdate` has a "not configured" status path that the UI can't reach. Both the login screen and Settings hide the check button when owner/repo are unset.
 - The `bump-version.ps1` header says it "syncs API + Android", but it only writes API files. Android picks up `version.json` at build time.
 - `ReleaseVersionCompare` is pure logic but has no unit tests. Android ViewModel tests are on the backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
