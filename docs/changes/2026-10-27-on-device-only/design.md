@@ -112,7 +112,7 @@ Device-local state that is **not** part of backups (backup folder URI, last back
 ### New spec `backup` (prefix `BAK`)
 
 - **ADDED** `BAK-001` — Backup document v1. Given app data, when a backup is produced, then it is JSON with `format`, `version: 1`, `exportedAt`, `appVersion`, `settings`, `days` (only non-empty days), `leavePeriods`, and `legacy`.
-- **ADDED** `BAK-002` — Choose backup folder. Given Settings → Backup, when the user picks a folder, then its URI permission is persisted and used for automatic backups.
+- **ADDED** `BAK-002` — Choose backup folder. Given Settings → Backup, when the user picks a folder, then its URI permission is persisted and used for automatic backups. Folder backups are skipped while the app holds no data, so a fresh install never overwrites a real backup with an empty one.
 - **ADDED** `BAK-003` — Automatic backup after changes. Given a folder is set, when data changes, then a backup is written about 10 minutes after the last change.
 - **ADDED** `BAK-004` — Daily backup. Given a folder is set, when the 24-hour periodic job runs, then a backup is written even without changes.
 - **ADDED** `BAK-005` — File naming and retention. Given backups in the folder, when a backup is written, then it is named `wfh-diary-backup-YYYY-MM-DD.json`, overwrites same-day, and only the newest 30 such files are kept.

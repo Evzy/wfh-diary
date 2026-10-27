@@ -23,9 +23,9 @@ class MissedNotificationWorker(
         val settings =
             runCatching { app.diaryRepository.getSettings() }
                 .getOrElse { error ->
-                showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
-                return Result.failure()
-            }
+                    showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
+                    return Result.failure()
+                }
 
         val default = settings.missedNotificationDefault
         if (!MissedNotificationDefault.isEnabled(default)) {

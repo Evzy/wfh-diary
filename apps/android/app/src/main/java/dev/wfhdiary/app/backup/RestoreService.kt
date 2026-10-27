@@ -22,6 +22,8 @@ class RestoreService(
                 is BackupOutcome.Success -> outcome.fileName
                 BackupOutcome.NoFolder ->
                     return RestoreOutcome.Failed("Choose a backup folder first so a safety backup can be saved. Nothing was changed.")
+                BackupOutcome.NothingToBackUp ->
+                    return RestoreOutcome.Failed("Could not save a safety backup, so nothing was changed.")
                 is BackupOutcome.Failed ->
                     return RestoreOutcome.Failed(
                         "Could not save a safety backup to your backup folder, so nothing was changed: ${outcome.message}",

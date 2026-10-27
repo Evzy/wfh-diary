@@ -11,6 +11,7 @@ class BackupWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         // Failures are recorded in BackupPreferences and surfaced in the UI; retrying blindly won't fix a revoked folder.
+        // NothingToBackUp (fresh install) is also a success.
         (applicationContext as WfhDiaryApplication).backupService.backupToFolder()
         return Result.success()
     }

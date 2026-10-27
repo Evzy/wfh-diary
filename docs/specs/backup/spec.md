@@ -22,7 +22,8 @@ Given Settings → Backup, when the user picks a folder, then its URI permission
 
 - **Given** Settings → Backup
 - **When** the user taps **Choose backup folder** and picks a folder
-- **Then** the folder's URI permission is persisted and used for automatic backups; a backup file is written immediately
+- **Then** the folder's URI permission is persisted and used for automatic backups; a backup is attempted immediately
+- Any backup to the folder (immediate, automatic, daily or manual) is skipped while the app holds no data (no days, no leave periods, default settings, empty `legacy`), so a fresh install never overwrites a real same-day backup with an empty one. The skip records neither success nor failure (no status or banner change) and shows "Nothing to back up yet". Safety backups before a restore are always written
 
 ### BAK-003 — Automatic backup after changes
 
@@ -114,7 +115,7 @@ Given a backup with `legacy` content, when restored and later backed up, then `l
 | Requirement | Tests |
 | --- | --- |
 | BAK-001 | `BackupCodecTest.encode_includes_format_and_version`, `BackupCodecTest.round_trip_preserves_document`, `BackupCodecTest.encode_always_includes_legacy`, `BackupCodecTest.missing_legacy_decodes_as_empty`; `DiaryStoreTest.export_document_and_replace_all_round_trip` |
-| BAK-002 | Manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) (Settings → Choose backup folder) |
+| BAK-002 | Manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) (Settings → Choose backup folder); `BackupServiceTest.empty_store_does_not_overwrite_existing_backup`, `BackupServiceTest.settings_only_change_still_backs_up`, `BackupServiceTest.safety_backup_is_written_even_when_store_is_empty` |
 | BAK-003 | Manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) (`DiaryStoreTest.writes_emit_change_events` covers the change signal only) |
 | BAK-004 | Manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) |
 | BAK-005 | `BackupRetentionTest.file_name_uses_iso_date`, `BackupRetentionTest.keeps_newest_thirty_and_ignores_other_files`; `BackupServiceTest.writes_todays_file_and_records_success`, `BackupServiceTest.prunes_old_files`, `BackupServiceTest.prune_failure_after_write_is_still_success` |
@@ -139,3 +140,4 @@ Given a backup with `legacy` content, when restored and later backed up, then `l
 
 - 2026-10-27: Initial spec for on-device storage, backups and restore; BAK-011 is phase 1 only ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: Final-review fixes ([change](../../changes/2026-10-27-on-device-only/design.md)). BAK-001: `legacy` is always written. BAK-009: restore and import require a chosen backup folder; the safety backup has no cache fallback and its failure refuses the restore with the reason; the summary shows the counts being replaced; the post-restore backup result is reported. BAK-011: import fetches FY 2020 through current + 1. A prune failure after a successful write no longer records a backup failure (BAK-005).
+- 2026-10-27: BAK-002: folder backups are skipped while the app holds no data, so choosing a folder on a fresh install cannot overwrite a real same-day backup with an empty one.

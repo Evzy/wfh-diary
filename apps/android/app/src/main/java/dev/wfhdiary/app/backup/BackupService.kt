@@ -1,5 +1,6 @@
 package dev.wfhdiary.app.backup
 
+import dev.wfhdiary.app.data.store.DiaryRules
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -29,15 +30,23 @@ class BackupService(
         mutex.withLock {
             val uri = prefs.folderUri ?: return BackupOutcome.NoFolder
             try {
-                val text = BackupCodec.encode(buildDocument())
+                val document = buildDocument()
+                if (isFreshInstallState(document)) return BackupOutcome.NothingToBackUp
+                val text = BackupCodec.encode(document)
                 val name = BackupRetention.fileNameFor(LocalDate.now(clock))
                 val folder =
                     withContext(Dispatchers.IO) {
                         openFolder(uri).also { it.write(name, text) }
                     }
                 prefs.recordSuccess(clock.millis())
-                withContext(Dispatchers.IO) {
-                    runCatching { BackupRetention.filesToDelete(folder.listNames()).forEach(folder::delete) }
+                try {
+                    withContext(Dispatchers.IO) {
+                        BackupRetention.filesToDelete(folder.listNames()).forEach(folder::delete)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // The backup itself was written; a failed prune is retried on the next backup.
                 }
                 BackupOutcome.Success(name)
             } catch (e: CancellationException) {
@@ -48,6 +57,12 @@ class BackupService(
                 BackupOutcome.Failed(message)
             }
         }
+
+    private fun isFreshInstallState(document: BackupDocument): Boolean =
+        document.days.isEmpty() &&
+            document.leavePeriods.isEmpty() &&
+            document.legacy.isEmpty() &&
+            document.settings == DiaryRules.defaultSettings()
 
     /** Writes a backup of the current data into the backup folder before a restore. */
     suspend fun writeSafetyBackup(): BackupOutcome {

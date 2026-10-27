@@ -79,6 +79,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
                 is BackupOutcome.Success -> app.getString(R.string.backup_done, outcome.fileName)
                 is BackupOutcome.Failed -> app.getString(R.string.backup_failed, outcome.message)
                 BackupOutcome.NoFolder -> app.getString(R.string.backup_no_folder)
+                BackupOutcome.NothingToBackUp -> app.getString(R.string.backup_nothing_yet)
             }
         }
 
@@ -157,6 +158,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
                             is BackupOutcome.Success -> app.getString(R.string.restore_backup_written, result.fileName)
                             is BackupOutcome.Failed -> app.getString(R.string.restore_backup_failed, result.message)
                             BackupOutcome.NoFolder -> app.getString(R.string.restore_backup_failed, app.getString(R.string.backup_no_folder))
+                            BackupOutcome.NothingToBackUp -> app.getString(R.string.backup_nothing_yet)
                         }
                     "$restored $backup"
                 }

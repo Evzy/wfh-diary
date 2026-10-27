@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
+import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
 import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.runBlocking
@@ -42,10 +43,40 @@ class BackupServiceTest {
     @After
     fun tearDown() = db.close()
 
+    private suspend fun addDay() {
+        store.upsertDay(2025, "2025-07-01", UpsertDayEntryRequest(location = "Home"))
+    }
+
     @Test
     fun no_folder_returns_no_folder() = runBlocking {
         prefs.folderUri = null
         assertEquals(BackupOutcome.NoFolder, service.backupToFolder())
+    }
+
+    @Test
+    fun empty_store_does_not_overwrite_existing_backup() = runBlocking {
+        prefs.folderUri = "content://tree"
+        folder.files["wfh-diary-backup-2026-10-27.json"] = "real data"
+        val outcome = service.backupToFolder()
+        assertEquals(BackupOutcome.NothingToBackUp, outcome)
+        assertEquals("real data", folder.files["wfh-diary-backup-2026-10-27.json"])
+        assertNull(prefs.lastSuccessMillis)
+        assertNull(prefs.lastError)
+    }
+
+    @Test
+    fun settings_only_change_still_backs_up() = runBlocking {
+        prefs.folderUri = "content://tree"
+        store.updateSettings(UpdateUserSettingsRequest(displayName = "Me"))
+        val outcome = service.backupToFolder()
+        assertEquals(BackupOutcome.Success("wfh-diary-backup-2026-10-27.json"), outcome)
+        assertTrue(folder.files.getValue("wfh-diary-backup-2026-10-27.json").contains("\"Me\""))
+    }
+
+    @Test
+    fun safety_backup_is_written_even_when_store_is_empty() = runBlocking {
+        prefs.folderUri = "content://tree"
+        assertTrue(service.writeSafetyBackup() is BackupOutcome.Success)
     }
 
     @Test
@@ -66,6 +97,7 @@ class BackupServiceTest {
         prefs.folderUri = "content://tree"
         repeat(31) { i -> folder.files["wfh-diary-backup-2026-09-%02d.json".format(i % 30 + 1)] = "{}" }
         folder.files["wfh-diary-backup-2026-08-31.json"] = "{}"
+        addDay()
         service.backupToFolder()
         assertEquals(30, folder.files.keys.count { it.startsWith("wfh-diary-backup-") })
         assertTrue("wfh-diary-backup-2026-10-27.json" in folder.files)
@@ -75,6 +107,7 @@ class BackupServiceTest {
     fun failure_is_recorded() = runBlocking {
         prefs.folderUri = "content://tree"
         folder.failWrites = true
+        addDay()
         val outcome = service.backupToFolder()
         assertTrue(outcome is BackupOutcome.Failed)
         assertEquals("disk full", prefs.lastError)
@@ -85,6 +118,7 @@ class BackupServiceTest {
         prefs.folderUri = "content://tree"
         repeat(30) { i -> folder.files["wfh-diary-backup-2026-09-%02d.json".format(i + 1)] = "{}" }
         folder.failDeletes = true
+        addDay()
         val outcome = service.backupToFolder()
         assertEquals(BackupOutcome.Success("wfh-diary-backup-2026-10-27.json"), outcome)
         assertEquals(clock.millis(), prefs.lastSuccessMillis)
