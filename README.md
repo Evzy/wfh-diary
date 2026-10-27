@@ -2,7 +2,7 @@
 
 Android app + ASP.NET Core API for tracking **working from home** hours (Australian FY, ATO fixed-rate method) and exporting the MGIS-style **Working from Home Diary** spreadsheet.
 
-Planning and continuity live under `docs/` — start with [`docs/TODO.md`](docs/TODO.md).
+This repo is **spec-driven** — start with [`AGENTS.md`](AGENTS.md), then the capability specs in [`docs/specs/`](docs/specs/README.md). Roadmap and backlog: [`docs/TODO.md`](docs/TODO.md).
 
 ## Layout
 

@@ -1,0 +1,22 @@
+---
+description: Spec-driven workflow for WFH Diary
+alwaysApply: true
+---
+
+# Spec-driven workflow
+
+This repo is spec-driven. Read `AGENTS.md` and `docs/CONSTITUTION.md` when starting work.
+
+Before changing behaviour in `services/`, `apps/`, or `packages/`:
+
+1. Find the affected capability spec(s) via `docs/specs/README.md` and read them.
+2. If the change adds, modifies, or removes specified behaviour, it needs a change folder in `docs/changes/YYYY-MM-DD-<slug>/` with `design.md` status `approved`. If none exists, propose one (status `proposed`) and get user approval before implementing.
+3. Refactors, dependency bumps, and fixes that do not change specified behaviour skip the change folder.
+
+After implementing:
+
+- Apply the requirement delta to the capability spec, update its Test coverage table and Revision log, and set the change `design.md` status to `shipped`.
+- If code and spec disagree, flag it to the user — do not silently pick one.
+- DTO changes must update `packages/shared/contracts/` fixtures and both contract test suites.
+
+Superpowers path override: brainstorming designs go to `docs/changes/<folder>/design.md` and writing-plans output to `docs/changes/<folder>/plan.md`, not `docs/superpowers/`.
