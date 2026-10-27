@@ -86,7 +86,7 @@ A failed log attempt shows a persistent failure notification with Retry and Open
 
 - **Given** a log attempt failed for a date
 - **When** the failure notification is shown, in the reminder slot (ID 1001) for quick-action attempts or in the auto-log slot (ID 1002) for automatic attempts
-- **Then** the Retry intent carries that slot, and the retry's pending, success and failure notifications reuse it, so a retried automatic failure stays in ID 1002. Retry cancels missed work for that date and shows the pending state. It re-runs the whole missed-default job when the missed job couldn't load settings, leave periods or the day entry, or when a Geolocation missed default failed; otherwise it re-runs the original action. Open app launches the app for that date
+- **Then** the Retry intent carries that slot, and the retry's pending and failure notifications reuse it. Success after re-running the original action always posts to ID 1001 on the `morning_reminder` channel; success after re-running the missed-default job posts to ID 1002. Retry cancels missed work for that date and shows the pending state. It re-runs the whole missed-default job when the missed job couldn't load settings, leave periods or the day entry, or when a Geolocation missed default failed; otherwise it re-runs the original action. Open app launches the app for that date
 
 ### NOTIF-011 — Permission gating
 
@@ -138,6 +138,7 @@ Settings can show the morning reminder immediately so the user can check that no
 - Suspected unintended: if `MissedNotificationWorker` can't load settings, its failure notification always names `Home` as the action, whatever the configured default is.
 - Suspected unintended: missed-default scheduling depends on notification permission (NOTIF-011), so users who block notifications never get automatic logging.
 - Suspected unintended: a manual quick action (NOTIF-005) upserts the day even if it already has an entry, overwriting existing times. The missed default checks for this case; the quick action does not.
+- Suspected unintended: when a retried automatic failure (ID 1002) re-runs the original action and succeeds, the success notification goes to ID 1001. The ongoing pending notification in ID 1002 is never cleared.
 - `NotificationChannels.ACTION_ADD_TIME` is defined but never used (Add time opens the quick-add activity directly). `NotificationActionWorker.SOURCE_AUTO_APPLY` is never enqueued by production code.
 
 ## Revision log
