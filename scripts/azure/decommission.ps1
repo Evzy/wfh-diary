@@ -17,28 +17,30 @@ az account set --subscription $Subscription
 if ($LASTEXITCODE -ne 0) { Write-Error "Could not select subscription '$Subscription'. Run 'az login' first." }
 
 $exists = az group exists --name $ResourceGroup
+if ($LASTEXITCODE -ne 0) { Write-Error "az group exists failed. Run 'az login' first." }
 if ($exists -ne "true") {
-    Write-Host "Resource group '$ResourceGroup' does not exist in '$Subscription'. Nothing to delete."
-    exit 0
+    Write-Host "Resource group '$ResourceGroup' does not exist in '$Subscription'. Skipping resource group deletion."
 }
+else {
+    Write-Host "Resources in ${ResourceGroup}:"
+    az resource list --resource-group $ResourceGroup --query "[].{name:name, type:type}" --output table
 
-Write-Host "Resources in ${ResourceGroup}:"
-az resource list --resource-group $ResourceGroup --query "[].{name:name, type:type}" --output table
+    Write-Host ""
+    Write-Host "This permanently deletes every resource above, including the SQL database." -ForegroundColor Yellow
+    $typed = Read-Host "Type the resource group name to confirm"
+    if ($typed -ne $ResourceGroup) {
+        Write-Host "Confirmation did not match. Nothing deleted."
+        exit 1
+    }
 
-Write-Host ""
-Write-Host "This permanently deletes every resource above, including the SQL database." -ForegroundColor Yellow
-$typed = Read-Host "Type the resource group name to confirm"
-if ($typed -ne $ResourceGroup) {
-    Write-Host "Confirmation did not match. Nothing deleted."
-    exit 1
+    az group delete --name $ResourceGroup --yes
+    if ($LASTEXITCODE -ne 0) { Write-Error "az group delete failed." }
+    Write-Host "Deleted $ResourceGroup."
 }
-
-az group delete --name $ResourceGroup --yes
-if ($LASTEXITCODE -ne 0) { Write-Error "az group delete failed." }
-Write-Host "Deleted $ResourceGroup."
 
 # The GitHub Actions deploy identity lives in Entra ID, outside the resource group.
 $appId = az ad app list --display-name $DeployAppName --query "[0].appId" --output tsv
+if ($LASTEXITCODE -ne 0) { Write-Error "az ad app list failed." }
 if ([string]::IsNullOrWhiteSpace($appId)) {
     Write-Host "No app registration named '$DeployAppName'. Done."
     exit 0

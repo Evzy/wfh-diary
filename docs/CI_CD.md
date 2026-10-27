@@ -85,4 +85,4 @@ Base64-encode for GitHub secret `WFH_SHARED_DEBUG_KEYSTORE_B64` (see [Secrets](#
 
 ## Retired backend
 
-The API and its Azure resources are no longer used. Delete them once, by hand, with [`scripts/azure/decommission.ps1`](../scripts/azure/decommission.ps1) after the phone holds all data and a backup file exists; then remove the `AZURE_*` secrets from the repo.
+The API and its Azure resources are no longer used. Delete them once, by hand, with [`scripts/azure/decommission.ps1`](../scripts/azure/decommission.ps1) after the phone holds all data and a backup file exists; then remove the stale `AZURE_*` and `WFH_FIREBASE_WEB_CLIENT_ID` secrets from the repo.
