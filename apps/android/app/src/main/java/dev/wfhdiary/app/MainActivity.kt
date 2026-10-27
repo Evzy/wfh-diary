@@ -21,12 +21,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.wfhdiary.app.backup.BackupWarning
 import dev.wfhdiary.app.ui.auth.AuthViewModel
 import dev.wfhdiary.app.ui.auth.LoginScreen
+import dev.wfhdiary.app.ui.backup.BackupSection
+import dev.wfhdiary.app.ui.backup.BackupViewModel
 import dev.wfhdiary.app.ui.month.MonthGridScreen
 import dev.wfhdiary.app.ui.month.MonthGridViewModel
 import dev.wfhdiary.app.ui.settings.SettingsScreen
@@ -48,6 +52,9 @@ class MainActivity : ComponentActivity() {
     }
     private val appUpdateViewModel: AppUpdateViewModel by viewModels {
         AppUpdateViewModel.factory(application)
+    }
+    private val backupViewModel: BackupViewModel by viewModels {
+        BackupViewModel.factory(application)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +96,7 @@ class MainActivity : ComponentActivity() {
                             settingsViewModel = settingsViewModel,
                             monthViewModel = monthViewModel,
                             appUpdateViewModel = appUpdateViewModel,
+                            backupViewModel = backupViewModel,
                             accountUserLabel = authState.userLabel,
                             onSignOut = authViewModel::signOut,
                         )
@@ -104,6 +112,7 @@ private fun MainAppContent(
     settingsViewModel: SettingsViewModel,
     monthViewModel: MonthGridViewModel,
     appUpdateViewModel: AppUpdateViewModel,
+    backupViewModel: BackupViewModel,
     accountUserLabel: String?,
     onSignOut: () -> Unit,
 ) {
@@ -121,6 +130,7 @@ private fun MainAppContent(
     val workScheduleCustomize by settingsViewModel.workScheduleCustomize.collectAsStateWithLifecycle()
     val geolocationSettingsOpen by settingsViewModel.geolocationSettingsOpen.collectAsStateWithLifecycle()
     val geolocationDraft by settingsViewModel.geolocationDraft.collectAsStateWithLifecycle()
+    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val activity = LocalContext.current as ComponentActivity
@@ -131,6 +141,7 @@ private fun MainAppContent(
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     monthViewModel.refreshFromRemote(showProgress = false)
+                    backupViewModel.refresh()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -141,6 +152,13 @@ private fun MainAppContent(
         if (drawerState.currentValue == DrawerValue.Open) {
             settingsViewModel.refreshSettings()
             settingsViewModel.syncExportFyYear(monthState.fyYear)
+        }
+    }
+
+    LaunchedEffect(backupState.restoreGeneration) {
+        if (backupState.restoreGeneration > 0) {
+            monthViewModel.refreshFromRemote(showProgress = true)
+            settingsViewModel.refreshSettings()
         }
     }
 
@@ -193,6 +211,18 @@ private fun MainAppContent(
                     onPickOfficeOnMap = settingsViewModel::openOfficeMapPicker,
                     onDismissGeofenceMapPicker = settingsViewModel::dismissGeofenceMapPicker,
                     onSaveGeofenceFromMap = settingsViewModel::saveGeofenceFromMap,
+                    backupSection = {
+                        BackupSection(
+                            state = backupState,
+                            onFolderChosen = backupViewModel::onFolderChosen,
+                            onBackupNow = backupViewModel::backupNow,
+                            onShare = { backupViewModel.share(activity) },
+                            onRestoreFileChosen = backupViewModel::onRestoreFileChosen,
+                            onImportFromServer = backupViewModel::importFromServer,
+                            onConfirmRestore = backupViewModel::confirmRestore,
+                            onCancelRestore = backupViewModel::cancelRestore,
+                        )
+                    },
                     onClose = {
                         settingsViewModel.flushPendingSettings()
                         scope.launch { drawerState.close() }
@@ -218,6 +248,13 @@ private fun MainAppContent(
                 onDeleteDay = monthViewModel::deleteDay,
                 onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
                 onRefresh = { monthViewModel.refreshFromRemote(showProgress = true) },
+                backupWarning = when (backupState.warning) {
+                    BackupWarning.NO_FOLDER -> stringResource(R.string.backup_warning_no_folder)
+                    BackupWarning.FAILED -> stringResource(R.string.backup_warning_failed)
+                    BackupWarning.STALE -> stringResource(R.string.backup_warning_stale)
+                    null -> null
+                },
+                onBackupWarningClick = { scope.launch { drawerState.open() } },
             )
         }
     }
