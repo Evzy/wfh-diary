@@ -16,7 +16,7 @@ Guide for agents and humans working in this repo. This project is **spec-driven*
 | `apps/android/` | Android app (`dev.wfhdiary.app`) — Compose, Room, WorkManager; on-device only, with file backups |
 | `.github/workflows/` | CI, Android release |
 | `docs/` | Constitution, specs, changes, architecture, CI/CD, testing |
-| `scripts/` | Version bump, git hook setup, Azure decommission (manual) |
+| `scripts/` | Version bump, git hook setup |
 
 ## Commands
 

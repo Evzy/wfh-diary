@@ -160,23 +160,6 @@
     <string name="fy_picker_title">Choose financial year</string>
     <string name="fy_previous">Previous financial year</string>
     <string name="fy_next">Next financial year</string>
-    <string name="work_templates_section_title">Work templates</string>
-    <string name="work_templates_section_hint">Optional extra presets with custom times or descriptions. Home and office geofences are configured above.</string>
-    <string name="work_templates_manage">Manage templates</string>
-    <string name="work_templates_title">Work templates</string>
-    <string name="work_templates_hint">Add templates with optional geofence (latitude, longitude, radius in metres). Used when a missed reminder finds you at that location.</string>
-    <string name="work_templates_empty">No templates yet.</string>
-    <string name="work_templates_label">Label</string>
-    <string name="work_templates_geofence_title">Geofence (optional)</string>
-    <string name="work_templates_latitude">Latitude</string>
-    <string name="work_templates_longitude">Longitude</string>
-    <string name="work_templates_radius_m">Radius (metres)</string>
-    <string name="work_templates_add">Add template</string>
-    <string name="work_templates_delete">Delete template</string>
-    <string name="work_templates_label_required">Label is required.</string>
-    <string name="work_templates_location_permission">Location access is needed for geofence auto-apply when a reminder is missed.</string>
-    <string name="work_templates_location_enable">Allow location</string>
-    <string name="work_templates_location_granted">Location access granted.</string>
     <string name="location_background_permission">Allow all the time so location can be checked at reminder and apply times when the app is closed.</string>
     <string name="location_background_enable">Allow all the time</string>
     <string name="location_geofence_section_title">Home &amp; office locations</string>
@@ -227,4 +210,6 @@
     <string name="backup_warning_no_folder">Backups are off. Tap to choose a backup folder.</string>
     <string name="backup_warning_failed">The last backup failed. Tap to check.</string>
     <string name="backup_warning_stale">No backup in the last 3 days. Tap to check.</string>
+    <string name="work_templates_location_permission">Location access is needed for geofence auto-apply when a reminder is missed.</string>
+    <string name="work_templates_location_enable">Allow location</string>
 </resources>

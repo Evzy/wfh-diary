@@ -85,4 +85,4 @@ Base64-encode for GitHub secret `WFH_SHARED_DEBUG_KEYSTORE_B64` (see [Secrets](#
 
 ## Retired backend
 
-The API and its Azure resources are no longer used. Delete them once, by hand, with [`scripts/azure/decommission.ps1`](../scripts/azure/decommission.ps1) after the phone holds all data and a backup file exists; then remove the stale `AZURE_*` and `WFH_FIREBASE_WEB_CLIENT_ID` secrets from the repo.
+The API, its Azure resources, the GitHub deploy app registration and the `AZURE_*` / `WFH_FIREBASE_WEB_CLIENT_ID` secrets were deleted on 2026-10-27 ([on-device-only change](changes/2026-10-27-on-device-only/tasks.md)). Firebase / Google Cloud cleanup is still pending — see [`TODO.md`](TODO.md#later-firebase--google-cloud-cleanup).
