@@ -127,10 +127,10 @@ Tapping "Export financial year (XLSX)" downloads `GET /v1/diaries/{fy}/export.xl
 - No Android ViewModel/repository tests (MockEngine) for the export flow ([`TODO.md` § B](../../TODO.md#b-strong-unit-testing--partial)).
 - Suspected bug: the Android `HttpClient` does not set `expectSuccess` and `downloadExportXlsx` does not check the status code, so a non-2xx response (e.g. a 401 JSON error) is saved and shared as an `.xlsx` file instead of showing "Export failed".
 - Suspected inconsistency: the spreadsheet hours formula `(D-C)*24-E` is not clamped, so finish before start or a break longer than the span yields negative hours, whereas the in-app summary (`TimeHelpers.ComputeTotalHours`) clamps to 0; the two totals can disagree.
-- Suspected inconsistency: the leave check for the Hours column (`Description == "LEAVE"`) is case-sensitive, while the grey leave styling is case-insensitive; a timed entry described `LEAVE` gets the hours formula, not 0.
+- Suspected inconsistency: the leave check for the Hours column (`Description == "LEAVE"`) is case-sensitive, while the grey leave styling is case-insensitive; an untimed entry described `leave` (lowercase) gets a blank Hours cell instead of 0 but is still shaded grey. (Separately, a timed entry described `LEAVE` gets the hours formula because times take precedence over the leave check.)
 - The settings hint says the FY "defaults to the calendar year when you open settings", but the code resets it to the FY of the month currently shown in the month grid (XLSX-010); the copy looks out of date.
 - The export status text (including "Downloading spreadsheet…") is always rendered in the error colour.
-- `fyYear` is not range-validated: exporting any integer year creates an empty diary for it as a side effect (XLSX-002).
+- `fyYear` is not range-validated: exporting any in-range year creates an empty diary for it as a side effect (XLSX-002), and years outside the `DateOnly` range (e.g. 0 or 9999) throw in `FinancialYearHelper.FyRange`, likely surfacing as a 500.
 - The $0.67/hour WFH rate is hard-coded separately in `XlsxExportService` and `SummaryCalculator`; a rate change must update both.
 
 ## Revision log
