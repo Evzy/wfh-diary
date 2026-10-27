@@ -38,7 +38,7 @@ Phase 1 (this branch, `on-device-only`) keeps the backend running and ships on-d
 
 ## Phase-1 gate (manual, on phone)
 
-**Not yet run.** These checks are for the human to perform on the phone and record here. **Phase 2 planning waits on this gate: it may only be planned once steps 2–5 have passed.** Procedure and BAK/DAY/XLSX IDs are also in [`ANDROID_TEST_PLAN.md`](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device).
+**Partly run (2026-10-27):** steps 1, 2, 3 and 5 confirmed on the phone with v0.1.24 (import succeeded, grid and FY summary match the old server, app XLSX export looks right, backup file present). Step 4 and steps 6–15 are still to do before `scripts/azure/decommission.ps1` runs. These checks are for the human to perform on the phone and record here. **Phase 2 planning waits on this gate: it may only be planned once steps 2–5 have passed.** Procedure and BAK/DAY/XLSX IDs are also in [`ANDROID_TEST_PLAN.md`](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device).
 
 Do steps 2 and 3 **before logging any day on the new build** (the import replaces everything on the phone; notification actions count as logging).
 
