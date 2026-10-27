@@ -1,14 +1,14 @@
 package dev.wfhdiary.app.notification
 
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettings
 import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
 
 object GeolocationNotificationHelper {
     suspend fun matchingPlace(
         app: WfhDiaryApplication,
-        settings: UserSettingsDto,
+        settings: UserSettings,
     ): GeofenceHelper.Place? {
         if (!hasGeofencesConfigured(settings)) return null
         val location = LocationHelper.getCurrentLocation(app) ?: return null
@@ -24,7 +24,7 @@ object GeolocationNotificationHelper {
         )
     }
 
-    fun hasGeofencesConfigured(settings: UserSettingsDto): Boolean =
+    fun hasGeofencesConfigured(settings: UserSettings): Boolean =
         (settings.homeGeofenceLatitude != null &&
             settings.homeGeofenceLongitude != null &&
             settings.homeGeofenceRadiusMeters != null) ||
@@ -33,7 +33,7 @@ object GeolocationNotificationHelper {
                 settings.officeGeofenceRadiusMeters != null)
 
     fun shouldSkipNotification(
-        settings: UserSettingsDto,
+        settings: UserSettings,
         place: GeofenceHelper.Place,
     ): Boolean =
         when (place) {
@@ -44,7 +44,7 @@ object GeolocationNotificationHelper {
     suspend fun applyPlace(
         app: WfhDiaryApplication,
         date: String,
-        settings: UserSettingsDto,
+        settings: UserSettings,
         place: GeofenceHelper.Place,
     ) {
         val action =
@@ -58,7 +58,7 @@ object GeolocationNotificationHelper {
     suspend fun applyAwayFallback(
         app: WfhDiaryApplication,
         date: String,
-        settings: UserSettingsDto,
+        settings: UserSettings,
     ) {
         NotificationDayActions.apply(app, date, settings.missedNotificationAwayDefault, settings)
     }

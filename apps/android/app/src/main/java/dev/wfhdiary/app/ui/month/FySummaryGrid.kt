@@ -15,12 +15,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.model.DiarySummaryDto
+import dev.wfhdiary.app.data.model.DiarySummary
 
 @Composable
 fun FySummaryGrid(
     fyYear: Int,
-    summary: DiarySummaryDto?,
+    summary: DiarySummary?,
     modifier: Modifier = Modifier,
 ) {
     Column(

@@ -14,7 +14,7 @@ Lets a user schedule leave as a date range (with an optional note), which marks 
 
 - **Given** the app
 - **When** it creates leave with `{ startDate, endDate, note }` using `yyyy-MM-dd` dates
-- **Then** a `LeavePeriodDto` is returned containing a new `id`, the start and end dates and the note (trimmed; blank becomes null)
+- **Then** a `LeavePeriod` is returned containing a new `id`, the start and end dates and the note (trimmed; blank becomes null)
 
 ### LEAVE-002 — Reject malformed dates
 
@@ -102,7 +102,7 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 | --- | --- |
 | Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`createLeave`, `getLeavePeriods`, `deleteLeave`), `data/store/DiaryRules.kt` (`leaveDatesInFy`, `leaveDay`, `datesToClearOnLeaveDelete`) |
 | Storage | `data/local/LeavePeriodEntity.kt`, `data/local/LeavePeriodDao.kt` |
-| Model | `data/model/LeavePeriodDto.kt`, `data/model/CreateLeaveRequest.kt` |
+| Model | `data/model/LeavePeriod.kt`, `data/model/NewLeave.kt` |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/leave/LeaveScheduleSheet.kt`, `util/LeavePeriodHelper.kt`, `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt` |
 
 ## Test coverage
@@ -138,3 +138,4 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — LEAVE-001..008 rewritten as local `DiaryStore` behaviour; "404" cases became no-ops ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — server and contract-fixture references removed; DTOs live in `data/model/` ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: Internal model classes renamed (`LeavePeriodDto` → `LeavePeriod`, `CreateLeaveRequest` → `NewLeave`), no behaviour change.

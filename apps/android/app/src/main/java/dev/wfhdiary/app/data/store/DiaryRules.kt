@@ -1,11 +1,11 @@
 package dev.wfhdiary.app.data.store
 
 import dev.wfhdiary.app.backup.BackupDay
-import dev.wfhdiary.app.data.model.DayEntryDto
-import dev.wfhdiary.app.data.model.DiarySummaryDto
-import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.DayEntry
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.DiarySummary
+import dev.wfhdiary.app.data.model.UserSettings
+import dev.wfhdiary.app.data.model.UserSettingsUpdate
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.TimeHelpers
 import dev.wfhdiary.app.util.WorkingDaysMask
@@ -24,7 +24,7 @@ object DiaryRules {
     fun normalizeTime(value: String?): String? =
         TimeHelpers.parseTimeString(value)?.let(TimeHelpers::minutesToTimeString)
 
-    fun applyUpsert(existing: BackupDay?, date: String, request: UpsertDayEntryRequest): BackupDay {
+    fun applyUpsert(existing: BackupDay?, date: String, request: DayEntryUpdate): BackupDay {
         var day = existing ?: BackupDay(date)
         if (request.startTime != null) day = day.copy(startTime = normalizeTime(request.startTime))
         if (request.finishTime != null) day = day.copy(finishTime = normalizeTime(request.finishTime))
@@ -34,7 +34,7 @@ object DiaryRules {
         return day
     }
 
-    fun replace(date: String, request: UpsertDayEntryRequest): BackupDay =
+    fun replace(date: String, request: DayEntryUpdate): BackupDay =
         BackupDay(
             date = date,
             startTime = normalizeTime(request.startTime),
@@ -61,8 +61,8 @@ object DiaryRules {
     fun dayName(date: String): String =
         LocalDate.parse(date).dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
 
-    fun toDto(day: BackupDay): DayEntryDto =
-        DayEntryDto(
+    fun toDayEntry(day: BackupDay): DayEntry =
+        DayEntry(
             date = day.date,
             dayName = dayName(day.date),
             startTime = day.startTime,
@@ -91,7 +91,7 @@ object DiaryRules {
             .filter { date -> others.none { date in it } }
             .toList()
 
-    fun summarize(days: Collection<BackupDay>): DiarySummaryDto {
+    fun summarize(days: Collection<BackupDay>): DiarySummary {
         var total = BigDecimal.ZERO
         var home = BigDecimal.ZERO
         var office = BigDecimal.ZERO
@@ -112,7 +112,7 @@ object DiaryRules {
             }
         }
         val claimable = home.multiply(WFH_RATE).setScale(2, RoundingMode.HALF_EVEN)
-        return DiarySummaryDto(
+        return DiarySummary(
             totalHours = total.toDouble(),
             homeHours = home.toDouble(),
             officeHours = office.toDouble(),
@@ -123,8 +123,8 @@ object DiaryRules {
         )
     }
 
-    fun defaultSettings(): UserSettingsDto =
-        UserSettingsDto(
+    fun defaultSettings(): UserSettings =
+        UserSettings(
             displayName = "YOUR NAME HERE",
             notificationTime = "08:00",
             notificationWorkingDaysMask = WorkingDaysMask.DEFAULT,
@@ -139,7 +139,7 @@ object DiaryRules {
             defaultOfficeBreakHours = 1.0,
         )
 
-    fun applySettingsUpdate(current: UserSettingsDto, r: UpdateUserSettingsRequest): UserSettingsDto {
+    fun applySettingsUpdate(current: UserSettings, r: UserSettingsUpdate): UserSettings {
         var s = current
         r.displayName?.let { s = s.copy(displayName = it) }
         normalizeTime(r.notificationTime)?.let { s = s.copy(notificationTime = it) }

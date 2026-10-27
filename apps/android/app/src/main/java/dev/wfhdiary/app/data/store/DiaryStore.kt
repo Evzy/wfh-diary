@@ -4,19 +4,18 @@ import androidx.room.withTransaction
 import dev.wfhdiary.app.backup.BackupDay
 import dev.wfhdiary.app.backup.BackupDocument
 import dev.wfhdiary.app.backup.BackupLeavePeriod
-import dev.wfhdiary.app.data.DiaryDataSource
 import dev.wfhdiary.app.data.local.DayEntryEntity
 import dev.wfhdiary.app.data.local.LeavePeriodEntity
 import dev.wfhdiary.app.data.local.SettingsEntity
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.model.CreateLeaveRequest
-import dev.wfhdiary.app.data.model.DayEntryDto
-import dev.wfhdiary.app.data.model.DiaryDto
-import dev.wfhdiary.app.data.model.DiarySummaryDto
-import dev.wfhdiary.app.data.model.LeavePeriodDto
-import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.DayEntry
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.DiaryRange
+import dev.wfhdiary.app.data.model.DiarySummary
+import dev.wfhdiary.app.data.model.LeavePeriod
+import dev.wfhdiary.app.data.model.NewLeave
+import dev.wfhdiary.app.data.model.UserSettings
+import dev.wfhdiary.app.data.model.UserSettingsUpdate
 import dev.wfhdiary.app.export.XlsxWriter
 import dev.wfhdiary.app.util.FinancialYearHelper
 import kotlinx.coroutines.channels.BufferOverflow
@@ -33,7 +32,7 @@ import java.util.UUID
 class DiaryStore(
     private val db: WfhDiaryDatabase,
     private val clock: () -> Long = System::currentTimeMillis,
-) : DiaryDataSource {
+) {
     private val dayDao = db.dayEntryDao()
     private val leaveDao = db.leavePeriodDao()
     private val settingsDao = db.settingsDao()
@@ -51,39 +50,41 @@ class DiaryStore(
         return result
     }
 
-    override suspend fun getDiary(fyYear: Int): DiaryDto {
+    suspend fun getDiary(fyYear: Int): DiaryRange {
         val (start, end) = FinancialYearHelper.fyRange(fyYear)
-        return DiaryDto(fyYear, start.toString(), end.toString())
+        return DiaryRange(fyYear, start.toString(), end.toString())
     }
 
-    override suspend fun getDays(fyYear: Int, from: String?, to: String?): List<DayEntryDto> {
+    suspend fun getDays(fyYear: Int, from: String?, to: String?): List<DayEntry> {
         val (fyStart, fyEnd) = FinancialYearHelper.fyRange(fyYear)
         val lower = maxOf(fyStart, from?.let(::parseDate) ?: fyStart)
         val upper = minOf(fyEnd, to?.let(::parseDate) ?: fyEnd)
         if (lower > upper) return emptyList()
-        return dayDao.getBetween(lower.toString(), upper.toString()).map { DiaryRules.toDto(it.toBackupDay()) }
+        return dayDao.getBetween(lower.toString(), upper.toString()).map { DiaryRules.toDayEntry(it.toBackupDay()) }
     }
 
-    override suspend fun upsertDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
+    /** Partial update: null fields are left unchanged. */
+    suspend fun upsertDay(fyYear: Int, date: String, request: DayEntryUpdate): DayEntry =
         write {
             requireInFy(fyYear, date)
             save(DiaryRules.applyUpsert(dayDao.get(date)?.toBackupDay(), date, request))
         }
 
-    override suspend fun replaceDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
+    /** Full replace: null or blank fields are cleared. */
+    suspend fun replaceDay(fyYear: Int, date: String, request: DayEntryUpdate): DayEntry =
         write {
             requireInFy(fyYear, date)
             save(DiaryRules.replace(date, request))
         }
 
-    override suspend fun deleteDay(fyYear: Int, date: String): DayEntryDto =
+    suspend fun deleteDay(fyYear: Int, date: String): DayEntry =
         write {
             requireInFy(fyYear, date)
             dayDao.delete(date)
-            DiaryRules.toDto(BackupDay(date))
+            DiaryRules.toDayEntry(BackupDay(date))
         }
 
-    override suspend fun createLeave(fyYear: Int, request: CreateLeaveRequest): LeavePeriodDto =
+    suspend fun createLeave(fyYear: Int, request: NewLeave): LeavePeriod =
         write {
             var start = parseDate(request.startDate)
             var end = parseDate(request.endDate)
@@ -98,20 +99,20 @@ class DiaryStore(
                 )
             leaveDao.insert(period)
             DiaryRules.leaveDatesInFy(fyYear, start, end).forEach { save(DiaryRules.leaveDay(it.toString())) }
-            period.toDto()
+            period.toLeavePeriod()
         }
 
-    override suspend fun getSummary(fyYear: Int): DiarySummaryDto =
+    suspend fun getSummary(fyYear: Int): DiarySummary =
         DiaryRules.summarize(daysInFy(fyYear))
 
-    override suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
+    suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
         val bytes = XlsxWriter.write(fyYear, getSettings().displayName, daysInFy(fyYear))
         return bytes to XlsxWriter.filename(fyYear)
     }
 
-    override suspend fun getLeavePeriods(): List<LeavePeriodDto> = leaveDao.getAll().map { it.toDto() }
+    suspend fun getLeavePeriods(): List<LeavePeriod> = leaveDao.getAll().map { it.toLeavePeriod() }
 
-    override suspend fun deleteLeave(id: String) {
+    suspend fun deleteLeave(id: String) {
         write {
             val period = leaveDao.get(id) ?: return@write
             leaveDao.delete(id)
@@ -126,16 +127,16 @@ class DiaryStore(
         }
     }
 
-    override suspend fun getSettings(): UserSettingsDto =
-        settingsDao.get()?.let { json.decodeFromString(UserSettingsDto.serializer(), it.settingsJson) }
+    suspend fun getSettings(): UserSettings =
+        settingsDao.get()?.let { json.decodeFromString(UserSettings.serializer(), it.settingsJson) }
             ?: DiaryRules.defaultSettings()
 
-    override suspend fun updateSettings(request: UpdateUserSettingsRequest): UserSettingsDto =
+    suspend fun updateSettings(request: UserSettingsUpdate): UserSettings =
         write {
             val updated = DiaryRules.applySettingsUpdate(getSettings(), request)
             settingsDao.upsert(
                 SettingsEntity(
-                    settingsJson = json.encodeToString(UserSettingsDto.serializer(), updated),
+                    settingsJson = json.encodeToString(UserSettings.serializer(), updated),
                     legacyJson = settingsDao.get()?.legacyJson,
                 ),
             )
@@ -171,7 +172,7 @@ class DiaryStore(
             )
             settingsDao.upsert(
                 SettingsEntity(
-                    settingsJson = json.encodeToString(UserSettingsDto.serializer(), document.settings),
+                    settingsJson = json.encodeToString(UserSettings.serializer(), document.settings),
                     legacyJson = document.legacy.takeIf { it.isNotEmpty() }?.toString(),
                 ),
             )
@@ -183,9 +184,9 @@ class DiaryStore(
         return dayDao.getBetween(start.toString(), end.toString()).map { it.toBackupDay() }
     }
 
-    private suspend fun save(day: BackupDay): DayEntryDto {
+    private suspend fun save(day: BackupDay): DayEntry {
         if (DiaryRules.isEmpty(day)) dayDao.delete(day.date) else dayDao.upsert(day.toEntity(clock()))
-        return DiaryRules.toDto(day)
+        return DiaryRules.toDayEntry(day)
     }
 
     private fun requireInFy(fyYear: Int, date: String) {
@@ -207,5 +208,5 @@ class DiaryStore(
     private fun BackupDay.toEntity(now: Long) =
         DayEntryEntity(date, startTime, finishTime, breakHours, description, location, now)
 
-    private fun LeavePeriodEntity.toDto() = LeavePeriodDto(id, startDate, endDate, note)
+    private fun LeavePeriodEntity.toLeavePeriod() = LeavePeriod(id, startDate, endDate, note)
 }

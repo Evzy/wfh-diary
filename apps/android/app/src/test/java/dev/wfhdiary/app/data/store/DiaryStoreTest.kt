@@ -7,9 +7,9 @@ import dev.wfhdiary.app.backup.BackupDay
 import dev.wfhdiary.app.backup.BackupDocument
 import dev.wfhdiary.app.backup.BackupLeavePeriod
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.model.CreateLeaveRequest
-import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.NewLeave
+import dev.wfhdiary.app.data.model.UserSettingsUpdate
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -45,12 +45,21 @@ class DiaryStoreTest {
     @After
     fun tearDown() = db.close()
 
-    private val homeDay = UpsertDayEntryRequest("08:00", "17:00", 1.0, null, "Home")
+    private val homeDay = DayEntryUpdate("08:00", "17:00", 1.0, null, "Home")
+
+    @Test
+    fun diary_range_derived_without_storing_days() = runBlocking {
+        val diary = store.getDiary(2025)
+        assertEquals(2025, diary.fyYear)
+        assertEquals("2025-07-01", diary.fyStartDate)
+        assertEquals("2026-06-30", diary.fyEndDate)
+        assertEquals(LocalCounts(0, 0), store.localCounts())
+    }
 
     @Test
     fun upsert_then_partial_upsert_keeps_fields() = runBlocking {
         store.upsertDay(2025, "2025-07-01", homeDay)
-        val saved = store.upsertDay(2025, "2025-07-01", UpsertDayEntryRequest(description = "Notes"))
+        val saved = store.upsertDay(2025, "2025-07-01", DayEntryUpdate(description = "Notes"))
         assertEquals("08:00", saved.startTime)
         assertEquals("Notes", saved.description)
         assertEquals(8.0, saved.totalHours, 0.0001)
@@ -60,7 +69,7 @@ class DiaryStoreTest {
     @Test
     fun replace_clears_fields() = runBlocking {
         store.upsertDay(2025, "2025-07-01", homeDay)
-        val saved = store.replaceDay(2025, "2025-07-01", UpsertDayEntryRequest(location = "Office"))
+        val saved = store.replaceDay(2025, "2025-07-01", DayEntryUpdate(location = "Office"))
         assertNull(saved.startTime)
         assertEquals("Office", saved.location)
     }
@@ -80,7 +89,7 @@ class DiaryStoreTest {
     }
 
     @Test
-    fun delete_day_removes_row_and_returns_empty_dto() = runBlocking {
+    fun delete_day_removes_row_and_returns_empty_entry() = runBlocking {
         store.upsertDay(2025, "2025-07-01", homeDay)
         val cleared = store.deleteDay(2025, "2025-07-01")
         assertNull(cleared.location)
@@ -89,7 +98,7 @@ class DiaryStoreTest {
 
     @Test
     fun create_leave_swaps_dates_and_marks_fy_days_only() = runBlocking {
-        val period = store.createLeave(2025, CreateLeaveRequest("2026-07-01", "2026-06-29", "Trip"))
+        val period = store.createLeave(2025, NewLeave("2026-07-01", "2026-06-29", "Trip"))
         assertEquals("2026-06-29", period.startDate)
         assertEquals("2026-07-01", period.endDate)
         val days = store.getDays(2025, null, null)
@@ -100,8 +109,8 @@ class DiaryStoreTest {
 
     @Test
     fun delete_leave_clears_only_uncovered_leave_days() = runBlocking {
-        val a = store.createLeave(2025, CreateLeaveRequest("2025-12-22", "2025-12-26"))
-        store.createLeave(2025, CreateLeaveRequest("2025-12-25", "2025-12-31"))
+        val a = store.createLeave(2025, NewLeave("2025-12-22", "2025-12-26"))
+        store.createLeave(2025, NewLeave("2025-12-25", "2025-12-31"))
         store.replaceDay(2025, "2025-12-22", homeDay)
         store.deleteLeave(a.id)
         val dates = store.getDays(2025, "2025-12-01", "2025-12-31").map { it.date }
@@ -120,7 +129,7 @@ class DiaryStoreTest {
     @Test
     fun settings_default_then_update() = runBlocking {
         assertEquals("YOUR NAME HERE", store.getSettings().displayName)
-        store.updateSettings(UpdateUserSettingsRequest(displayName = "Me"))
+        store.updateSettings(UserSettingsUpdate(displayName = "Me"))
         assertEquals("Me", store.getSettings().displayName)
     }
 
@@ -135,7 +144,7 @@ class DiaryStoreTest {
                 legacy = legacy,
             ),
         )
-        store.updateSettings(UpdateUserSettingsRequest(displayName = "Changed"))
+        store.updateSettings(UserSettingsUpdate(displayName = "Changed"))
         val exported = store.exportDocument("test", "2026-10-27T09:00:00Z")
         assertEquals(legacy, exported.legacy)
         assertEquals("Changed", exported.settings.displayName)
@@ -170,8 +179,8 @@ class DiaryStoreTest {
     @Test
     fun replace_all_rolls_back_when_a_step_fails() = runBlocking {
         store.upsertDay(2025, "2025-08-01", homeDay)
-        store.createLeave(2025, CreateLeaveRequest("2025-12-22", "2025-12-23", "Old"))
-        store.updateSettings(UpdateUserSettingsRequest(displayName = "Before"))
+        store.createLeave(2025, NewLeave("2025-12-22", "2025-12-23", "Old"))
+        store.updateSettings(UserSettingsUpdate(displayName = "Before"))
         db.openHelper.writableDatabase.execSQL(
             "CREATE TRIGGER fail_leave_insert BEFORE INSERT ON leave_periods BEGIN SELECT RAISE(ABORT, 'boom'); END",
         )
@@ -196,7 +205,7 @@ class DiaryStoreTest {
     fun local_counts_reports_days_and_leave_periods() = runBlocking {
         assertEquals(LocalCounts(0, 0), store.localCounts())
         store.upsertDay(2025, "2025-08-01", homeDay)
-        store.createLeave(2025, CreateLeaveRequest("2025-12-22", "2025-12-23"))
+        store.createLeave(2025, NewLeave("2025-12-22", "2025-12-23"))
         assertEquals(LocalCounts(3, 1), store.localCounts())
     }
 

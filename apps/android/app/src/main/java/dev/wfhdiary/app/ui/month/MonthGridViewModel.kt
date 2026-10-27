@@ -6,10 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.model.CreateLeaveRequest
-import dev.wfhdiary.app.data.model.DayEntryDto
-import dev.wfhdiary.app.data.model.DiarySummaryDto
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.DayEntry
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.DiarySummary
+import dev.wfhdiary.app.data.model.NewLeave
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.LeavePeriodHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,31 +22,31 @@ import java.time.format.DateTimeFormatter
 
 class MonthGridViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as WfhDiaryApplication
-    private val repo = app.diaryRepository
+    private val store = app.diaryStore
 
     private val _uiState = MutableStateFlow(MonthGridUiState())
     val uiState = _uiState.asStateFlow()
 
     private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
-    private val daysCache = mutableMapOf<String, DayEntryDto>()
-    private val summaryByFy = mutableMapOf<Int, DiarySummaryDto>()
-    private var refreshInFlight = false
+    private val daysCache = mutableMapOf<String, DayEntry>()
+    private val summaryByFy = mutableMapOf<Int, DiarySummary>()
+    private var reloadInFlight = false
 
     init {
         viewModelScope.launch {
             val now = YearMonth.now()
             applyMonth(now)
             runCatching {
-                val leavePeriods = repo.getLeavePeriods()
+                val leavePeriods = store.getLeavePeriods()
                 _uiState.update { it.copy(leavePeriods = leavePeriods) }
             }
         }
     }
 
     fun reload(showProgress: Boolean = false) {
-        if (refreshInFlight) return
+        if (reloadInFlight) return
         viewModelScope.launch {
-            refreshInFlight = true
+            reloadInFlight = true
             val state = _uiState.value
             val fyYear = state.fyYear
             val (fyStart, fyEnd) = FinancialYearHelper.fyRange(fyYear)
@@ -57,12 +57,12 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             }
             runCatching {
-                repo.getDiary(fyYear)
-                val days = repo.getDays(fyYear, fyStart.format(isoDate), fyEnd.format(isoDate))
+                store.getDiary(fyYear)
+                val days = store.getDays(fyYear, fyStart.format(isoDate), fyEnd.format(isoDate))
                 daysCache.keys.removeAll { it >= fyStart.format(isoDate) && it <= fyEnd.format(isoDate) }
                 days.forEach { daysCache[it.date] = it }
-                val leavePeriods = repo.getLeavePeriods()
-                val summary = repo.getSummary(fyYear)
+                val leavePeriods = store.getLeavePeriods()
+                val summary = store.getSummary(fyYear)
                 summaryByFy[fyYear] = summary
                 _uiState.update {
                     it.copy(
@@ -81,7 +81,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 }
             }
-            refreshInFlight = false
+            reloadInFlight = false
         }
     }
 
@@ -113,10 +113,10 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(showLeaveSheet = false) }
     }
 
-    fun scheduleLeave(request: CreateLeaveRequest) {
+    fun scheduleLeave(request: NewLeave) {
         viewModelScope.launch {
             refreshAfterLeaveChange(closeSheet = true) {
-                repo.createLeave(_uiState.value.fyYear, request)
+                store.createLeave(_uiState.value.fyYear, request)
             }
         }
     }
@@ -124,7 +124,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
     fun deleteLeave(id: String) {
         viewModelScope.launch {
             refreshAfterLeaveChange(closeSheet = false, closeSelectedDay = true) {
-                repo.deleteLeave(id)
+                store.deleteLeave(id)
             }
         }
     }
@@ -143,8 +143,8 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         val fyYear = _uiState.value.fyYear
         runCatching {
             action()
-            val leavePeriods = repo.getLeavePeriods()
-            val summary = repo.getSummary(fyYear)
+            val leavePeriods = store.getLeavePeriods()
+            val summary = store.getSummary(fyYear)
             summaryByFy[fyYear] = summary
             _uiState.update {
                 it.copy(
@@ -160,12 +160,12 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun saveDay(date: String, request: UpsertDayEntryRequest) {
+    fun saveDay(date: String, request: DayEntryUpdate) {
         viewModelScope.launch {
             val localDate = LocalDate.parse(date, isoDate)
             val fyYear = FinancialYearHelper.currentFyYear(localDate)
             runCatching {
-                val saved = repo.replaceDay(fyYear, date, request)
+                val saved = store.replaceDay(fyYear, date, request)
                 refreshDayInState(fyYear, saved, date)
             }.onFailure { e ->
                 _uiState.update { it.copy(error = e.message) }
@@ -178,7 +178,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             val localDate = LocalDate.parse(date, isoDate)
             val fyYear = FinancialYearHelper.currentFyYear(localDate)
             runCatching {
-                val cleared = repo.deleteDay(fyYear, date)
+                val cleared = store.deleteDay(fyYear, date)
                 refreshDayInState(fyYear, cleared, date)
             }.onFailure { e ->
                 _uiState.update { it.copy(error = e.message) }
@@ -186,9 +186,9 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private suspend fun refreshDayInState(fyYear: Int, saved: DayEntryDto, date: String) {
+    private suspend fun refreshDayInState(fyYear: Int, saved: DayEntry, date: String) {
         daysCache[date] = saved
-        val summary = repo.getSummary(fyYear)
+        val summary = store.getSummary(fyYear)
         summaryByFy[fyYear] = summary
         _uiState.update {
             it.copy(
@@ -215,11 +215,11 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
             val to = yearMonth.atEndOfMonth().format(isoDate)
             val monthDays =
                 runCatching {
-                    FinancialYearHelper.fyYearsCovering(yearMonth).flatMap { fy -> repo.getDays(fy, from, to) }
+                    FinancialYearHelper.fyYearsCovering(yearMonth).flatMap { fy -> store.getDays(fy, from, to) }
                 }.getOrNull() ?: return@launch
             daysCache.keys.removeAll { it in from..to }
             monthDays.forEach { daysCache[it.date] = it }
-            val summary = runCatching { repo.getSummary(fyYear) }.getOrNull()
+            val summary = runCatching { store.getSummary(fyYear) }.getOrNull()
             if (summary != null) summaryByFy[fyYear] = summary
             _uiState.update { state ->
                 if (state.yearMonth == yearMonth) {
@@ -231,7 +231,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun daysForMonth(yearMonth: YearMonth): List<DayEntryDto> {
+    private fun daysForMonth(yearMonth: YearMonth): List<DayEntry> {
         val from = yearMonth.atDay(1)
         val to = yearMonth.atEndOfMonth()
         return daysCache.values

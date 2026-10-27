@@ -93,7 +93,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | Kind | Location |
 | --- | --- |
 | Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`getSettings`, `updateSettings`), `data/store/DiaryRules.kt` (`applySettingsUpdate`: geofence rules) |
-| Model | `data/model/UserSettingsDto.kt`, `data/model/UpdateUserSettingsRequest.kt` (`home*`/`office*Geofence*`, `clear*Geofence`, `missedNotificationAwayDefault`, `geolocationSkipNotificationAt*`) |
+| Model | `data/model/UserSettings.kt`, `data/model/UserSettingsUpdate.kt` (`home*`/`office*Geofence*`, `clear*Geofence`, `missedNotificationAwayDefault`, `geolocationSkipNotificationAt*`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/util/GeofenceHelper.kt`, `util/LocationHelper.kt`, `notification/GeolocationNotificationHelper.kt`, `ui/settings/GeolocationSettingsSheet.kt`, `ui/settings/GeolocationSettingsDraft.kt`, `ui/settings/GeofenceMapPickerSheet.kt`, `ui/settings/WorkLocationsSection.kt`, `ui/settings/SettingsViewModel.kt` |
 
 ## Test coverage
@@ -127,3 +127,4 @@ The geolocation sheet asks for foreground location first, then background locati
 - 2026-10-27: On-device-only phase 1 — GEO-006 now clears the local settings row ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: GEO-009 coverage test moved to DayLogNotificationUpdaterTest (on-device-only phase 2).
 - 2026-10-27: On-device-only phase 2 — GEO-007 reworded for the local save; GEO-008/009 failures post "Couldn't save entry" with Open app only (no Retry); template geofence references removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: Internal model classes renamed (`UserSettingsDto` → `UserSettings`, `UpdateUserSettingsRequest` → `UserSettingsUpdate`), no behaviour change.

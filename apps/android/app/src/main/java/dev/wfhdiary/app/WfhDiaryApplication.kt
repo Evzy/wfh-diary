@@ -7,7 +7,6 @@ import dev.wfhdiary.app.backup.BackupScheduler
 import dev.wfhdiary.app.backup.BackupService
 import dev.wfhdiary.app.backup.RestoreService
 import dev.wfhdiary.app.backup.SafBackupFolder
-import dev.wfhdiary.app.data.DiaryDataSource
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
 import dev.wfhdiary.app.data.store.DiaryStore
 import dev.wfhdiary.app.notification.NotificationChannels
@@ -43,9 +42,6 @@ class WfhDiaryApplication : Application() {
         }
     }
 
-    val diaryRepository: DiaryDataSource
-        get() = diaryStore
-
     override fun onCreate() {
         super.onCreate()
         database = WfhDiaryDatabase.getInstance(this)
@@ -64,7 +60,7 @@ class WfhDiaryApplication : Application() {
         }
         appScope.launch {
             runCatching {
-                val settings = diaryRepository.getSettings()
+                val settings = diaryStore.getSettings()
                 NotificationScheduler.scheduleNext(
                     this@WfhDiaryApplication,
                     settings.notificationTime,

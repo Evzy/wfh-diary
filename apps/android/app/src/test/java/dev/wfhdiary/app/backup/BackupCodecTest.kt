@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.backup
 
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettings
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -10,7 +10,7 @@ import org.junit.Test
 
 class BackupCodecTest {
     private fun settings() =
-        UserSettingsDto(
+        UserSettings(
             displayName = "Test User",
             notificationTime = "08:00",
             defaultHomeStart = "08:00",

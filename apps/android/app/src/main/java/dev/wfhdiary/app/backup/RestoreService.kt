@@ -1,13 +1,13 @@
 package dev.wfhdiary.app.backup
 
-import dev.wfhdiary.app.data.model.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettings
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.CancellationException
 
 class RestoreService(
     private val store: DiaryStore,
     private val backupService: BackupService,
-    private val onRestored: suspend (UserSettingsDto) -> Unit,
+    private val onRestored: suspend (UserSettings) -> Unit,
 ) {
     fun preview(text: String): BackupParseResult = BackupCodec.decode(text)
 

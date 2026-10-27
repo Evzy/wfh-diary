@@ -46,7 +46,7 @@ Day responses contain `date` (yyyy-MM-dd), `dayName`, `startTime`/`finishTime` (
 
 - **Given** a day with logged times
 - **When** it is returned by list, upsert or clear
-- **Then** the entry (`DayEntryDto`) has all eight properties; `dayName` is the English weekday name
+- **Then** the entry (`DayEntry`) has all eight properties; `dayName` is the English weekday name
 
 ### DAY-006 — Total hours computation
 
@@ -108,22 +108,22 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 
 | Kind | Location |
 | --- | --- |
-| Data source | `apps/android/app/src/main/java/dev/wfhdiary/app/data/DiaryDataSource.kt` (interface), `data/store/DiaryStore.kt` (local implementation), `data/store/DiaryRules.kt` (pure rules: upsert, replace, total hours, day DTO) |
+| Data source | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (local store, `WfhDiaryApplication.diaryStore`), `data/store/DiaryRules.kt` (pure rules: upsert, replace, total hours, day entry) |
 | Storage | `data/local/` — Room v2 `DayEntryEntity`, `DayEntryDao`, `WfhDiaryDatabase` (`date` TEXT primary key; only days with data are stored) |
-| Model | `data/model/DayEntryDto.kt`, `DiaryDto.kt`, `UpsertDayEntryRequest.kt` |
+| Model | `data/model/DayEntry.kt`, `DiaryRange.kt`, `DayEntryUpdate.kt` |
 | Android | `ui/month/MonthGridScreen.kt`, `ui/month/MonthGridViewModel.kt`, `ui/month/MonthGridUiState.kt`, `ui/day/DayEditSheet.kt`, `ui/BreakHoursField.kt`, `ui/quick/QuickAddActivity.kt`, `util/DayEntryHelper.kt`, `util/DayBadge.kt`, `util/TimeHelpers.kt` |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| DAY-001 | `untested` |
+| DAY-001 | `DiaryStoreTest.diary_range_derived_without_storing_days` |
 | DAY-002 | `DiaryStoreTest.get_days_filters_by_fy_and_range` (unparseable filter untested) |
 | DAY-003 | `DiaryRulesTest.upsert_keeps_unset_fields`, `DiaryRulesTest.upsert_on_missing_day_creates_it`, `DiaryRulesTest.upsert_blank_time_and_location_clear_them`, `DiaryRulesTest.replace_clears_fields_not_supplied`, `DiaryRulesTest.replace_blank_description_becomes_null`, `DiaryStoreTest.upsert_then_partial_upsert_keeps_fields`, `DiaryStoreTest.replace_clears_fields`; `TimeHelpersTest.parseTimeString_accepts_hh_mm` |
 | DAY-004 | `DiaryStoreTest.upsert_outside_fy_throws` (outside-FY case only; unparseable date untested) |
-| DAY-005 | `DiaryRulesTest.toDto_fills_day_name_and_total` |
-| DAY-006 | `TimeHelpersTest.computeTotalHours_subtracts_break`; `DiaryRulesTest.toDto_fills_day_name_and_total` |
-| DAY-007 | `DiaryStoreTest.delete_day_removes_row_and_returns_empty_dto`; `DiaryRulesTest.isEmpty_detects_blank_days` |
+| DAY-005 | `DiaryRulesTest.toDayEntry_fills_day_name_and_total` |
+| DAY-006 | `TimeHelpersTest.computeTotalHours_subtracts_break`; `DiaryRulesTest.toDayEntry_fills_day_name_and_total` |
+| DAY-007 | `DiaryStoreTest.delete_day_removes_row_and_returns_empty_entry`; `DiaryRulesTest.isEmpty_detects_blank_days` |
 | DAY-008 | `untested` |
 | DAY-009 | `untested` |
 | DAY-010 | `DiaryStoreTest.replace_clears_fields` (store half); manual — [Android test plan](../../testing/ANDROID_TEST_PLAN.md#backup--restore-on-device) (step "clear a field") |
@@ -139,10 +139,9 @@ The quick-add screen, opened from the morning reminder with a date (default toda
 - **No negative-path tests** for unparseable dates (DAY-004) or filter values (DAY-002); ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 - **Template picker:** "Apply template…" in the day edit sheet and quick-add screen was never implemented ([TODO § C](../../TODO.md#c-work-scenario-templates--dropped), items 1 and 3); templates were dropped.
 - `DayEntryHelper.needsDefault` (tested in `DayEntryHelperTest`) is only used by the morning-reminder and missed-notification workers, so it belongs to the notifications capability and is not specified here.
-- `DiaryStore.getDiary` (DAY-001) has no direct test since the contract fixture tests were removed in phase 2.
-
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — DAY-001..007 and DAY-010 rewritten as local `DiaryStore` behaviour; the clear-a-field gap is closed ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — server row and contract-fixture references removed (DAY-005 no longer cites a fixture; DAY-001 now untested); DTOs live in `data/model/`; grid reload renamed to `MonthGridViewModel.reload` ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: DAY-001 coverage added (`DiaryStoreTest.diary_range_derived_without_storing_days`). Internal model classes renamed (`DayEntryDto` → `DayEntry`, `DiaryDto` → `DiaryRange`, `UpsertDayEntryRequest` → `DayEntryUpdate`; `DiaryRules.toDto` → `toDayEntry`; `DiaryDataSource` interface removed), no behaviour change.

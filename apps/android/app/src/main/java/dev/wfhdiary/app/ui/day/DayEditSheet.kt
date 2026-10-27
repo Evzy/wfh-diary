@@ -23,13 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.model.DayEntryDto
-import dev.wfhdiary.app.data.model.LeavePeriodDto
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.DayEntry
+import dev.wfhdiary.app.data.model.DayEntryUpdate
+import dev.wfhdiary.app.data.model.LeavePeriod
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 
-private fun DayEntryDto?.hasLoggedWork(): Boolean {
+private fun DayEntry?.hasLoggedWork(): Boolean {
     if (this == null) return false
     if (description.equals("LEAVE", ignoreCase = true)) return false
     return !location.isNullOrBlank() ||
@@ -39,7 +39,7 @@ private fun DayEntryDto?.hasLoggedWork(): Boolean {
         !description.isNullOrBlank()
 }
 
-private fun leaveRangeLabel(period: LeavePeriodDto): String =
+private fun leaveRangeLabel(period: LeavePeriod): String =
     if (period.startDate == period.endDate) {
         period.startDate
     } else {
@@ -50,10 +50,10 @@ private fun leaveRangeLabel(period: LeavePeriodDto): String =
 @Composable
 fun DayEditSheet(
     date: String,
-    entry: DayEntryDto?,
-    leavePeriod: LeavePeriodDto? = null,
+    entry: DayEntry?,
+    leavePeriod: LeavePeriod? = null,
     onDismiss: () -> Unit,
-    onSave: (UpsertDayEntryRequest) -> Unit,
+    onSave: (DayEntryUpdate) -> Unit,
     onDelete: (() -> Unit)? = null,
     onRemoveLeave: (() -> Unit)? = null,
 ) {
@@ -130,7 +130,7 @@ fun DayEditSheet(
             Button(
                 onClick = {
                     onSave(
-                        UpsertDayEntryRequest(
+                        DayEntryUpdate(
                             startTime = startTime.ifBlank { null },
                             finishTime = finishTime.ifBlank { null },
                             breakHours = breakHours.toDoubleOrNull(),

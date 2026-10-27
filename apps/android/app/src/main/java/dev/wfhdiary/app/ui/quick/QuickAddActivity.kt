@@ -23,9 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
-import dev.wfhdiary.app.notification.NotificationChannels
+import dev.wfhdiary.app.data.model.DayEntryUpdate
 import dev.wfhdiary.app.notification.MorningReminderNotifier
+import dev.wfhdiary.app.notification.NotificationChannels
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme
 import dev.wfhdiary.app.ui.time.TimePickerField
 import dev.wfhdiary.app.util.FinancialYearHelper
@@ -86,10 +86,10 @@ class QuickAddActivity : ComponentActivity() {
                                     runCatching {
                                         val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
                                         val fyYear = FinancialYearHelper.currentFyYear(localDate)
-                                        app.diaryRepository.upsertDay(
+                                        app.diaryStore.upsertDay(
                                             fyYear,
                                             date,
-                                            UpsertDayEntryRequest(
+                                            DayEntryUpdate(
                                                 startTime = startTime.ifBlank { null },
                                                 finishTime = finishTime.ifBlank { null },
                                                 location = location.ifBlank { null },
