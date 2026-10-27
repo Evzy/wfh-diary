@@ -35,8 +35,6 @@
     <string name="settings_info_missed_response_message">If you ignore the morning reminder, the app can auto-log at the apply time below.\n\n\u2022 None \u2014 no auto-log\n\u2022 Home / Office / Leave \u2014 always log that choice\n\u2022 Geolocation \u2014 check where you are at reminder and apply times (see Location settings)\n\nIf you already logged the day (from the notification or calendar), nothing is overwritten.</string>
     <string name="settings_info_apply_at_title">Apply default at</string>
     <string name="settings_info_apply_at_message">When the morning reminder gets no response, the app waits until this time then auto-logs. With geolocation, your location is checked at this moment\u2014not tracked all day. You receive a notification confirming what was logged.</string>
-    <string name="settings_info_geolocation_title">Geolocation mode</string>
-    <string name="settings_info_geolocation_message">At your morning reminder time and at the apply time, the app checks whether you are inside your home or office area. It does not track you throughout the day.\n\nIf inside home \u2192 Home preset. If inside office \u2192 Office preset. If neither \u2192 your away fallback.</string>
     <string name="settings_info_away_fallback_title">When away from home and office</string>
     <string name="settings_info_away_fallback_message">Used when geolocation mode runs but you are not inside either area at check time. Example: you are at a caf\u00e9 and away fallback is Office \u2192 logs Office at apply time.</string>
     <string name="settings_info_skip_notification_title">Skip morning reminder</string>
@@ -62,7 +60,6 @@
     <string name="geolocation_settings_open">Location settings\u2026</string>
     <string name="geolocation_settings_title">Location settings</string>
     <string name="geolocation_settings_hint">Configure areas and fallbacks for geolocation mode. Location is checked at reminder and apply times only. Changes save automatically.</string>
-    <string name="geolocation_settings_apply">Apply</string>
     <string name="geolocation_settings_saved">Location settings saved.</string>
     <string name="work_presets_section_title">Home &amp; office presets</string>
     <string name="work_presets_section_hint">Default times applied when you choose Home or Office, or when geolocation mode matches a place.</string>
@@ -80,7 +77,6 @@
     <string name="settings_notification_permission_denied">Allow notifications in Android settings to post reminders to the status bar.</string>
     <string name="settings_default_home">Default home times</string>
     <string name="settings_default_office">Default office times</string>
-    <string name="settings_save">Save settings</string>
     <string name="settings_saved">Settings saved</string>
     <string name="github_update_section_title">App update (GitHub Releases)</string>
     <string name="update_dialog_title">Update available</string>
@@ -118,8 +114,6 @@
     <string name="notification_log_failure_title">Couldn\u2019t save entry</string>
     <string name="notification_log_failure_local">Couldn\u2019t log %1$s. Open the app to log it.</string>
     <string name="notification_auto_log_morning_geo">Logged as %1$s using geolocation (morning reminder skipped).</string>
-    <string name="month_summary_home">Home %1$.1f h</string>
-    <string name="month_summary_claimable">Claimable $%1$.2f</string>
     <string name="fy_summary_title">Financial year %1$d–%2$d (Jul–Jun)</string>
     <string name="fy_summary_days_home">WFH days</string>
     <string name="fy_summary_days_office">Office days</string>
@@ -156,14 +150,10 @@
     <string name="leave_delete">Delete leave</string>
     <string name="leave_error_dates_required">Start and end dates are required.</string>
     <string name="leave_error_end_before_start">End date must be on or after start date.</string>
-    <string name="fy_selector_label">FY %1$d–%2$d</string>
-    <string name="fy_picker_title">Choose financial year</string>
     <string name="fy_previous">Previous financial year</string>
     <string name="fy_next">Next financial year</string>
     <string name="location_background_permission">Allow all the time so location can be checked at reminder and apply times when the app is closed.</string>
     <string name="location_background_enable">Allow all the time</string>
-    <string name="location_geofence_section_title">Home &amp; office locations</string>
-    <string name="location_geofence_section_hint">Set where you usually work from. If you ignore the morning reminder, the app checks your location and logs Home or Office using your default times above.</string>
     <string name="location_geofence_home">Home location</string>
     <string name="location_geofence_office">Office location</string>
     <string name="location_geofence_not_set">Not set</string>
