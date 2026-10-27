@@ -1,8 +1,8 @@
 package dev.wfhdiary.app.data.store
 
 import dev.wfhdiary.app.backup.BackupDay
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

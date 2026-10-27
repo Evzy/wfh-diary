@@ -3,11 +3,11 @@
 Phase 1 (this branch, `on-device-only`) keeps the backend running and ships on-device storage, backups, restore and the one-time importer. Phase 2 removes the backend after the phase-1 gate below passes.
 
 - [x] Design approved
-- [ ] Implementation — phase 1 code done (Tasks 1–11); phase 2 pending
-- [x] Tests added/updated and passing (phase 1: `:app:testDebugUnitTest`)
-- [ ] Capability specs updated (requirements, coverage, revision log) — the new `backup` spec and the phase-1 MODIFIED deltas are applied, except `OTA-009`, which is only annotated until its text is updated in phase 2; REMOVED items wait for phase 2
-- [ ] Contract fixtures updated (if DTOs changed) — no DTO change in phase 1; fixtures are copied into Android test resources before phase 2 deletes them
-- [ ] Status set to `shipped` in `design.md` — stays `in-progress` until phase 2 ships
+- [x] Implementation — phase 1 (Tasks 1–11) and phase 2 ([`plan-phase-2.md`](plan-phase-2.md) Tasks 1–5) done; only the manual Azure decommission remains
+- [x] Tests added/updated and passing (`:app:testDebugUnitTest`; .NET tests deleted with the API in phase 2)
+- [x] Capability specs updated (requirements, coverage, revision log) — `backup` spec added, MODIFIED deltas applied (including `OTA-009` at app start), REMOVED deltas applied in phase 2; `auth` and `work-templates` retired
+- [x] Contract fixtures updated (if DTOs changed) — not applicable: `packages/shared/contracts/` and `ContractDeserializationTest` were deleted in phase 2 (the importer was removed first, so the fixtures were not copied into Android test resources); the backup format (`BackupCodecTest`) is now the only serialized contract
+- [x] Status set to `shipped` in `design.md`
 
 ## Phase 1 plan (Android only)
 
@@ -42,11 +42,11 @@ Phase 1 (this branch, `on-device-only`) keeps the backend running and ships on-d
 
 Do steps 2 and 3 **before logging any day on the new build** (the import replaces everything on the phone; notification actions count as logging).
 
-- [ ] 1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected. Restore and import are disabled until a folder is chosen.
-- [ ] 2. Settings → Backup & restore → **Choose backup folder**, pick a folder that syncs off the phone (e.g. Google Drive-synced or Documents). The app is still empty on the upgrade path, so the message says "Nothing to back up yet" and no file is written (an existing same-day file is left untouched); the first `wfh-diary-backup-YYYY-MM-DD.json` appears after the import in step 3. (BAK-002, BAK-005)
-- [ ] 3. **Import from old server** → confirm → the replace summary shows the current phone counts (0 days, 0 leave periods) → confirm. The month grid shows historic days for several FYs, Settings shows your name and geofences, and the result message says the backup was written. (BAK-011, BAK-009)
+- [x] 1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected. Restore and import are disabled until a folder is chosen.
+- [x] 2. Settings → Backup & restore → **Choose backup folder**, pick a folder that syncs off the phone (e.g. Google Drive-synced or Documents). The app is still empty on the upgrade path, so the message says "Nothing to back up yet" and no file is written (an existing same-day file is left untouched); the first `wfh-diary-backup-YYYY-MM-DD.json` appears after the import in step 3. (BAK-002, BAK-005)
+- [x] 3. **Import from old server** → confirm → the replace summary shows the current phone counts (0 days, 0 leave periods) → confirm. The month grid shows historic days for several FYs, Settings shows your name and geofences, and the result message says the backup was written. (BAK-011, BAK-009)
 - [ ] 4. Drive folder overwrite check: after another backup the same day (e.g. **Back up now**), the day's file in the Drive folder has a new size or modified time, and the file opens as valid JSON. (BAK-005)
-- [ ] 5. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. (XLSX-003..009)
+- [x] 5. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. (XLSX-003..009)
 - [ ] 6. Edit a day; within about 10–15 minutes the backup file's modified time changes. (BAK-003)
 - [ ] 7. Leave the phone untouched for more than 24 hours (no edits); a new day's `wfh-diary-backup-YYYY-MM-DD.json` appears. (BAK-004)
 - [ ] 8. Clear a field in the edit sheet (e.g. remove the description) and save; it stays cleared after reopening. (DAY-010)
@@ -60,11 +60,11 @@ Do steps 2 and 3 **before logging any day on the new build** (the import replace
 
 ## Phase 2 (after the gate passes)
 
-Plan to be written as `plan-phase-2.md` in this folder. Scope per [`design.md`](design.md) § Rollout and § Removed (phase 2).
+Plan: [`plan-phase-2.md`](plan-phase-2.md) (branch `remove-backend`). Scope per [`design.md`](design.md) § Rollout and § Removed (phase 2).
 
-- [ ] `plan-phase-2.md` written and approved
-- [ ] Remove the importer, `data/remote/` Ktor code, Firebase auth, login gate, `ApiErrorClassifier`, `DayLogRetryPolicy` and retry/pending paths; move the automatic update check to app start
-- [ ] Apply REMOVED deltas to specs: `NOTIF-009`, `NOTIF-010`, `OTA-001`, `OTA-002`, `AUTH-001`..`AUTH-011`, `TPL-001`..`TPL-008`, `BAK-011`; update `OTA-009` text
-- [ ] Delete `services/`, `packages/shared/`, `WfhDiary.sln`, deploy/keep-warm workflows and .NET CI jobs; update `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `TODO.md`, `README.md`
+- [x] `plan-phase-2.md` written and approved (`d94cedb`, `ec036e8`)
+- [x] Remove the importer, `data/remote/` Ktor code, Firebase auth, login gate, `ApiErrorClassifier`, `DayLogRetryPolicy` and retry/pending paths; move the automatic update check to app start (Tasks 1–3: `67e3068`, `c1a9c2e`, `cac85ea`, `7c5433d`)
+- [x] Apply REMOVED deltas to specs: `NOTIF-009`, `NOTIF-010`, `OTA-001`, `OTA-002`, `AUTH-001`..`AUTH-011`, `TPL-001`..`TPL-008`, `BAK-011`; update `OTA-009` text (Task 5, the commit that ticks this box)
+- [x] Delete `services/`, `packages/shared/`, `WfhDiary.sln`, deploy/keep-warm workflows and .NET CI jobs; update `AGENTS.md`, `CONSTITUTION.md`, `ARCHITECTURE.md`, `TODO.md`, `README.md` (Task 4: `939c3d8`, `f7f59a4`)
 - [ ] User runs `scripts/azure/decommission.ps1` after confirming phase 1
-- [ ] Status set to `shipped` in `design.md`
+- [x] Status set to `shipped` in `design.md` (Task 5); version bumped to 0.1.25

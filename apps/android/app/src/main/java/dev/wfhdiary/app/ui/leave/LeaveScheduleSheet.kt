@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
+import dev.wfhdiary.app.data.model.CreateLeaveRequest
+import dev.wfhdiary.app.data.model.LeavePeriodDto
 import dev.wfhdiary.app.ui.time.DatePickerField
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

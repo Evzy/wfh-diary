@@ -23,9 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import dev.wfhdiary.app.ui.BreakHoursField
 import dev.wfhdiary.app.ui.time.TimePickerField
 

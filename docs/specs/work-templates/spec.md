@@ -2,112 +2,71 @@
 
 **Prefix:** `TPL` · **Last updated:** 2026-10-27
 
+**Status: retired** (2026-10-27, [on-device only](../../changes/2026-10-27-on-device-only/design.md)). Work templates were dropped; server templates are preserved in backups under `legacy.workTemplates`.
+
 ## Purpose & scope
 
-Reusable work-day presets via the per-user **work templates** API (`/v1/work-templates`: label, times, break, location, description, default flag and optional geofence). Out of scope: the built-in Home and Office presets, which are default-schedule fields on user settings (see [settings](../settings/spec.md)), geofence capture and matching (see [geolocation](../geolocation/spec.md)), and the built-in Home/Office presets applied from notifications (NOTIF-005 in [notifications](../notifications/spec.md)). Template quick actions from notifications are not implemented (see Known gaps). The Android app currently has no UI that reads or writes `/v1/work-templates` (see Known gaps).
+Formerly specified reusable work-day presets served by the per-user work templates API. The Android app never had template UI. The API and the Android template DTOs were removed in phase 2 of the on-device-only change. The built-in Home and Office presets remain as default-schedule fields on user settings (see [settings](../settings/spec.md)) and are what notification quick actions apply (NOTIF-005 in [notifications](../notifications/spec.md)). The requirement IDs below are kept so references to them stay resolvable.
 
 ## Requirements
 
-### TPL-001 — List templates
+### ~~TPL-001~~ — REMOVED (2026-10-27)
 
-`GET /v1/work-templates` returns the caller's templates ordered by `sortOrder`, then `label`.
+**Removed** (phase 2): the API was deleted. (Was: list templates.)
 
-- **Given** a user with templates (and other users with their own)
-- **When** they call `GET /v1/work-templates`
-- **Then** the response is `200` with only their templates, sorted by `sortOrder` then `label`
+### ~~TPL-002~~ — REMOVED (2026-10-27)
 
-### TPL-002 — Label is required on create
+**Removed** (phase 2): the API was deleted. (Was: label is required on create.)
 
-Creating a template with a missing or blank label is rejected with `400`.
+### ~~TPL-003~~ — REMOVED (2026-10-27)
 
-- **Given** an authenticated user
-- **When** they `POST /v1/work-templates` with `label` empty or whitespace
-- **Then** the response is `400` with `{ error: "Label is required." }` and nothing is stored
+**Removed** (phase 2): the API was deleted. (Was: create template.)
 
-### TPL-003 — Create template
+### ~~TPL-004~~ — REMOVED (2026-10-27)
 
-Creating a template stores it for the caller and returns it with `200`, normalising its fields.
+**Removed** (phase 2): the API was deleted. (Was: at most one default template.)
 
-- **Given** an authenticated user
-- **When** they `POST /v1/work-templates` with a label and optional fields
-- **Then** the response is `200` with a `WorkTemplateDto` whose label is trimmed, `sortOrder` is the supplied value or one more than the caller's current maximum (`0` for the first), times are parsed from `HH:mm`, blank location/description become `null`, and geofence fields are stored as sent
+### ~~TPL-005~~ — REMOVED (2026-10-27)
 
-### TPL-004 — At most one default template
+**Removed** (phase 2): the API was deleted. (Was: partial update.)
 
-Marking a template as default (on create or update) clears the default flag on the caller's other templates.
+### ~~TPL-006~~ — REMOVED (2026-10-27)
 
-- **Given** a user with a default template
-- **When** they create a template with `isDefault: true`, or update another template with `isDefault: true`
-- **Then** only the newly marked template has `isDefault: true`; `isDefault: false` on update just unsets it
+**Removed** (phase 2): the API was deleted. (Was: update unknown or foreign template returns 404.)
 
-### TPL-005 — Partial update
+### ~~TPL-007~~ — REMOVED (2026-10-27)
 
-`PUT /v1/work-templates/{id}` changes only non-null fields of the caller's template and returns it with `200`.
+**Removed** (phase 2): the API was deleted. (Was: delete template.)
 
-- **Given** a template owned by the caller
-- **When** they send an update with some fields set and the rest `null`
-- **Then** the response is `200`; set fields change (label trimmed, blank location/description become `null`), `null` fields are unchanged
+### ~~TPL-008~~ — REMOVED (2026-10-27)
 
-### TPL-006 — Update unknown or foreign template returns 404
-
-Updating a template id that does not exist or belongs to another user returns `404`.
-
-- **Given** a template id that is unknown or owned by a different user
-- **When** the caller sends `PUT /v1/work-templates/{id}`
-- **Then** the response is `404` and nothing changes
-
-### TPL-007 — Delete template
-
-`DELETE /v1/work-templates/{id}` removes the caller's template with `204`, or returns `404` if it is unknown or not theirs.
-
-- **Given** a template id
-- **When** the caller deletes it
-- **Then** the response is `204` and it is no longer listed if it was theirs; otherwise `404`
-
-### TPL-008 — Response matches the shared contract
-
-The `work-template.json` contract fixture deserializes into both the API and Android template DTOs.
-
-- **Given** the shared fixture `packages/shared/contracts/work-template.json`
-- **When** it is deserialized as `WorkTemplateDto` on the API and on Android
-- **Then** both succeed
+**Removed** (phase 2): the shared DTO package and its contract fixtures were deleted. (Was: response matches the shared contract.)
 
 ## Interfaces
 
 | Kind | Location |
 | --- | --- |
-| API | `GET/POST /v1/work-templates`, `PUT/DELETE /v1/work-templates/{id}` — `services/api/WfhDiary.Api/Endpoints/WorkTemplateEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| Data | `services/api/WfhDiary.Api/Data/WorkTemplateEntity.cs` (table `work_templates`) |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/WorkTemplateDto.cs`, `packages/shared/WfhDiary.Shared/Dtos/CreateWorkTemplateRequest.cs`, `packages/shared/WfhDiary.Shared/Dtos/UpdateWorkTemplateRequest.cs`, `packages/shared/contracts/work-template.json` |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/WorkTemplateDto.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/CreateWorkTemplateRequest.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/DiaryRepository.kt` |
+| Backup | `legacy` object of `apps/android/app/src/main/java/dev/wfhdiary/app/backup/BackupDocument.kt` (templates kept verbatim under `legacy.workTemplates` when present; see [backup](../backup/spec.md)) |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| TPL-001 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (ordering and per-user scoping untested) |
-| TPL-002 | `untested` |
-| TPL-003 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (default sort order and blank-to-null untested) |
-| TPL-004 | `untested` |
-| TPL-005 | `untested` |
-| TPL-006 | `untested` |
-| TPL-007 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (`404` path untested) |
-| TPL-008 | `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.workTemplate_fixture_deserializes` |
+| TPL-001 | `removed` |
+| TPL-002 | `removed` |
+| TPL-003 | `removed` |
+| TPL-004 | `removed` |
+| TPL-005 | `removed` |
+| TPL-006 | `removed` |
+| TPL-007 | `removed` |
+| TPL-008 | `removed` |
 
 ## Known gaps
 
-- **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the template-management strings (e.g. `work_templates_manage`, `work_templates_add`) are unused. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 previously listed Settings → **Manage templates** and missed-notification geofence → apply template as shipped (now annotated as not implemented); neither was found in the current code.
-- Backlog from [TODO § C](../../TODO.md#c-work-scenario-templates--partial):
-  1. Day edit sheet — "Apply template…" dropdown/chips.
-  2. Morning notification — optional template quick actions.
-  3. Quick add activity — same template picker.
-  4. Reorder templates and mark **default** in the UI (the API already supports `sortOrder` and `isDefault`).
-- **Update can blank the label (suspected bug).** `PUT` with `label: " "` stores an empty label; only create validates it.
-- **Update cannot clear some fields.** `null` means "unchanged", so geofence fields and break hours cannot be reset to `null` via `PUT`. Times can be cleared, but only as a side effect: an empty or unparseable `startTime`/`finishTime` sets the time to `null` (unlike settings, which ignores invalid times).
-- No validation of times on create (unparseable values store `null`), geofence coordinate ranges, radius, or partially supplied geofences.
-- Duplicate `sortOrder` values are possible when callers supply them explicitly.
+- Template quick actions and pickers listed in [TODO § C](../../TODO.md#c-work-scenario-templates--dropped) were never built and are not planned.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 2 — capability retired; TPL-001..008 removed with the API and shared DTOs ([change](../../changes/2026-10-27-on-device-only/design.md)).

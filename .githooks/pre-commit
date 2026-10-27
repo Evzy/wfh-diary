@@ -1,5 +1,5 @@
 #!/bin/sh
-# Auto-bump version.json before every commit (API + Android read this file).
+# Auto-bump version.json before every commit (the Android build reads this file).
 # Skip once: SKIP_VERSION_BUMP=1 git commit ...
 # Enable hooks: scripts/setup-git-hooks.ps1
 
@@ -19,8 +19,6 @@ else
   exit 1
 fi
 
-git add version.json \
-  services/api/WfhDiary.Api/AppVersion.cs \
-  services/api/WfhDiary.Api/WfhDiary.Api.csproj
+git add version.json
 
 exit 0

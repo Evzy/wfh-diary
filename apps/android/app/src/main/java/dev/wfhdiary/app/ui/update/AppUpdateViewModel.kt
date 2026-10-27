@@ -35,7 +35,7 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
 
     private var autoCheckStarted = false
 
-    fun checkOnLoginIfNeeded() {
+    fun checkOnStartIfNeeded() {
         if (autoCheckStarted || !GithubApkReleaseUpdater.isConfigured()) return
         autoCheckStarted = true
         checkForUpdate(manual = false)

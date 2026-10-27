@@ -5,9 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -21,7 +19,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -30,8 +27,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.wfhdiary.app.backup.BackupWarning
-import dev.wfhdiary.app.ui.auth.AuthViewModel
-import dev.wfhdiary.app.ui.auth.LoginScreen
 import dev.wfhdiary.app.ui.backup.BackupSection
 import dev.wfhdiary.app.ui.backup.BackupViewModel
 import dev.wfhdiary.app.ui.month.MonthGridScreen
@@ -40,13 +35,11 @@ import dev.wfhdiary.app.ui.settings.SettingsScreen
 import dev.wfhdiary.app.ui.settings.SettingsViewModel
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme
 import dev.wfhdiary.app.ui.update.AppUpdateViewModel
+import dev.wfhdiary.app.ui.update.UpdateAvailableDialog
 import dev.wfhdiary.app.update.GithubApkReleaseUpdater
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val authViewModel: AuthViewModel by viewModels {
-        AuthViewModel.factory(application)
-    }
     private val monthViewModel: MonthGridViewModel by viewModels {
         MonthGridViewModel.factory(application)
     }
@@ -65,46 +58,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             WfhDiaryTheme {
-                val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-                val appUpdateState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
-                val activity = LocalContext.current as ComponentActivity
-
-                when {
-                    authState.showLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                    authState.showLoginScreen -> {
-                        LoginScreen(
-                            signInBusy = authState.signInBusy,
-                            errorMessage = authState.errorMessage,
-                            onSignInWithGoogle = { authViewModel.signInWithGoogle(activity) },
-                            updateConfigured = GithubApkReleaseUpdater.isConfigured(),
-                            updateBusy = appUpdateState.busy,
-                            updateStatus = appUpdateState.status,
-                            pendingUpdate = appUpdateState.pendingRelease,
-                            showUpdateDialog = appUpdateState.showUpdateDialog,
-                            onAutoCheckForUpdate = appUpdateViewModel::checkOnLoginIfNeeded,
-                            onCheckForUpdate = { appUpdateViewModel.checkForUpdate(manual = true) },
-                            onDismissUpdateDialog = appUpdateViewModel::dismissUpdateDialog,
-                            onDownloadUpdate = { appUpdateViewModel.downloadAndInstall(activity) },
-                        )
-                    }
-                    else -> {
-                        MainAppContent(
-                            settingsViewModel = settingsViewModel,
-                            monthViewModel = monthViewModel,
-                            appUpdateViewModel = appUpdateViewModel,
-                            backupViewModel = backupViewModel,
-                            accountUserLabel = authState.userLabel,
-                            onSignOut = authViewModel::signOut,
-                        )
-                    }
-                }
+                MainAppContent(
+                    settingsViewModel = settingsViewModel,
+                    monthViewModel = monthViewModel,
+                    appUpdateViewModel = appUpdateViewModel,
+                    backupViewModel = backupViewModel,
+                )
             }
         }
     }
@@ -116,8 +75,6 @@ private fun MainAppContent(
     monthViewModel: MonthGridViewModel,
     appUpdateViewModel: AppUpdateViewModel,
     backupViewModel: BackupViewModel,
-    accountUserLabel: String?,
-    onSignOut: () -> Unit,
 ) {
     val monthState by monthViewModel.uiState.collectAsStateWithLifecycle()
     val settingsForm by settingsViewModel.settingsForm.collectAsStateWithLifecycle()
@@ -143,7 +100,7 @@ private fun MainAppContent(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    monthViewModel.refreshFromRemote(showProgress = false)
+                    monthViewModel.reload(showProgress = false)
                     backupViewModel.refresh()
                 }
             }
@@ -162,11 +119,24 @@ private fun MainAppContent(
     LaunchedEffect(backupState.restoreGeneration) {
         val generation = backupState.restoreGeneration
         if (generation > lastHandledRestoreGeneration) {
-            monthViewModel.refreshFromRemote(showProgress = true)
+            monthViewModel.reload(showProgress = true)
             settingsViewModel.refreshSettings()
         }
         // Always sync (not just on increase) so a reset counter after process death can't hide later restores.
         lastHandledRestoreGeneration = generation
+    }
+
+    LaunchedEffect(Unit) {
+        appUpdateViewModel.checkOnStartIfNeeded()
+    }
+    val pendingUpdate = githubUpdateUi.pendingRelease
+    if (githubUpdateUi.showUpdateDialog && pendingUpdate != null) {
+        UpdateAvailableDialog(
+            pendingUpdate = pendingUpdate,
+            busy = githubUpdateUi.busy,
+            onDownload = { appUpdateViewModel.downloadAndInstall(activity) },
+            onDismiss = appUpdateViewModel::dismissUpdateDialog,
+        )
     }
 
     ModalNavigationDrawer(
@@ -187,8 +157,6 @@ private fun MainAppContent(
                     onSendTestNotification = settingsViewModel::sendTestNotification,
                     onClearNotificationMessage = settingsViewModel::clearNotificationMessage,
                     onExportClick = { settingsViewModel.exportXlsx(activity) },
-                    accountUserLabel = accountUserLabel,
-                    onSignOut = onSignOut,
                     githubUpdateConfigured = GithubApkReleaseUpdater.isConfigured(),
                     githubUpdateBusy = githubUpdateUi.busy,
                     githubUpdateStatus = githubUpdateUi.status,
@@ -225,7 +193,6 @@ private fun MainAppContent(
                             onBackupNow = backupViewModel::backupNow,
                             onShare = { backupViewModel.share(activity) },
                             onRestoreFileChosen = backupViewModel::onRestoreFileChosen,
-                            onImportFromServer = backupViewModel::importFromServer,
                             onConfirmRestore = backupViewModel::confirmRestore,
                             onCancelRestore = backupViewModel::cancelRestore,
                         )
@@ -254,7 +221,7 @@ private fun MainAppContent(
                 onDeleteLeave = monthViewModel::deleteLeave,
                 onDeleteDay = monthViewModel::deleteDay,
                 onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
-                onRefresh = { monthViewModel.refreshFromRemote(showProgress = true) },
+                onRefresh = { monthViewModel.reload(showProgress = true) },
                 backupWarning = when (backupState.warning) {
                     BackupWarning.NO_FOLDER -> stringResource(R.string.backup_warning_no_folder)
                     BackupWarning.FAILED -> stringResource(R.string.backup_warning_failed)

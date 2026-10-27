@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
 import dev.wfhdiary.app.export.XlsxExportHelper
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.GeofenceHelper
@@ -420,7 +420,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             defaultOfficeDescription = form.defaultOfficeDescription.ifBlank { null },
         )
 
-    private fun settingsFormFromDto(s: dev.wfhdiary.app.data.remote.UserSettingsDto): SettingsFormState =
+    private fun settingsFormFromDto(s: dev.wfhdiary.app.data.model.UserSettingsDto): SettingsFormState =
         SettingsFormState(
             displayName = s.displayName,
             notificationTime = s.notificationTime,

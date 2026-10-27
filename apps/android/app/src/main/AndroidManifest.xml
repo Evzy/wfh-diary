@@ -53,7 +53,6 @@
                 <action android:name="dev.wfhdiary.app.notification.HOME" />
                 <action android:name="dev.wfhdiary.app.notification.OFFICE" />
                 <action android:name="dev.wfhdiary.app.notification.LEAVE" />
-                <action android:name="dev.wfhdiary.app.notification.RETRY" />
             </intent-filter>
         </receiver>
 

@@ -1,11 +1,11 @@
 package dev.wfhdiary.app.data.store
 
 import dev.wfhdiary.app.backup.BackupDay
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.DiarySummaryDto
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.DiarySummaryDto
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UserSettingsDto
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.TimeHelpers
 import dev.wfhdiary.app.util.WorkingDaysMask

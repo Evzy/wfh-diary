@@ -6,10 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.DiarySummaryDto
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.CreateLeaveRequest
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.DiarySummaryDto
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import dev.wfhdiary.app.util.FinancialYearHelper
 import dev.wfhdiary.app.util.LeavePeriodHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +43,7 @@ class MonthGridViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun refreshFromRemote(showProgress: Boolean = false) {
+    fun reload(showProgress: Boolean = false) {
         if (refreshInFlight) return
         viewModelScope.launch {
             refreshInFlight = true

@@ -7,9 +7,9 @@ import dev.wfhdiary.app.backup.BackupDay
 import dev.wfhdiary.app.backup.BackupDocument
 import dev.wfhdiary.app.backup.BackupLeavePeriod
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.CreateLeaveRequest
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first

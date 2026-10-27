@@ -38,8 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
 import dev.wfhdiary.app.ui.day.DayEditSheet
 import dev.wfhdiary.app.ui.leave.LeaveScheduleSheet
 import dev.wfhdiary.app.util.DayBadge
@@ -64,10 +64,10 @@ fun MonthGridScreen(
     onNextYear: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectDate: (String?) -> Unit,
-    onSaveDay: (String, dev.wfhdiary.app.data.remote.UpsertDayEntryRequest) -> Unit,
+    onSaveDay: (String, dev.wfhdiary.app.data.model.UpsertDayEntryRequest) -> Unit,
     onOpenLeaveSheet: () -> Unit,
     onDismissLeaveSheet: () -> Unit,
-    onScheduleLeave: (dev.wfhdiary.app.data.remote.CreateLeaveRequest) -> Unit,
+    onScheduleLeave: (dev.wfhdiary.app.data.model.CreateLeaveRequest) -> Unit,
     onDeleteLeave: (String) -> Unit,
     onDeleteDay: (String) -> Unit,
     onRemoveLeaveForDate: (String) -> Unit,

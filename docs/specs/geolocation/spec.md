@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-On Android, the user can save a Home geofence and an Office geofence (latitude, longitude and radius). When the missed-notification default is `Geolocation`, the app checks the phone's location once, at the moment a default is due. A match applies the Home or Office defaults; no match applies an "away" fallback. Each place can also be set to skip the morning reminder and log automatically. The reminder and missed-default pipeline is specified in [notifications](../notifications/spec.md). Storage of these settings fields is specified in [settings](../settings/spec.md). Template geofence fields are specified in [work-templates](../work-templates/spec.md). Out of scope: continuous background geofence monitoring, logging on arrival, and matching against template geofences (see Known gaps).
+On Android, the user can save a Home geofence and an Office geofence (latitude, longitude and radius). When the missed-notification default is `Geolocation`, the app checks the phone's location once, at the moment a default is due. A match applies the Home or Office defaults; no match applies an "away" fallback. Each place can also be set to skip the morning reminder and log automatically. The reminder and missed-default pipeline is specified in [notifications](../notifications/spec.md). Storage of these settings fields is specified in [settings](../settings/spec.md). Work templates (and their geofence fields) are retired ([work-templates](../work-templates/spec.md)). Out of scope: continuous background geofence monitoring and logging on arrival (see Known gaps).
 
 ## Requirements
 
@@ -62,7 +62,7 @@ Changes in the geolocation settings sheet are saved without an explicit Save but
 
 - **Given** the geolocation settings sheet is open
 - **When** the away fallback, a skip toggle, or a geofence changes
-- **Then** `PUT /v1/settings` is sent 500 ms after the last change, and again when the sheet is dismissed. A "saved" message appears on success; the error message appears on failure
+- **Then** the draft is saved locally with `DiaryStore.updateSettings` 500 ms after the last change, and again when the sheet is dismissed. A "saved" message appears on success; the error message appears on failure
 
 ### GEO-008 — Geolocation missed default
 
@@ -70,7 +70,7 @@ When the missed default is `Geolocation`, a matching place applies its defaults;
 
 - **Given** `missedNotificationDefault` is `Geolocation` and the day still needs an entry (NOTIF-007)
 - **When** the missed-default job runs
-- **Then** matching runs only if at least one geofence is fully configured and a location is available (GEO-003). A match on `HOME` or `OFFICE` applies that place's default times, and the auto-log notification names the place. With no match (including no configured geofence or no location), `missedNotificationAwayDefault` (stored as described in [SET-004](../settings/spec.md#set-004--mode-fields-fall-back-on-unknown-values)) is applied, and the notification names the fallback. On failure, Retry re-runs the whole missed-default job, including the location check
+- **Then** matching runs only if at least one geofence is fully configured and a location is available (GEO-003). A match on `HOME` or `OFFICE` applies that place's default times, and the auto-log notification names the place. With no match (including no configured geofence or no location), `missedNotificationAwayDefault` (stored as described in [SET-004](../settings/spec.md#set-004--mode-fields-fall-back-on-unknown-values)) is applied, and the notification names the fallback. On failure, the "Couldn't save entry" notification with Open app only is posted in the auto-log slot (NOTIF-008); there is no Retry
 
 ### GEO-009 — Skip morning reminder at a known place
 
@@ -78,7 +78,7 @@ At reminder time, the app can log today automatically instead of showing the rem
 
 - **Given** the missed default is `Geolocation`, today needs an entry, at least one geofence is fully configured, a location is available, and it matches `HOME` or `OFFICE`, and `geolocationSkipNotificationAtHome` or `geolocationSkipNotificationAtOffice` is on for that place
 - **When** the morning reminder worker runs
-- **Then** no reminder is shown, the place's defaults are applied, and an auto-log notification is shown. On failure, a failure notification with Retry for that place's action is shown. If any condition is not met, the normal reminder is shown
+- **Then** no reminder is shown, the place's defaults are applied, and an auto-log notification is shown. On failure, the "Couldn't save entry" notification naming that place's action, with Open app only, is posted in the auto-log slot (ID 1002). If any condition is not met, the normal reminder is shown
 
 ### GEO-010 — Location permission prompts
 
@@ -93,7 +93,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | Kind | Location |
 | --- | --- |
 | Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`getSettings`, `updateSettings`), `data/store/DiaryRules.kt` (`applySettingsUpdate`: geofence rules) |
-| DTO / contract | `packages/shared/contracts/user-settings.json` (`home*`/`office*Geofence*`, `clear*Geofence`, `missedNotificationAwayDefault`, `geolocationSkipNotificationAt*`; shape reused by `data/remote/UserSettingsDto.kt`, `UpdateUserSettingsRequest.kt`) |
+| Model | `data/model/UserSettingsDto.kt`, `data/model/UpdateUserSettingsRequest.kt` (`home*`/`office*Geofence*`, `clear*Geofence`, `missedNotificationAwayDefault`, `geolocationSkipNotificationAt*`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/util/GeofenceHelper.kt`, `util/LocationHelper.kt`, `notification/GeolocationNotificationHelper.kt`, `ui/settings/GeolocationSettingsSheet.kt`, `ui/settings/GeolocationSettingsDraft.kt`, `ui/settings/GeofenceMapPickerSheet.kt`, `ui/settings/WorkLocationsSection.kt`, `ui/settings/SettingsViewModel.kt` |
 
 ## Test coverage
@@ -107,19 +107,17 @@ The geolocation sheet asks for foreground location first, then background locati
 | GEO-005 | `untested` |
 | GEO-006 | `DiaryRulesTest.settings_geofence_requires_all_fields_and_clear_wins` (store rule only; the Clear button flow is untested) |
 | GEO-007 | `untested` |
-| GEO-008 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker` (retry policy only; worker untested) |
-| GEO-009 | `DayLogNotificationUpdaterActionTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
+| GEO-008 | `DayLogNotificationUpdaterTest.showFailure_auto_target_uses_auto_log_slot` (failure notification only; worker untested) |
+| GEO-009 | `DayLogNotificationUpdaterTest.actionForPlace_maps_home_and_office` (helper only; worker untested) |
 | GEO-010 | `untested` |
 
 ## Known gaps
 
 - Backlog ([`TODO.md`](../../TODO.md) § A): proactive logging on arrival, and background geofence monitoring. Today, location is checked only once, when the morning reminder or the missed-default job runs.
-- Suspected unintended: [`TODO.md`](../../TODO.md) § A and § C say "geofence match → apply template", but no Android notification code reads work-template geofences. Only the Home and Office settings geofences are matched, so template `Geofence*` fields are stored but unused.
-- Suspected unintended: the API doesn't validate geofence values (latitude and longitude range, or radius). The 50–500 m radius limit exists only in the map picker slider.
+- Suspected unintended: `DiaryRules.applySettingsUpdate` doesn't validate geofence values (latitude and longitude range, or radius). The 50–500 m radius limit exists only in the map picker slider.
 - Suspected unintended: the sheet asks for background location (GEO-010), but location lookups only check foreground permission. `LocationHelper.canCheckLocationInBackground` and `canUseGeofencing` are never called, so on Android 10 and later the worker's location request may fail without background permission and quietly fall back to the away default.
 - Suspected unintended: `MorningReminderWorker` treats a failed day-entry fetch (null) as "needs entry", so skip-at-place (GEO-009) could auto-log over an existing entry.
-- **GEO-007 wording still describes the server.** It says `PUT /v1/settings` is sent after 500 ms; the app now saves the same debounced update locally through `DiaryStore.updateSettings`. Left as is because the design did not list GEO-007 as modified.
-- Template geofence matching was never implemented (see above); templates are dropped by the on-device-only change, so this gap is closed by removal rather than by a fix.
+- Template geofence matching was never implemented; templates were dropped by the on-device-only change, so this gap is closed by removal rather than by a fix.
 - The map picker uses Sydney CBD (-33.8688, 151.2093) as the starting camera position until the real location resolves.
 
 ## Revision log
@@ -127,3 +125,5 @@ The geolocation sheet asks for foreground location first, then background locati
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: On-device-only phase 1 — GEO-006 now clears the local settings row ([change](../../changes/2026-10-27-on-device-only/design.md)).
+- 2026-10-27: GEO-009 coverage test moved to DayLogNotificationUpdaterTest (on-device-only phase 2).
+- 2026-10-27: On-device-only phase 2 — GEO-007 reworded for the local save; GEO-008/009 failures post "Couldn't save entry" with Open app only (no Retry); template geofence references removed ([change](../../changes/2026-10-27-on-device-only/design.md)).

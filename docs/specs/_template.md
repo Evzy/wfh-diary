@@ -20,8 +20,8 @@ One paragraph: what this capability does for the user, and what is explicitly ou
 
 | Kind | Location |
 | --- | --- |
-| API | `METHOD /v1/...` — `services/api/WfhDiary.Api/Endpoints/...` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/...`, `packages/shared/contracts/...json` |
+| Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/...` |
+| Model | `apps/android/app/src/main/java/dev/wfhdiary/app/data/model/...` |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/...` |
 
 ## Test coverage

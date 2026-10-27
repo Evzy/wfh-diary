@@ -22,8 +22,8 @@ class MissedNotificationWorker(
 
         val settings =
             runCatching { app.diaryRepository.getSettings() }
-                .getOrElse { error ->
-                    showSettingsFailure(app, date, MissedNotificationDefault.HOME, error)
+                .getOrElse {
+                    showSettingsFailure(app, date, MissedNotificationDefault.HOME)
                     return Result.failure()
                 }
 
@@ -35,8 +35,8 @@ class MissedNotificationWorker(
         val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
         val leavePeriods =
             runCatching { app.diaryRepository.getLeavePeriods() }
-                .getOrElse { error ->
-                    showSettingsFailure(app, date, default, error)
+                .getOrElse {
+                    showSettingsFailure(app, date, default)
                     return Result.failure()
                 }
         if (LeavePeriodHelper.isOnLeave(localDate, leavePeriods)) {
@@ -46,8 +46,8 @@ class MissedNotificationWorker(
         val fyYear = FinancialYearHelper.currentFyYear(localDate)
         val entry =
             runCatching { app.diaryRepository.getDays(fyYear, date, date).firstOrNull() }
-                .getOrElse { error ->
-                    showSettingsFailure(app, date, default, error)
+                .getOrElse {
+                    showSettingsFailure(app, date, default)
                     return Result.failure()
                 }
         if (!DayEntryHelper.needsDefault(entry)) {
@@ -63,14 +63,11 @@ class MissedNotificationWorker(
                 DayLogNotificationUpdater.showAutoSuccessDefault(app, default, applyAt)
             }
             Result.success()
-        }.getOrElse { error ->
-            val retry = DayLogRetryPolicy.failureRetryForMissedDefault(default)
+        }.getOrElse {
             DayLogNotificationUpdater.showFailure(
                 context = app,
-                action = retry.action,
+                action = default,
                 date = date,
-                reason = ApiErrorClassifier.classify(error),
-                retryMode = retry.retryMode,
                 target = DayLogNotificationTarget.DAY_LOG_RESULT,
             )
             Result.failure()
@@ -80,7 +77,7 @@ class MissedNotificationWorker(
     private suspend fun applyGeolocationFallback(
         app: WfhDiaryApplication,
         date: String,
-        settings: dev.wfhdiary.app.data.remote.UserSettingsDto,
+        settings: dev.wfhdiary.app.data.model.UserSettingsDto,
         applyAt: String,
     ) {
         val place = GeolocationNotificationHelper.matchingPlace(app, settings)
@@ -98,15 +95,12 @@ class MissedNotificationWorker(
         app: WfhDiaryApplication,
         date: String,
         action: String,
-        error: Throwable,
     ) {
         if (!NotificationPermissions.canPost(app)) return
         DayLogNotificationUpdater.showFailure(
             context = app,
             action = action,
             date = date,
-            reason = ApiErrorClassifier.classify(error),
-            retryMode = NotificationChannels.RETRY_MODE_MISSED,
             target = DayLogNotificationTarget.DAY_LOG_RESULT,
         )
     }

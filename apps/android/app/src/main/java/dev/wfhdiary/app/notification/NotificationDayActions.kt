@@ -1,9 +1,9 @@
 package dev.wfhdiary.app.notification
 
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.CreateLeaveRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UserSettingsDto
 import dev.wfhdiary.app.util.FinancialYearHelper
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

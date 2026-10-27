@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import dev.wfhdiary.app.notification.NotificationChannels
 import dev.wfhdiary.app.notification.MorningReminderNotifier
 import dev.wfhdiary.app.ui.theme.WfhDiaryTheme

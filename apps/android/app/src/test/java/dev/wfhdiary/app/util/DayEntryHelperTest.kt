@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.DayEntryDto
+import dev.wfhdiary.app.data.model.DayEntryDto
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -13,17 +13,13 @@ Guide for agents and humans working in this repo. This project is **spec-driven*
 
 | Path | Role |
 | --- | --- |
-| `services/api/WfhDiary.Api/` | ASP.NET Core minimal API (`Endpoints/`, `Services/`, `Data/`, `Auth/`) |
-| `services/api/WfhDiary.Api.Tests/` | xUnit integration + unit tests |
-| `packages/shared/WfhDiary.Shared/Dtos/` | Shared DTOs |
-| `packages/shared/contracts/` | JSON fixtures used by API and Android contract tests |
-| `apps/android/` | Android app (`dev.wfhdiary.app`) — Compose, Ktor, Room, WorkManager |
-| `.github/workflows/` | CI, API deploy, Android release |
+| `apps/android/` | Android app (`dev.wfhdiary.app`) — Compose, Room, WorkManager; on-device only, with file backups |
+| `.github/workflows/` | CI, Android release |
+| `docs/` | Constitution, specs, changes, architecture, CI/CD, testing |
+| `scripts/` | Version bump, git hook setup, Azure decommission (manual) |
 
 ## Commands
 
-- API tests (from repo root): `dotnet test WfhDiary.sln -c Release`
-- Run API (from `services/api/WfhDiary.Api/`): `dotnet run --launch-profile http` (dev auth header `X-Debug-User-Id: dev-user`)
 - Android unit tests (from `apps/android/`): `./gradlew :app:testDebugUnitTest`
 - Android build (from `apps/android/`): `./gradlew :app:assembleDebug`
 
