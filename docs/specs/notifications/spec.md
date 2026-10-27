@@ -70,7 +70,7 @@ When the day still needs an entry, the job applies the configured Home, Office o
 
 - **Given** the missed default is `Home`, `Office` or `Leave`, and the day needs an entry
 - **When** the missed-default job runs
-- **Then** the default is applied the same way as NOTIF-005. An auto-log result notification on the `auto_log_result` channel names the default and the apply-at time in 12-hour form (for example "12pm" or "12:30pm"), and it auto-dismisses after 8 seconds
+- **Then** the job upserts the day or creates leave as in NOTIF-005, without showing a pending notification. An auto-log result notification on the `auto_log_result` channel names the default and the apply-at time in 12-hour form (for example "12pm" or "12:30pm"), and it auto-dismisses after 8 seconds
 
 ### NOTIF-009 — Failure classification
 
@@ -85,8 +85,8 @@ A failed log attempt is classified into one of four reasons, each with its own m
 A failed log attempt shows a persistent failure notification with Retry and Open app actions, and Retry re-runs the same kind of work.
 
 - **Given** a log attempt failed for a date
-- **When** the failure notification is shown, replacing the reminder for manual and retry attempts, or in the auto-log slot (ID 1002) for automatic attempts
-- **Then** Retry cancels missed work for that date, shows the pending state, and re-runs the missed-default job if the original was a Geolocation missed default; otherwise it re-runs the original action. Open app launches the app for that date
+- **When** the failure notification is shown, in the reminder slot (ID 1001) for quick-action attempts or in the auto-log slot (ID 1002) for automatic attempts
+- **Then** the Retry intent carries that slot, and the retry's pending, success and failure notifications reuse it, so a retried automatic failure stays in ID 1002. Retry cancels missed work for that date and shows the pending state. It re-runs the whole missed-default job when the missed job couldn't load settings, leave periods or the day entry, or when a Geolocation missed default failed; otherwise it re-runs the original action. Open app launches the app for that date
 
 ### NOTIF-011 — Permission gating
 
@@ -118,14 +118,14 @@ Settings can show the morning reminder immediately so the user can check that no
 | --- | --- |
 | NOTIF-001 | `untested` |
 | NOTIF-002 | `untested` |
-| NOTIF-003 | `untested` (worker); helper only: `LeavePeriodHelperTest.isOnLeave_includes_start_and_end_dates` (missed worker's helper; morning worker checks leave inline) |
+| NOTIF-003 | `untested` |
 | NOTIF-004 | `untested` |
-| NOTIF-005 | `DayLogRetryPolicyTest.notificationTargetForWorker_manual_defaults_to_morning` (target routing only) |
+| NOTIF-005 | `untested` |
 | NOTIF-006 | `MissedNotificationDefaultTest.isEnabled_false_for_none`, `MissedNotificationDefaultTest.isEnabled_true_for_home_office_leave` (enabled check only) |
 | NOTIF-007 | `DayEntryHelperTest.needsDefault_true_when_entry_null`, `DayEntryHelperTest.needsDefault_false_when_location_set`, `DayEntryHelperTest.needsDefault_false_when_leave_description`, `DayEntryHelperTest.needsDefault_true_when_empty_day`, `LeavePeriodHelperTest.isOnLeave_true_for_date_in_range` (helpers only) |
 | NOTIF-008 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_home_uses_apply_action`, `DayLogRetryPolicyTest.failureRetryForMissedDefault_office_uses_apply_action` (failure path only) |
 | NOTIF-009 | `ApiErrorClassifierTest.classify_connect_exception_as_server_waking`, `ApiErrorClassifierTest.classify_timeout_message_as_database_timeout`, `ApiErrorClassifierTest.classify_connection_reset_as_database_timeout`, `ApiErrorClassifierTest.classify_connect_timeout_exception_as_database_timeout`, `ApiErrorClassifierTest.classify_nested_connect_timeout_as_database_timeout`, `ApiErrorClassifierTest.classify_unknown_as_generic`, `ApiErrorClassifierTest.classifyResponseStatus_503_as_server_waking`, `ApiErrorClassifierTest.classifyResponseStatus_502_as_server_waking`, `ApiErrorClassifierTest.classifyResponseStatus_504_as_server_waking`, `ApiErrorClassifierTest.classifyResponseStatus_401_as_sign_in_required`, `ApiErrorClassifierTest.classifyResponseStatus_500_as_generic` |
-| NOTIF-010 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker`, `DayLogRetryPolicyTest.notificationTargetFromKey_morning`, `DayLogRetryPolicyTest.notificationTargetFromKey_day_log_or_null`, `DayLogRetryPolicyTest.notificationTargetKey_round_trips`, `DayLogRetryPolicyTest.notificationTargetForWorker_retry_defaults_to_morning`, `DayLogRetryPolicyTest.notificationTargetForWorker_auto_apply_defaults_to_day_log`, `DayLogRetryPolicyTest.notificationTargetForWorker_stored_target_overrides_source`, `DayLogRetryPolicyTest.usesMissedWorkerRetry_only_for_missed_mode` (policy only; receiver untested) |
+| NOTIF-010 | `DayLogRetryPolicyTest.failureRetryForMissedDefault_geolocation_uses_missed_worker`, `DayLogRetryPolicyTest.notificationTargetFromKey_morning`, `DayLogRetryPolicyTest.notificationTargetFromKey_day_log_or_null`, `DayLogRetryPolicyTest.notificationTargetKey_round_trips`, `DayLogRetryPolicyTest.notificationTargetForWorker_stored_target_overrides_source`, `DayLogRetryPolicyTest.usesMissedWorkerRetry_only_for_missed_mode` (policy helpers only; receiver, worker and load-failure retry paths untested) |
 | NOTIF-011 | `untested` |
 | NOTIF-012 | `untested` |
 
