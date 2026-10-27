@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import dev.wfhdiary.app.backup.BackupPreferences
 import dev.wfhdiary.app.backup.BackupScheduler
 import dev.wfhdiary.app.backup.BackupService
+import dev.wfhdiary.app.backup.LegacyServerImporter
 import dev.wfhdiary.app.backup.RestoreService
 import dev.wfhdiary.app.backup.SafBackupFolder
 import dev.wfhdiary.app.data.DiaryDataSource
@@ -39,6 +40,7 @@ class WfhDiaryApplication : Application() {
 
     val httpClient: HttpClient by lazy {
         HttpClient(Android) {
+            expectSuccess = true
             install(HttpTimeout) {
                 connectTimeoutMillis = 60_000
                 requestTimeoutMillis = 90_000
@@ -89,6 +91,10 @@ class WfhDiaryApplication : Application() {
     /** Old server API; used only by the one-time importer in phase 1. */
     val remoteDiaryRepository: DiaryRepository by lazy {
         DiaryRepository(httpClient) { resolveApiBaseUrl() }
+    }
+
+    val legacyServerImporter: LegacyServerImporter by lazy {
+        LegacyServerImporter(remoteDiaryRepository, BuildConfig.VERSION_NAME)
     }
 
     suspend fun resolveApiBaseUrl(): String {
