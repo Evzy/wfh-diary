@@ -46,7 +46,7 @@ Tapping Home, Office or Leave logs that date in the background and shows progres
 
 - **Given** the morning reminder for a date
 - **When** the user taps Home, Office or Leave
-- **Then** pending missed-default work for that date is cancelled, an ongoing progress notification replaces the reminder, and a background worker refreshes the Firebase token and either upserts the day using the settings' Home or Office default start time, finish time, break and description (with location `Home`/`Office`) or creates a single-day leave period; on success, a "logged" notification is shown and auto-dismisses after 8 seconds
+- **Then** pending missed-default work for that date is cancelled, an ongoing progress notification replaces the reminder, and a background worker writes locally through `DiaryStore` (no network), either upserting the day using the settings' Home or Office default start time, finish time, break and description (with location `Home`/`Office`) or creating a single-day leave period; on success, a "logged" notification is shown and auto-dismisses after 8 seconds
 
 ### NOTIF-006 — Missed default scheduling
 
@@ -70,7 +70,7 @@ When the day still needs an entry, the job applies the configured Home, Office o
 
 - **Given** the missed default is `Home`, `Office` or `Leave`, and the day needs an entry
 - **When** the missed-default job runs
-- **Then** the job upserts the day or creates leave as in NOTIF-005, without showing a pending notification. An auto-log result notification on the `auto_log_result` channel names the default and the apply-at time in 12-hour form (for example "12pm" or "12:30pm"), and it auto-dismisses after 8 seconds
+- **Then** the job writes locally (upserts the day or creates leave) as in NOTIF-005, without showing a pending notification. An auto-log result notification on the `auto_log_result` channel names the default and the apply-at time in 12-hour form (for example "12pm" or "12:30pm"), and it auto-dismisses after 8 seconds
 
 ### NOTIF-009 — Failure classification
 
@@ -108,8 +108,8 @@ Settings can show the morning reminder immediately so the user can check that no
 
 | Kind | Location |
 | --- | --- |
-| API | `GET /v1/settings`, `GET /v1/leave-periods`, `GET /v1/diaries/{fyYear}/days`, `PUT /v1/diaries/{fyYear}/days/{date}`, `POST /v1/diaries/{fyYear}/leave` — `services/api/WfhDiary.Api/Endpoints/` (called via `DiaryRepository`) |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/UserSettingsDto.cs` (`NotificationTime`, `NotificationWorkingDaysMask`, `MissedNotificationDefault`, `MissedNotificationApplyAt`) |
+| Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (settings, leave periods and day writes, reached via `WfhDiaryApplication.diaryRepository`) |
+| DTO / contract | `packages/shared/contracts/user-settings.json` (`notificationTime`, `notificationWorkingDaysMask`, `missedNotificationDefault`, `missedNotificationApplyAt`; shape reused by `data/remote/UserSettingsDto.kt`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogRetryPolicy`, `DayLogNotificationUpdater`, `ApiErrorClassifier`, `NotificationPermissions`, `FirebaseTokenHelper`) |
 
 ## Test coverage
@@ -131,7 +131,8 @@ Settings can show the morning reminder immediately so the user can check that no
 
 ## Known gaps
 
-- Backlog ([`TODO.md`](../../TODO.md) § C): optional work-template quick actions on the morning reminder.
+- Backlog ([`TODO.md`](../../TODO.md) § C): optional work-template quick actions on the morning reminder. Template UI was never implemented, and templates are dropped by the on-device-only change.
+- **Server-era failure handling remains until phase 2.** Writes are now local, so the failure classification and Retry paths (NOTIF-009, NOTIF-010), `ApiErrorClassifier` and `FirebaseTokenHelper.ensureToken` calls in the workers are vestigial. They are deliberately left in place for phase 2, which removes them with the importer and Firebase sign-in.
 - Backlog ([`TODO.md`](../../TODO.md) § B): ViewModel and repository tests. No worker, receiver or scheduler code has automated tests; coverage above comes from pure helpers only.
 - Suspected unintended: `MorningReminderWorker` fetches settings without first calling `FirebaseTokenHelper.ensureToken`. If that fetch fails (for example with an expired token), the reminder is still shown using the 08:00 and Mon–Fri fallbacks, but no missed default is scheduled (NOTIF-006 needs settings).
 - Suspected unintended: in `MorningReminderWorker`, a failed leave-period fetch is treated as "not on leave" (`getOrDefault(false)`), so the reminder can appear on a leave day.
@@ -145,3 +146,4 @@ Settings can show the morning reminder immediately so the user can check that no
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — NOTIF-005 and NOTIF-008 now describe local writes; NOTIF-009/010 kept until phase 2 ([change](../../changes/2026-10-27-on-device-only/design.md)).

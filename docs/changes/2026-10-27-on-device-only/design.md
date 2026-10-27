@@ -1,6 +1,6 @@
 # On-device only (remove backend) — design
 
-**Status:** approved · **Date:** 2026-10-27 · **Touches specs:** [day-entries](../../specs/day-entries/spec.md), [summary-fy](../../specs/summary-fy/spec.md), [leave](../../specs/leave/spec.md), [settings](../../specs/settings/spec.md), [export-xlsx](../../specs/export-xlsx/spec.md), [notifications](../../specs/notifications/spec.md), [ota-updates](../../specs/ota-updates/spec.md), [auth](../../specs/auth/spec.md), [work-templates](../../specs/work-templates/spec.md), [geolocation](../../specs/geolocation/spec.md), new `backup`
+**Status:** in-progress · **Date:** 2026-10-27 · **Touches specs:** [day-entries](../../specs/day-entries/spec.md), [summary-fy](../../specs/summary-fy/spec.md), [leave](../../specs/leave/spec.md), [settings](../../specs/settings/spec.md), [export-xlsx](../../specs/export-xlsx/spec.md), [notifications](../../specs/notifications/spec.md), [ota-updates](../../specs/ota-updates/spec.md), [auth](../../specs/auth/spec.md), [work-templates](../../specs/work-templates/spec.md), [geolocation](../../specs/geolocation/spec.md), new `backup`
 
 ## Problem
 

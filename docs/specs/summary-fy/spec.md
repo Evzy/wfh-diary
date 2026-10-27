@@ -24,13 +24,13 @@ FY `N` runs from 1 July `N` to 30 June `N+1` inclusive, and iterating its days i
 - **When** its range is computed and iterated
 - **Then** it starts 2025-07-01, ends 2026-06-30, and iteration from 1 to 3 July yields three days ending on 3 July
 
-### FY-003 — Summary endpoint
+### FY-003 — Summary computed on-device
 
-`GET /v1/diaries/{fyYear}/summary` returns the summary computed over all of the user's day entries in that FY, creating the diary first if needed.
+`DiaryStore.getSummary(fyYear)` returns the summary computed on-device by the ported calculator (`DiaryRules.summarize`) over all stored day entries in that FY; results are the same as the former server calculation.
 
 - **Given** a user who logged 08:00–17:00 with a 1-hour break at Home on the first day of the FY
-- **When** they call `GET /v1/diaries/{fy}/summary`
-- **Then** the response is 200 with `homeHours` ≥ 8 and `claimableWfhAmount` > 0, matching the `diary-summary.json` contract shape
+- **When** the app asks `DiaryStore` for that FY's summary
+- **Then** `homeHours` is 8 or more and `claimableWfhAmount` is greater than 0, matching the `diary-summary.json` contract shape
 
 ### FY-004 — Hours by location
 
@@ -92,9 +92,10 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 
 | Kind | Location |
 | --- | --- |
-| API | `GET /v1/diaries/{fyYear}/summary` — `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs`; `services/api/WfhDiary.Api/Services/SummaryCalculator.cs`, `FinancialYearHelper.cs`, `WorkingDaysMask.cs` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/DiarySummaryDto.cs`, `packages/shared/contracts/diary-summary.json` |
+| Summary calculation | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryRules.kt` (`summarize`), `data/store/DiaryStore.kt` (`getSummary`) |
+| DTO / contract | `packages/shared/contracts/diary-summary.json` (shape reused by `data/remote/DiarySummaryDto.kt`) |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/` — `ui/month/FySummaryGrid.kt`, `ui/month/MonthGridViewModel.kt`, `util/FinancialYearHelper.kt`, `util/WorkingDaysMask.kt` |
+| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Services/SummaryCalculator.cs`, `FinancialYearHelper.cs`, `WorkingDaysMask.cs` — still present but no longer used by the app |
 
 ## Test coverage
 
@@ -102,25 +103,26 @@ The app reloads the summary after a refresh, a day save or clear, and a leave ch
 | --- | --- |
 | FY-001 | `FinancialYearHelperTests.CurrentFyYear_july_start`; `FinancialYearHelperTest.currentFyYear_june_uses_prior_calendar_year`; `FinancialYearHelperTest.currentFyYear_july_uses_current_calendar_year` |
 | FY-002 | `FinancialYearHelperTests.FyRange_spans_july_to_june`; `FinancialYearHelperTests.EachDay_includes_end_date`; `FinancialYearHelperTest.fyRange_spans_july_to_june` |
-| FY-003 | `DiaryFlowTests.Upsert_day_and_summary_work`; `ApiContractTests.Fixture_deserializes_to_shared_dto`; `ContractDeserializationTest.diarySummary_fixture_deserializes` |
-| FY-004 | `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount`; `SummaryCalculatorTests.Compute_logic_check_fails_when_unlocated_hours` |
-| FY-005 | `untested` |
-| FY-006 | `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` |
-| FY-007 | `SummaryCalculatorTests.Compute_logic_check_fails_when_unlocated_hours`; `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` |
+| FY-003 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryStoreTest.summary_uses_fy_days`; `ContractDeserializationTest.diarySummary_fixture_deserializes` |
+| FY-004 | `DiaryRulesTest.summary_matches_server_rules`; `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours`; `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` (legacy server) |
+| FY-005 | `DiaryRulesTest.summary_matches_server_rules` (day counts asserted there; Android summary display untested) |
+| FY-006 | `DiaryRulesTest.summary_matches_server_rules`; `SummaryCalculatorTests.Compute_home_hours_and_claimable_amount` (legacy server) |
+| FY-007 | `DiaryRulesTest.summary_logic_check_fails_for_untagged_hours`; `SummaryCalculatorTests.Compute_logic_check_fails_when_unlocated_hours` (legacy server) |
 | FY-008 | `WorkingDaysMaskTest.default_mask_is_monday_to_friday`; `WorkingDaysMaskTest.setDay_toggles_single_day`; `WorkingDaysMaskTest.selectedDayLabels_lists_enabled_days` |
 | FY-009 | `untested` |
 | FY-010 | `untested` |
 
 ## Known gaps
 
-- **Fixed 67c/hour rate for every FY:** `SummaryCalculator` hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
-- **Banker's rounding:** `Math.Round(home * 0.67, 2)` uses .NET's default midpoint-to-even rounding, not away-from-zero.
+- **Fixed 67c/hour rate for every FY:** `DiaryRules.summarize` (and the legacy server `SummaryCalculator`) hard-codes `0.67` regardless of `fyYear`. The ATO fixed-rate method changed to 70c/hour from 1 July 2024 (to be confirmed against ATO guidance), so FY 2024+ claimable amounts are likely understated. Suspected unintended.
+- **Banker's rounding:** the claimable amount is rounded half-even (`RoundingMode.HALF_EVEN`, ported from .NET's default `Math.Round`), not away-from-zero.
 - **API `WorkingDaysMask.IsWorkingDay` mis-maps Sunday:** .NET `DayOfWeek.Sunday` is 0, so `1 << -1` tests bit 31 instead of bit 6 (Android's Sunday bit). The API currently only uses `WorkingDaysMask.Default`, so there is no live impact. Suspected unintended; no API test exists for it.
 - **Location matching is untrimmed:** matching is case-insensitive but does not trim, so `"Home "` with whitespace (or other labels, e.g. from quick add's free-text field) is excluded from Home/Office totals and fails the logic check — even though the Android grid trims and badges it `H`.
 - **Android `eachDay`** has no unit test (API equivalent is tested).
-- **No test** asserts `daysAtHome`/`daysInOffice` (FY-005) or Android summary display/refresh; Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
+- **No test** asserts Android summary display/refresh (FY-009, FY-010); Android ViewModel tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — FY-003 now describes the on-device calculator; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).

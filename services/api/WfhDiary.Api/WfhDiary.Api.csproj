@@ -20,7 +20,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.1.23</Version>
+    <Version>0.1.24</Version>
   </PropertyGroup>
 
 </Project>

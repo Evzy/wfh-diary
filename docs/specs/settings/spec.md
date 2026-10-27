@@ -4,25 +4,25 @@
 
 ## Purpose & scope
 
-Per-user preferences stored by the API and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions, shown in the **Home & office presets** section. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see [geolocation](../geolocation/spec.md)), the work-template API (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see [notifications](../notifications/spec.md)), XLSX export ([export-xlsx](../export-xlsx/spec.md)) and OTA updates ([ota-updates](../ota-updates/spec.md)), which share the Settings screen but have their own specs.
+Preferences stored on the phone (a single Room settings row, handled by `DiaryStore`) and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions, shown in the **Home & office presets** section. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see [geolocation](../geolocation/spec.md)), work templates (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see [notifications](../notifications/spec.md)), XLSX export ([export-xlsx](../export-xlsx/spec.md)) and OTA updates ([ota-updates](../ota-updates/spec.md)), which share the Settings screen but have their own specs.
 
 ## Requirements
 
-### SET-001 — Lazily created defaults
+### SET-001 — Single local row with defaults
 
-`GET /v1/settings` returns the caller's settings, creating a row with defaults on first access.
+`DiaryStore.getSettings` returns the single local settings row (`id = 1`); when no row exists it returns the defaults, which equal the former server defaults.
 
-- **Given** a user with no stored settings
-- **When** they call `GET /v1/settings`
-- **Then** the response is `200` with display name `YOUR NAME HERE`, notification time `08:00`, working-days mask `31` (Mon–Fri), missed default `None`, apply-at `12:00`, away default `Office`, both skip flags `false`, Home and Office `08:00`–`17:00` with a 1-hour break, null descriptions and null geofences
+- **Given** no stored settings row
+- **When** the app reads settings
+- **Then** the result has display name `YOUR NAME HERE`, notification time `08:00`, working-days mask `31` (Mon–Fri), missed default `None`, apply-at `12:00`, away default `Office`, both skip flags `false`, Home and Office `08:00`–`17:00` with a 1-hour break, null descriptions and null geofences
 
 ### SET-002 — Partial update
 
-`PUT /v1/settings` updates only the fields that are non-null in the request and returns the full updated settings.
+`DiaryStore.updateSettings` updates only the fields that are non-null in the request, writes the single local row and returns the full updated settings; any `legacy` content stored with the row is kept.
 
 - **Given** existing settings
-- **When** the user sends a request with some fields set and the rest `null`
-- **Then** the response is `200`, the set fields are changed, `null` fields keep their previous values, and a later `GET` returns the same values
+- **When** the app saves a request with some fields set and the rest `null`
+- **Then** the set fields are changed, `null` fields keep their previous values, and a later read returns the same values
 
 ### SET-003 — Unparseable times are ignored
 
@@ -56,23 +56,21 @@ A home or office geofence is only updated when latitude, longitude and radius ar
 - **When** the user sends all three geofence fields, or sends the clear flag
 - **Then** the geofence is stored as sent, or all three fields become `null`; a partial set (e.g. latitude only) changes nothing
 
-### SET-007 — Response matches the shared contract
+### SET-007 — Settings shape is the backup schema
 
-The settings response exposes every property of the shared `user-settings.json` contract.
+The settings object has every property of the shared `user-settings.json` contract and is the `settings` object of the backup document ([BAK-001](../backup/spec.md#bak-001--backup-document-v1)); backup validation of that object replaces the former contract requirement.
 
-- **Given** an authenticated user
-- **When** they call `GET /v1/settings`
-- **Then** the JSON includes every contract property, and the fixture deserializes into both the API and Android DTOs
-
-The live-response test checks a hard-coded property list in `ApiContractTests`, not the fixture file itself, so a property added to the fixture is not automatically checked.
+- **Given** stored settings
+- **When** they are read or included in a backup
+- **Then** the JSON includes every contract property, the fixture deserializes into the Android DTO, and a backup round-trips the settings unchanged
 
 ### SET-008 — Android auto-save
 
-Edits on the Settings screen are saved automatically 500 ms after the last change.
+Edits on the Settings screen are saved locally 500 ms after the last change.
 
-- **Given** the Settings screen has loaded the user's settings
+- **Given** the Settings screen has loaded the stored settings
 - **When** the user changes a field and pauses for 500 ms (or taps **Close**, which flushes pending changes)
-- **Then** the form is sent with `PUT /v1/settings` unless it equals the last saved form; on success `Settings saved` shows for 2 seconds and the form is replaced by the server response, unless the user edited it while the save was in flight, in which case another auto-save is scheduled instead; on failure the error message stays visible
+- **Then** the form is written with `DiaryStore.updateSettings` unless it equals the last saved form; on success `Settings saved` shows for 2 seconds and the form is replaced by the stored result, unless the user edited it while the save was in flight, in which case another auto-save is scheduled instead; on failure the error message stays visible
 
 ### SET-009 — Saving reschedules the morning reminder
 
@@ -118,23 +116,24 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 
 | Kind | Location |
 | --- | --- |
-| API | `GET /v1/settings`, `PUT /v1/settings` — `services/api/WfhDiary.Api/Endpoints/SettingsEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| Data | `services/api/WfhDiary.Api/Data/UserSettingsEntity.cs`; Home/Office description columns added by `services/api/WfhDiary.Api/Migrations/20260625151406_AddDefaultPresetDescriptions.cs` |
-| DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/UserSettingsDto.cs`, `packages/shared/WfhDiary.Shared/Dtos/UpdateUserSettingsRequest.cs`, `packages/shared/contracts/user-settings.json` |
+| Store & rules | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (`getSettings`, `updateSettings`), `data/store/DiaryRules.kt` (`defaultSettings`, `applySettingsUpdate`) |
+| Storage | `data/local/SettingsEntity.kt`, `data/local/SettingsDao.kt` (single row `id = 1`; settings JSON plus raw `legacyJson`) |
+| DTO / contract | `packages/shared/contracts/user-settings.json` (shape reused by `data/remote/UserSettingsDto.kt`, `UpdateUserSettingsRequest.kt`); backup schema: [BAK-001](../backup/spec.md#bak-001--backup-document-v1) |
+| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Endpoints/SettingsEndpoints.cs`, `Data/UserSettingsEntity.cs` — no longer used by the app |
 | Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/settings/` — `SettingsScreen.kt`, `SettingsViewModel.kt`, `SettingsFormState.kt`, `WorkPresetsSection.kt`, `WorkScheduleCustomizeSheet.kt`, `WorkScheduleSummaryRow.kt`, `WorkingDaysSelector.kt`, `MissedNotificationDefaultSelector.kt`, `SettingsInfoIcon.kt`, `SettingsSectionTitleRow.kt` |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| SET-001 | `SettingsFlowTests.Settings_default_missed_notification_values` (checks missed default, apply-at and mask only) |
-| SET-002 | `SettingsFlowTests.Settings_update_missed_notification_persists` |
-| SET-003 | `untested` |
-| SET-004 | `SettingsFlowTests.Settings_invalid_missed_notification_default_falls_back_to_none` (away-default fallback untested) |
-| SET-005 | `untested` |
-| SET-006 | `SettingsFlowTests.Settings_home_geofence_set_and_clear` (partial-set and office cases untested) |
-| SET-007 | `ApiContractTests.Live_settings_response_matches_contract_properties` (hard-coded property list, not the fixture), `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.userSettings_fixture_deserializes` |
-| SET-008 | `untested` |
+| SET-001 | `DiaryRulesTest.default_settings_match_server_defaults`; `DiaryStoreTest.settings_default_then_update`; `WfhDiaryDatabaseTest.settings_single_row_upsert` |
+| SET-002 | `DiaryStoreTest.settings_default_then_update`; `DiaryStoreTest.update_settings_preserves_legacy`; `DiaryRulesTest.settings_update_ignores_invalid_time_and_normalises_valid` |
+| SET-003 | `DiaryRulesTest.settings_update_ignores_invalid_time_and_normalises_valid` (ported rule) |
+| SET-004 | `DiaryRulesTest.settings_update_validates_enums` (ported rule) |
+| SET-005 | `DiaryRulesTest.settings_update_trims_or_clears_descriptions` (ported rule) |
+| SET-006 | `DiaryRulesTest.settings_geofence_requires_all_fields_and_clear_wins` (ported rule) |
+| SET-007 | `ContractDeserializationTest.userSettings_fixture_deserializes`; `BackupCodecTest.round_trip_preserves_document` |
+| SET-008 | `untested` (the store write is covered by `DiaryStoreTest.settings_default_then_update`; the debounce is manual) |
 | SET-009 | `untested` |
 | SET-010 | `untested` |
 | SET-011 | `untested` |
@@ -143,8 +142,9 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 
 ## Known gaps
 
-- **Android cannot clear a default description (suspected bug).** The ViewModel sends a blank description as `null`, which the API treats as "unchanged", so emptying the field in the Customize sheet reverts to the old text after save. The API's blank-clears behaviour (SET-005) is never reached from the app.
-- **No input validation.** Invalid times are silently ignored (SET-003) rather than rejected with `400`; break hours, working-days mask range (0–127), display name and geofence coordinates/radius are not validated.
+- **Android cannot clear a default description (suspected bug).** The ViewModel sends a blank description as `null`, which `DiaryStore.updateSettings` treats as "unchanged", so emptying the field in the Customize sheet reverts to the old text after save. The blank-clears behaviour (SET-005) is never reached from the app. (Unlike day entries, this was not fixed by moving on-device.)
+- **SET-003..006, SET-009 wording still describes the server.** Their Given/When/Then text still says "the response is `200`" and "the server's returned"; the rules now live in `DiaryRules.applySettingsUpdate` and are covered by `DiaryRulesTest`. The wording is left for a tidy-up because the design did not list them as modified.
+- **No input validation.** Invalid times are silently ignored (SET-003) rather than rejected; break hours, working-days mask range (0–127), display name and geofence coordinates/radius are not validated.
 - **Inconsistent Office default.** `SettingsFormState` and the Customize sheet's time picker default Office start to `08:30`, while the API default is `08:00`. Only visible before settings load or when the picker has no value.
 - Android ViewModel / repository tests are backlog ([TODO § B](../../TODO.md#b-strong-unit-testing--partial)).
 
@@ -152,3 +152,4 @@ The Settings screen shows a **Home & office presets** section summarising the Ho
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — SET-001, SET-002, SET-007 and SET-008 rewritten for the single local settings row; coverage references updated ([change](../../changes/2026-10-27-on-device-only/design.md)).

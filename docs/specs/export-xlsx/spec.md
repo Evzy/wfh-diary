@@ -4,25 +4,25 @@
 
 ## Purpose & scope
 
-Produces an MGIS-style "Working from Home Diary" spreadsheet for one Australian financial year (1 July – 30 June) from the caller's day entries, and lets the Android user pick a financial year in Settings, download the workbook, and share it via the system share sheet. The workbook contains one row per calendar day, an Excel formula per worked day, and a formula-driven summary block (total, home and office hours, claimable WFH amount at $0.67/hour, day counts). Out of scope: editing or importing spreadsheets, other file formats (CSV/PDF), server-side storage of exports, and the in-app FY summary (see [summary-fy](../summary-fy/spec.md)).
+Produces an MGIS-style "Working from Home Diary" spreadsheet for one Australian financial year (1 July – 30 June) from the day entries stored on the phone, and lets the Android user pick a financial year in Settings, generate the workbook on-device (`XlsxWriter`) and share it via the system share sheet. The workbook contains one row per calendar day, an Excel formula per worked day, and a formula-driven summary block (total, home and office hours, claimable WFH amount at $0.67/hour, day counts). Out of scope: editing or importing spreadsheets, other file formats (CSV/PDF), persistent storage of exports beyond the share cache, and the in-app FY summary (see [summary-fy](../summary-fy/spec.md)).
 
 ## Requirements
 
-### XLSX-001 — Export endpoint returns an xlsx file
+### XLSX-001 — Workbook generated on-device
 
-`GET /v1/diaries/{fyYear}/export.xlsx` returns the caller's diary for that financial year as an xlsx file attachment named `WFH-Diary-{fyYear}-{fyYear+1}.xlsx`.
+`DiaryStore.downloadExportXlsx(fyYear)` generates the diary for that financial year as an xlsx workbook with `XlsxWriter` (a hand-written OOXML zip, no third-party spreadsheet library) and returns its bytes with the file name `WFH-Diary-{fyYear}-{fyYear+1}.xlsx`.
 
-- **Given** an authenticated caller (Firebase Bearer, or `X-Debug-User-Id` when Firebase is not configured)
-- **When** they request `GET /v1/diaries/2025/export.xlsx`
-- **Then** the response is 200 with content type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, download filename `WFH-Diary-2025-2026.xlsx`, and a non-trivial xlsx body
+- **Given** the app with stored days and settings
+- **When** it exports FY 2025
+- **Then** it gets a non-trivial xlsx byte array that is a valid package (workbook, sheet, styles parts) and the file name `WFH-Diary-2025-2026.xlsx`
 
-### XLSX-002 — Export is scoped to the caller and creates missing records
+### XLSX-002 — Export reads only local data and writes nothing
 
-The export uses only the caller's settings, diary and day entries, and creates the settings and diary for that financial year if they do not yet exist; a request with no user id is rejected with 401.
+The export uses the local settings (display name, defaults if no row exists) and the stored day entries for that financial year only; it does not create or change any stored data.
 
-- **Given** a caller with no diary for FY 2024 and another user who has entries for FY 2024
-- **When** the caller requests `GET /v1/diaries/2024/export.xlsx`
-- **Then** a diary for FY 2024 is created for the caller, the workbook contains none of the other user's entries, and a request with no user id returns 401
+- **Given** no stored days for FY 2024 and stored days for other FYs
+- **When** the app exports FY 2024
+- **Then** the workbook has one empty row per day of FY 2024 and contains none of the other FYs' entries, and no rows are created in the database
 
 ### XLSX-003 — Single "Diary" sheet with title and name
 
@@ -88,11 +88,11 @@ Settings has an Export section showing "Financial year {fy}–{fy+1}" with previ
 - **When** the user opens the settings drawer and taps the previous arrow once
 - **Then** the picker first shows "Financial year 2025–2026" and then "Financial year 2024–2025"
 
-### XLSX-011 — Android download and share
+### XLSX-011 — Android generate and share
 
-Tapping "Export financial year (XLSX)" downloads `GET /v1/diaries/{fy}/export.xlsx` for the selected FY, writes it to `cache/exports/WFH-Diary-{fy}-{fy+1}.xlsx`, and opens a system chooser with an `ACTION_SEND` intent carrying a FileProvider (`{package}.fileprovider`) URI with read permission; while running the button is disabled and "Downloading spreadsheet…" is shown, and on failure the error message (or "Export failed") is shown.
+Tapping "Export financial year (XLSX)" generates the workbook on-device with `DiaryStore.downloadExportXlsx` for the selected FY (off the main thread), writes it to `cache/exports/WFH-Diary-{fy}-{fy+1}.xlsx`, and opens a system chooser with an `ACTION_SEND` intent carrying a FileProvider (`{package}.fileprovider`) URI with read permission; while running the button is disabled and "Downloading spreadsheet…" is shown, and on failure the error message (or "Export failed") is shown.
 
-- **Given** the export picker shows FY 2025 and the API is reachable
+- **Given** the export picker shows FY 2025
 - **When** the user taps "Export financial year (XLSX)"
 - **Then** the button is disabled with "Downloading spreadsheet…" shown, then the share chooser opens for `WFH-Diary-2025-2026.xlsx` and the status text clears
 
@@ -100,40 +100,39 @@ Tapping "Export financial year (XLSX)" downloads `GET /v1/diaries/{fy}/export.xl
 
 | Kind | Location |
 | --- | --- |
-| API | `GET /v1/diaries/{fyYear}/export.xlsx` — `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs` |
-| API service | `services/api/WfhDiary.Api/Services/XlsxExportService.cs` (ClosedXML; registered as singleton in `Program.cs`) |
-| DTO / contract | None — binary xlsx response; no shared DTO or contract fixture |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxExportHelper.kt`, `data/remote/DiaryRepository.kt` (`downloadExportXlsx`), `ui/settings/SettingsViewModel.kt` (`exportXlsx`, export FY state), `ui/settings/SettingsScreen.kt` (Export section), `MainActivity.kt` (drawer sync), `apps/android/app/src/main/res/xml/file_paths.xml` (`exports/` cache path) |
+| Workbook | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxWriter.kt` (port of the server `XlsxExportService`), `data/store/DiaryStore.kt` (`downloadExportXlsx`) |
+| DTO / contract | None — binary xlsx; no shared DTO or contract fixture |
+| Server (legacy, until phase 2) | `services/api/WfhDiary.Api/Endpoints/DiaryEndpoints.cs`, `Services/XlsxExportService.cs` (ClosedXML) — no longer used by the app |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/export/XlsxExportHelper.kt` (cache file + share intent), `ui/settings/SettingsViewModel.kt` (`exportXlsx`, export FY state), `ui/settings/SettingsScreen.kt` (Export section), `MainActivity.kt` (drawer sync), `apps/android/app/src/main/res/xml/file_paths.xml` (`exports/` cache path) |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
-| XLSX-001 | `DiaryFlowTests.Export_returns_xlsx` (status, content type, size; filename not asserted) |
-| XLSX-002 | `untested` |
-| XLSX-003 | `XlsxExportServiceTests.Export_summary_formulas_use_valid_column_ranges` (sheet name only; title and name rows untested) |
-| XLSX-004 | `XlsxExportServiceTests.Export_summary_formulas_use_valid_column_ranges` (row count implied via last data row; headers untested) |
-| XLSX-005 | `untested` |
-| XLSX-006 | `XlsxExportServiceTests.Export_day_row_hours_formula_uses_start_finish_and_break` (timed row only; leave and blank rows untested) |
-| XLSX-007 | `XlsxExportServiceTests.Export_summary_formulas_use_valid_column_ranges` (claimable WFH row not asserted) |
-| XLSX-008 | `untested` |
-| XLSX-009 | `untested` |
+| XLSX-001 | `XlsxWriterTest.package_has_required_parts`, `XlsxWriterTest.filename_matches_previous_server_name`; `DiaryStoreTest.export_contains_xlsx_bytes_and_filename` |
+| XLSX-002 | `DiaryStoreTest.export_contains_xlsx_bytes_and_filename`, `XlsxWriterTest.one_row_per_fy_day_and_summary_formulas` (that nothing is written to the database is not asserted) |
+| XLSX-003 | `XlsxWriterTest.workbook_names_sheet_diary`, `XlsxWriterTest.title_and_name_are_written_and_escaped` |
+| XLSX-004 | `XlsxWriterTest.headers_are_on_row_five`, `XlsxWriterTest.one_row_per_fy_day_and_summary_formulas` |
+| XLSX-005 | `XlsxWriterTest.first_day_row_has_values_formula_and_styles`, `XlsxWriterTest.empty_day_keeps_input_styling` |
+| XLSX-006 | `XlsxWriterTest.first_day_row_has_values_formula_and_styles`, `XlsxWriterTest.leave_day_has_zero_hours_and_grey_location`, `XlsxWriterTest.empty_day_keeps_input_styling` |
+| XLSX-007 | `XlsxWriterTest.one_row_per_fy_day_and_summary_formulas` |
+| XLSX-008 | `XlsxWriterTest.first_day_row_has_values_formula_and_styles`, `XlsxWriterTest.leave_day_has_zero_hours_and_grey_location` |
+| XLSX-009 | `XlsxWriterTest.layout_freeze_widths_and_autofilter` |
 | XLSX-010 | `untested` |
 | XLSX-011 | `untested` |
 
 ## Known gaps
 
-- No golden-file xlsx export test; workbook content is only spot-checked by two formula tests ([`TODO.md` § B](../../TODO.md#b-strong-unit-testing--partial)).
-- No Android ViewModel/repository tests (MockEngine) for the export flow ([`TODO.md` § B](../../TODO.md#b-strong-unit-testing--partial)).
-- Suspected bug: the Android `HttpClient` does not set `expectSuccess` and `downloadExportXlsx` does not check the status code, so a non-2xx response (e.g. a 401 JSON error) is saved and shared as an `.xlsx` file instead of showing "Export failed".
-- Suspected inconsistency: the spreadsheet hours formula `(D-C)*24-E` is not clamped, so finish before start or a break longer than the span yields negative hours, whereas the in-app summary (`TimeHelpers.ComputeTotalHours`) clamps to 0; the two totals can disagree.
+- No golden-file comparison against a workbook produced by the old server; `XlsxWriterTest` unzips the package and asserts the sheet name, headers, key cells, styles and formulas, but not that Excel renders it identically (covered by the manual device checklist).
+- No Android ViewModel test for the export flow ([`TODO.md` § B](../../TODO.md#b-strong-unit-testing--partial)).
+- Suspected inconsistency: the spreadsheet hours formula `(D-C)*24-E` is not clamped, so finish before start or a break longer than the span yields negative hours, whereas the in-app summary (`TimeHelpers.computeTotalHours`) clamps to 0; the two totals can disagree.
 - Suspected inconsistency: the leave check for the Hours column (`Description == "LEAVE"`) is case-sensitive, while the grey leave styling is case-insensitive; an untimed entry described `leave` (lowercase) gets a blank Hours cell instead of 0 but is still shaded grey. (Separately, a timed entry described `LEAVE` gets the hours formula because times take precedence over the leave check.)
 - The settings hint says the FY "defaults to the calendar year when you open settings", but the code resets it to the FY of the month currently shown in the month grid (XLSX-010); the copy looks out of date.
-- The export status text (including "Downloading spreadsheet…") is always rendered in the error colour.
-- `fyYear` is not range-validated: exporting any in-range year creates an empty diary for it as a side effect (XLSX-002), and years outside the `DateOnly` range (e.g. 0 or 9999) throw in `FinancialYearHelper.FyRange`, likely surfacing as a 500.
-- The $0.67/hour WFH rate is hard-coded separately in `XlsxExportService` and `SummaryCalculator`; a rate change must update both.
+- The export status text (including "Downloading spreadsheet…") is always rendered in the error colour, and the label is now a misnomer because the workbook is generated locally.
+- The $0.67/hour WFH rate is hard-coded separately in `XlsxWriter` and `DiaryRules`; a rate change must update both.
 
 ## Revision log
 
 - 2026-10-27: Initial spec backfilled from implementation ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
 - 2026-10-27: Final-review consistency fixes ([change](../../changes/2026-10-27-spec-driven-setup/design.md)).
+- 2026-10-27: On-device-only phase 1 — XLSX-001, XLSX-002 and XLSX-011 now describe on-device generation by `XlsxWriter`; XLSX-003..009 content unchanged, coverage mapped to `XlsxWriterTest` ([change](../../changes/2026-10-27-on-device-only/design.md)).
