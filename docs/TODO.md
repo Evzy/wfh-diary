@@ -1,6 +1,8 @@
 # WFH Diary — continuation backlog
 
-Use this file to resume work (human or agent). **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md). **CI/CD:** [`CI_CD.md`](CI_CD.md).
+Use this file to resume work (human or agent). **Specs (source of truth for behaviour):** [`specs/`](specs/README.md). **Changes:** [`changes/`](changes/README.md). **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md). **CI/CD:** [`CI_CD.md`](CI_CD.md).
+
+New backlog work should become a change folder before implementation — see [`changes/README.md`](changes/README.md).
 
 ## Repo state (as of last doc update)
 

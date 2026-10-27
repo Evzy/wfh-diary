@@ -1,6 +1,6 @@
 # Spec-driven development setup — design
 
-**Status:** proposed · **Date:** 2026-10-27 · **Touches specs:** none (introduces the spec system)
+**Status:** shipped · **Date:** 2026-10-27 · **Touches specs:** none (introduces the spec system)
 
 ## Problem
 
