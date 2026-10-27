@@ -11,7 +11,8 @@ New backlog work should become a change folder before implementation — see [`c
 | Android app (`dev.wfhdiary.app`) | Done — on-device only (Room), month grid, day edit, settings, notifications, xlsx export, file backups, OTA, home/office geofence missed-notification |
 | Backend (API, shared DTOs, Azure, Firebase sign-in) | Removed — see [on-device-only change](changes/2026-10-27-on-device-only/design.md) |
 | GitHub Actions | `ci.yml`, `release-android.yml`, parallel Android test jobs |
-| GitHub repos | Private [`wfh-diary`](https://github.com/Evzy/wfh-diary), public [`wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
+| GitHub repos | Public [`wfh-diary`](https://github.com/Evzy/wfh-diary) (public since 2026-10-27 so Actions minutes are free), public [`wfh-diary-releases`](https://github.com/Evzy/wfh-diary-releases) |
+| Cloud cleanup | Azure and unused GitHub secrets done 2026-10-27; Firebase / Google Cloud still to do — see [below](#later-firebase--google-cloud-cleanup) |
 | GitHub Releases OTA | **Working** — checked at app start and from Settings |
 
 ## Ordered milestones
@@ -31,6 +32,30 @@ New backlog work should become a change folder before implementation — see [`c
 ## Next manual steps
 
 - [ ] Add GitHub secrets if not done: `WFH_RELEASES_TOKEN`, shared debug keystore, `WFH_MAPS_API_KEY` (see [`CI_CD.md`](CI_CD.md))
+- [ ] Firebase / Google Cloud cleanup — see [below](#later-firebase--google-cloud-cleanup)
+
+### Later: Firebase / Google Cloud cleanup
+
+The app has had no Firebase code since v0.1.25, so nothing breaks if this waits. Already done on 2026-10-27: the Azure resource group `rg-wfh-diary-dev-australiaeast`, the app registration `github-wfh-diary-deploy`, and the GitHub secrets `AZURE_*` and `WFH_FIREBASE_WEB_CLIENT_ID`.
+
+**What to look for:**
+
+- **Google account:** unknown. Try each Google account at [console.firebase.google.com](https://console.firebase.google.com/) until project **`wfh-diary-dev`** shows up.
+- **Project:** `wfh-diary-dev`, project number `991277833122`, Android app `dev.wfhdiary.app`.
+- **Firebase API key:** starts with `AIzaSyDSviah…`. It's the "Android key (auto created by Firebase)" and is in the public git history.
+- **Maps key:** the value of the `WFH_MAPS_API_KEY` GitHub secret. GitHub won't show it again, so you need your own copy or to recognise it in the console. **Find out which project this key lives in before deleting anything.** If it goes, geofence map picking stops working.
+
+**Steps:**
+
+1. Open [Cloud console → Credentials](https://console.cloud.google.com/apis/credentials?project=wfh-diary-dev) for `wfh-diary-dev`. Check whether any key there is the Maps key: Maps SDK for Android enabled, or a matching prefix.
+2. **If the Maps key is in a different project:** in Firebase, open Project settings → General → **Delete project**. It's recoverable for 30 days.
+3. **If the Maps key is in `wfh-diary-dev`:** keep the project and remove only the Firebase parts.
+   - Authentication → Users: delete your user.
+   - Authentication → Sign-in method: disable Google.
+   - Project settings → Your apps: remove `dev.wfhdiary.app`.
+   - Credentials: delete the OAuth "Web client (auto created by Google Service)".
+   - Credentials: delete the `AIzaSyDSviah…` key unless it *is* the Maps key. If it is, restrict it to Maps SDK for Android plus the app's package name and signing SHA-1.
+4. Optionally, check Billing for `wfh-diary-dev` to confirm only Maps usage remains, or nothing at all.
 
 ## End improvements (after core ship)
 
