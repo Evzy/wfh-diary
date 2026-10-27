@@ -1,7 +1,7 @@
 package dev.wfhdiary.app.notification
 
 import dev.wfhdiary.app.WfhDiaryApplication
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettingsDto
 import dev.wfhdiary.app.util.GeofenceHelper
 import dev.wfhdiary.app.util.LocationHelper
 

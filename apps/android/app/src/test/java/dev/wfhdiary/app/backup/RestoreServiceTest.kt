@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UserSettingsDto
 import dev.wfhdiary.app.data.store.DiaryRules
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.CancellationException

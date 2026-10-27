@@ -1,4 +1,4 @@
-package dev.wfhdiary.app.data.remote
+package dev.wfhdiary.app.data.model
 
 import kotlinx.serialization.Serializable
 

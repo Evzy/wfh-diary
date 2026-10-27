@@ -14,10 +14,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,14 +31,12 @@ fun BackupSection(
     onBackupNow: () -> Unit,
     onShare: () -> Unit,
     onRestoreFileChosen: (Uri?) -> Unit,
-    onImportFromServer: () -> Unit,
     onConfirmRestore: () -> Unit,
     onCancelRestore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree(), onFolderChosen)
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument(), onRestoreFileChosen)
-    var confirmImport by remember { mutableStateOf(false) }
     val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -85,30 +80,10 @@ fun BackupSection(
         ) {
             Text(stringResource(R.string.restore_from_file))
         }
-        OutlinedButton(onClick = { confirmImport = true }, enabled = !state.busy && state.folderChosen) {
-            Text(stringResource(R.string.import_from_server))
-        }
         if (!state.folderChosen) {
             Text(stringResource(R.string.restore_needs_folder_hint), style = MaterialTheme.typography.bodySmall)
         }
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
-    }
-
-    if (confirmImport) {
-        AlertDialog(
-            onDismissRequest = { confirmImport = false },
-            title = { Text(stringResource(R.string.import_confirm_title)) },
-            text = { Text(stringResource(R.string.import_confirm_body)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmImport = false
-                    onImportFromServer()
-                }) { Text(stringResource(R.string.import_confirm_action)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmImport = false }) { Text(stringResource(R.string.time_picker_cancel)) }
-            },
-        )
     }
 
     state.pendingRestore?.let { pending ->

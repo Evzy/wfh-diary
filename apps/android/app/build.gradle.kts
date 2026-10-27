@@ -110,7 +110,6 @@ android {
         val mapsApiKey = escapeForBuildConfigString(localPropOrEnv("MAPS_API_KEY"))
         buildConfigField("boolean", "GOOGLE_MAPS_CONFIGURED", if (mapsApiKey.isNotEmpty()) "true" else "false")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey.ifEmpty { "MISSING_MAPS_API_KEY" }
-        buildConfigField("String", "AZURE_API_BASE_URL", "\"https://app-wfh-diary-api-dev.azurewebsites.net/\"")
         val updateOwner = escapeForBuildConfigString(
             localPropOrEnv("UPDATE_GITHUB_OWNER").ifEmpty { "Evzy" },
         )
@@ -192,5 +191,4 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.ktor.client.mock)
 }

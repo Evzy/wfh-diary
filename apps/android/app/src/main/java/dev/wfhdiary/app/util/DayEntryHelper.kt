@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.DayEntryDto
+import dev.wfhdiary.app.data.model.DayEntryDto
 
 object DayEntryHelper {
     fun needsDefault(entry: DayEntryDto?): Boolean {

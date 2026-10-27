@@ -80,7 +80,7 @@ class MissedNotificationWorker(
     private suspend fun applyGeolocationFallback(
         app: WfhDiaryApplication,
         date: String,
-        settings: dev.wfhdiary.app.data.remote.UserSettingsDto,
+        settings: dev.wfhdiary.app.data.model.UserSettingsDto,
         applyAt: String,
     ) {
         val place = GeolocationNotificationHelper.matchingPlace(app, settings)

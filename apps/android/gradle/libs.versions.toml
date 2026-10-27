@@ -63,8 +63,6 @@ maps-compose = { group = "com.google.maps.android", name = "maps-compose", versi
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-core = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
-ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.wfhdiary.app.data.local.WfhDiaryDatabase
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.runBlocking
 import org.junit.After

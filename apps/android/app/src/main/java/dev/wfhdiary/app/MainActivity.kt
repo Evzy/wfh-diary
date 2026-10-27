@@ -143,7 +143,7 @@ private fun MainAppContent(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    monthViewModel.refreshFromRemote(showProgress = false)
+                    monthViewModel.reload(showProgress = false)
                     backupViewModel.refresh()
                 }
             }
@@ -162,7 +162,7 @@ private fun MainAppContent(
     LaunchedEffect(backupState.restoreGeneration) {
         val generation = backupState.restoreGeneration
         if (generation > lastHandledRestoreGeneration) {
-            monthViewModel.refreshFromRemote(showProgress = true)
+            monthViewModel.reload(showProgress = true)
             settingsViewModel.refreshSettings()
         }
         // Always sync (not just on increase) so a reset counter after process death can't hide later restores.
@@ -225,7 +225,6 @@ private fun MainAppContent(
                             onBackupNow = backupViewModel::backupNow,
                             onShare = { backupViewModel.share(activity) },
                             onRestoreFileChosen = backupViewModel::onRestoreFileChosen,
-                            onImportFromServer = backupViewModel::importFromServer,
                             onConfirmRestore = backupViewModel::confirmRestore,
                             onCancelRestore = backupViewModel::cancelRestore,
                         )
@@ -254,7 +253,7 @@ private fun MainAppContent(
                 onDeleteLeave = monthViewModel::deleteLeave,
                 onDeleteDay = monthViewModel::deleteDay,
                 onRemoveLeaveForDate = monthViewModel::removeLeaveForDate,
-                onRefresh = { monthViewModel.refreshFromRemote(showProgress = true) },
+                onRefresh = { monthViewModel.reload(showProgress = true) },
                 backupWarning = when (backupState.warning) {
                     BackupWarning.NO_FOLDER -> stringResource(R.string.backup_warning_no_folder)
                     BackupWarning.FAILED -> stringResource(R.string.backup_warning_failed)

@@ -9,8 +9,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.backup.BackupCodec
@@ -26,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -101,41 +98,17 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             when (val result = BackupCodec.decode(text)) {
                 is BackupParseResult.Failure -> result.message
                 is BackupParseResult.Success -> {
-                    showConfirmation(result.document, RestoreSource.FILE)
+                    showConfirmation(result.document)
                     null
                 }
             }
         }
     }
 
-    fun importFromServer() =
-        runBusy {
-            if (prefs.folderUri == null) return@runBusy app.getString(R.string.restore_needs_folder)
-            val document =
-                try {
-                    if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
-                        val token = FirebaseAuth.getInstance().currentUser?.getIdToken(true)?.await()?.token
-                        app.firebaseIdTokenHolder.setToken(token)
-                    }
-                    app.legacyServerImporter.fetch()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    return@runBusy app.getString(R.string.import_failed, e.message ?: e.javaClass.simpleName)
-                }
-            when (val result = BackupCodec.validate(document)) {
-                is BackupParseResult.Failure -> app.getString(R.string.import_failed, result.message)
-                is BackupParseResult.Success -> {
-                    showConfirmation(result.document, RestoreSource.SERVER)
-                    null
-                }
-            }
-        }
-
-    private suspend fun showConfirmation(document: BackupDocument, source: RestoreSource) {
+    private suspend fun showConfirmation(document: BackupDocument) {
         val counts = app.diaryStore.localCounts()
         _uiState.update {
-            it.copy(pendingRestore = PendingRestore(document, source, counts.days, counts.leavePeriods))
+            it.copy(pendingRestore = PendingRestore(document, counts.days, counts.leavePeriods))
         }
     }
 

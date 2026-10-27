@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.backup
 
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.UserSettingsDto
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

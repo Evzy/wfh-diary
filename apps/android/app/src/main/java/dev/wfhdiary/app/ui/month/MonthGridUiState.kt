@@ -1,8 +1,8 @@
 package dev.wfhdiary.app.ui.month
 
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.DiarySummaryDto
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.DiarySummaryDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
 import dev.wfhdiary.app.util.FinancialYearHelper
 import java.time.YearMonth
 

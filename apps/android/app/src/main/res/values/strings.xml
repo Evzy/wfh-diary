@@ -236,13 +236,8 @@
     <string name="restore_done">Restored %1$d days and %2$d leave periods.</string>
     <string name="restore_backup_written">Backup written to %1$s.</string>
     <string name="restore_backup_failed">But the follow-up backup failed: %1$s</string>
-    <string name="restore_needs_folder">Choose a backup folder before restoring or importing, so a safety backup can be saved.</string>
-    <string name="restore_needs_folder_hint">Choose a backup folder to enable restore and import.</string>
-    <string name="import_from_server">Import from old server</string>
-    <string name="import_confirm_title">Import from the old server?</string>
-    <string name="import_confirm_body">This downloads everything from the old server and then replaces the data on this phone. You must be signed in.</string>
-    <string name="import_confirm_action">Import</string>
-    <string name="import_failed">Import failed, nothing was changed: %1$s</string>
+    <string name="restore_needs_folder">Choose a backup folder before restoring, so a safety backup can be saved.</string>
+    <string name="restore_needs_folder_hint">Choose a backup folder to enable restore.</string>
     <string name="backup_warning_no_folder">Backups are off. Tap to choose a backup folder.</string>
     <string name="backup_warning_failed">The last backup failed. Tap to check.</string>
     <string name="backup_warning_stale">No backup in the last 3 days. Tap to check.</string>

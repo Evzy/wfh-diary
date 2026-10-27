@@ -1,6 +1,6 @@
 package dev.wfhdiary.app.util
 
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

@@ -1,13 +1,13 @@
 package dev.wfhdiary.app.data
 
-import dev.wfhdiary.app.data.remote.CreateLeaveRequest
-import dev.wfhdiary.app.data.remote.DayEntryDto
-import dev.wfhdiary.app.data.remote.DiaryDto
-import dev.wfhdiary.app.data.remote.DiarySummaryDto
-import dev.wfhdiary.app.data.remote.LeavePeriodDto
-import dev.wfhdiary.app.data.remote.UpdateUserSettingsRequest
-import dev.wfhdiary.app.data.remote.UpsertDayEntryRequest
-import dev.wfhdiary.app.data.remote.UserSettingsDto
+import dev.wfhdiary.app.data.model.CreateLeaveRequest
+import dev.wfhdiary.app.data.model.DayEntryDto
+import dev.wfhdiary.app.data.model.DiaryDto
+import dev.wfhdiary.app.data.model.DiarySummaryDto
+import dev.wfhdiary.app.data.model.LeavePeriodDto
+import dev.wfhdiary.app.data.model.UpdateUserSettingsRequest
+import dev.wfhdiary.app.data.model.UpsertDayEntryRequest
+import dev.wfhdiary.app.data.model.UserSettingsDto
 
 interface DiaryDataSource {
     suspend fun getDiary(fyYear: Int): DiaryDto
