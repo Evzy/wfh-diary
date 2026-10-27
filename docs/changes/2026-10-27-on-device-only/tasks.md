@@ -42,11 +42,11 @@ Phase 1 (this branch, `on-device-only`) keeps the backend running and ships on-d
 
 Do steps 2 and 3 **before logging any day on the new build** (the import replaces everything on the phone; notification actions count as logging).
 
-- [ ] 1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected. Restore and import are disabled until a folder is chosen.
-- [ ] 2. Settings → Backup & restore → **Choose backup folder**, pick a folder that syncs off the phone (e.g. Google Drive-synced or Documents). The app is still empty on the upgrade path, so the message says "Nothing to back up yet" and no file is written (an existing same-day file is left untouched); the first `wfh-diary-backup-YYYY-MM-DD.json` appears after the import in step 3. (BAK-002, BAK-005)
-- [ ] 3. **Import from old server** → confirm → the replace summary shows the current phone counts (0 days, 0 leave periods) → confirm. The month grid shows historic days for several FYs, Settings shows your name and geofences, and the result message says the backup was written. (BAK-011, BAK-009)
+- [x] 1. Install the new build over the old one (GitHub Releases OTA or `adb install -r`). The Room v1 cache is dropped on first launch, so the grid is empty; that is expected. Restore and import are disabled until a folder is chosen.
+- [x] 2. Settings → Backup & restore → **Choose backup folder**, pick a folder that syncs off the phone (e.g. Google Drive-synced or Documents). The app is still empty on the upgrade path, so the message says "Nothing to back up yet" and no file is written (an existing same-day file is left untouched); the first `wfh-diary-backup-YYYY-MM-DD.json` appears after the import in step 3. (BAK-002, BAK-005)
+- [x] 3. **Import from old server** → confirm → the replace summary shows the current phone counts (0 days, 0 leave periods) → confirm. The month grid shows historic days for several FYs, Settings shows your name and geofences, and the result message says the backup was written. (BAK-011, BAK-009)
 - [ ] 4. Drive folder overwrite check: after another backup the same day (e.g. **Back up now**), the day's file in the Drive folder has a new size or modified time, and the file opens as valid JSON. (BAK-005)
-- [ ] 5. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. (XLSX-003..009)
+- [x] 5. The in-app FY summary matches an XLSX export from the old server for the same FY; then export XLSX in the app and open it in Excel or Google Sheets: layout, colours and totals match. (XLSX-003..009)
 - [ ] 6. Edit a day; within about 10–15 minutes the backup file's modified time changes. (BAK-003)
 - [ ] 7. Leave the phone untouched for more than 24 hours (no edits); a new day's `wfh-diary-backup-YYYY-MM-DD.json` appears. (BAK-004)
 - [ ] 8. Clear a field in the edit sheet (e.g. remove the description) and save; it stays cleared after reopening. (DAY-010)
