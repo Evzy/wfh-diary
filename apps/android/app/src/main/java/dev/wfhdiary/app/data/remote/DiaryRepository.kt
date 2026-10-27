@@ -1,5 +1,6 @@
 package dev.wfhdiary.app.data.remote
 
+import dev.wfhdiary.app.data.DiaryDataSource
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -15,54 +16,57 @@ import io.ktor.http.contentType
 class DiaryRepository(
     private val client: HttpClient,
     private val baseUrlProvider: suspend () -> String,
-) {
+) : DiaryDataSource {
     private suspend fun base(): String = baseUrlProvider()
 
-    suspend fun getDiary(fyYear: Int): DiaryDto =
+    override suspend fun getDiary(fyYear: Int): DiaryDto =
         client.get("${base()}v1/diaries/$fyYear").body()
 
-    suspend fun getDays(fyYear: Int, from: String?, to: String?): List<DayEntryDto> =
+    override suspend fun getDays(fyYear: Int, from: String?, to: String?): List<DayEntryDto> =
         client.get("${base()}v1/diaries/$fyYear/days") {
             from?.let { parameter("from", it) }
             to?.let { parameter("to", it) }
         }.body()
 
-    suspend fun upsertDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
+    override suspend fun upsertDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
         client.put("${base()}v1/diaries/$fyYear/days/$date") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
-    suspend fun deleteDay(fyYear: Int, date: String): DayEntryDto =
+    override suspend fun replaceDay(fyYear: Int, date: String, request: UpsertDayEntryRequest): DayEntryDto =
+        upsertDay(fyYear, date, request)
+
+    override suspend fun deleteDay(fyYear: Int, date: String): DayEntryDto =
         client.delete("${base()}v1/diaries/$fyYear/days/$date").body()
 
-    suspend fun createLeave(fyYear: Int, request: CreateLeaveRequest): LeavePeriodDto =
+    override suspend fun createLeave(fyYear: Int, request: CreateLeaveRequest): LeavePeriodDto =
         client.post("${base()}v1/diaries/$fyYear/leave") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
-    suspend fun getSummary(fyYear: Int): DiarySummaryDto =
+    override suspend fun getSummary(fyYear: Int): DiarySummaryDto =
         client.get("${base()}v1/diaries/$fyYear/summary").body()
 
-    suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
+    override suspend fun downloadExportXlsx(fyYear: Int): Pair<ByteArray, String> {
         val response = client.get("${base()}v1/diaries/$fyYear/export.xlsx")
         val bytes = response.readRawBytes()
         val filename = "WFH-Diary-$fyYear-${fyYear + 1}.xlsx"
         return bytes to filename
     }
 
-    suspend fun getLeavePeriods(): List<LeavePeriodDto> =
+    override suspend fun getLeavePeriods(): List<LeavePeriodDto> =
         client.get("${base()}v1/leave-periods").body()
 
-    suspend fun deleteLeave(id: String) {
+    override suspend fun deleteLeave(id: String) {
         client.delete("${base()}v1/leave-periods/$id")
     }
 
-    suspend fun getSettings(): UserSettingsDto =
+    override suspend fun getSettings(): UserSettingsDto =
         client.get("${base()}v1/settings").body()
 
-    suspend fun updateSettings(request: UpdateUserSettingsRequest): UserSettingsDto =
+    override suspend fun updateSettings(request: UpdateUserSettingsRequest): UserSettingsDto =
         client.put("${base()}v1/settings") {
             contentType(ContentType.Application.Json)
             setBody(request)
