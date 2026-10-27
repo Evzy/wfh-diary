@@ -90,29 +90,80 @@ class BackupCodecTest {
     }
 
     @Test
+    fun object_format_is_refused() {
+        val text =
+            BackupCodec.encode(document()).replace(
+                "\"format\": \"wfh-diary-backup\"",
+                "\"format\": {}",
+            )
+        assertTrue(decodeFails(text).contains("Not a WFH Diary backup"))
+    }
+
+    @Test
+    fun array_version_is_refused() {
+        val text = BackupCodec.encode(document()).replace("\"version\": 1", "\"version\": []")
+        assertTrue(decodeFails(text).contains("no version"))
+    }
+
+    @Test
+    fun zero_version_is_refused() {
+        val text = BackupCodec.encode(document()).replace("\"version\": 1", "\"version\": 0")
+        assertTrue(decodeFails(text).contains("Unsupported backup version 0"))
+    }
+
+    @Test
     fun invalid_day_date_is_refused() {
-        decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-13-01")))))
+        val msg = decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-13-01")))))
+        assertTrue(msg.contains("2025-13-01"))
     }
 
     @Test
     fun duplicate_day_is_refused() {
-        decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-07-01"), BackupDay("2025-07-01")))))
+        val msg =
+            decodeFails(
+                BackupCodec.encode(
+                    document(days = listOf(BackupDay("2025-07-01"), BackupDay("2025-07-01"))),
+                ),
+            )
+        assertTrue(msg.contains("2025-07-01"))
     }
 
     @Test
     fun invalid_time_is_refused() {
-        decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-07-01", startTime = "25:99")))))
+        val msg =
+            decodeFails(
+                BackupCodec.encode(document(days = listOf(BackupDay("2025-07-01", startTime = "25:99")))),
+            )
+        assertTrue(msg.contains("2025-07-01"))
     }
 
     @Test
     fun negative_break_is_refused() {
-        decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-07-01", breakHours = -1.0)))))
+        val msg =
+            decodeFails(BackupCodec.encode(document(days = listOf(BackupDay("2025-07-01", breakHours = -1.0)))))
+        assertTrue(msg.contains("2025-07-01"))
     }
 
     @Test
     fun invalid_settings_time_is_refused() {
         val doc = document().copy(settings = settings().copy(notificationTime = "nope"))
-        decodeFails(BackupCodec.encode(doc))
+        assertTrue(decodeFails(BackupCodec.encode(doc)).contains("invalid time"))
+    }
+
+    @Test
+    fun negative_settings_break_is_refused() {
+        val doc = document().copy(settings = settings().copy(defaultOfficeBreakHours = -0.5))
+        assertTrue(decodeFails(BackupCodec.encode(doc)).contains("invalid break hours"))
+    }
+
+    @Test
+    fun duplicate_leave_id_is_refused() {
+        val leave =
+            listOf(
+                BackupLeavePeriod("same-id", "2025-12-22", "2025-12-23"),
+                BackupLeavePeriod("same-id", "2025-12-24", "2025-12-25"),
+            )
+        assertTrue(decodeFails(BackupCodec.encode(document(leave = leave))).contains("same-id"))
     }
 
     @Test

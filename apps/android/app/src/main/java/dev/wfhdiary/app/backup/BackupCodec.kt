@@ -2,10 +2,10 @@ package dev.wfhdiary.app.backup
 
 import dev.wfhdiary.app.util.TimeHelpers
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
@@ -28,13 +28,16 @@ object BackupCodec {
             } catch (e: Exception) {
                 return BackupParseResult.Failure("Not a valid backup file (unreadable JSON).")
             }
-        val format = root["format"]?.jsonPrimitive?.contentOrNull
+        val format = (root["format"] as? JsonPrimitive)?.contentOrNull
         if (format != BackupDocument.FORMAT) {
             return BackupParseResult.Failure("Not a WFH Diary backup file.")
         }
         val version =
-            root["version"]?.jsonPrimitive?.intOrNull
+            (root["version"] as? JsonPrimitive)?.intOrNull
                 ?: return BackupParseResult.Failure("Backup file has no version.")
+        if (version < 1) {
+            return BackupParseResult.Failure("Unsupported backup version $version.")
+        }
         if (version > BackupDocument.CURRENT_VERSION) {
             return BackupParseResult.Failure(
                 "Backup was made by a newer app (format version $version). Update the app first.",
@@ -63,6 +66,9 @@ object BackupCodec {
         if (settingsTimes.any { TimeHelpers.parseTimeString(it) == null }) {
             return BackupParseResult.Failure("Backup settings contain an invalid time.")
         }
+        if (s.defaultHomeBreakHours < 0 || s.defaultOfficeBreakHours < 0) {
+            return BackupParseResult.Failure("Backup settings contain invalid break hours.")
+        }
 
         val seen = HashSet<String>()
         for (day in document.days) {
@@ -82,9 +88,13 @@ object BackupCodec {
         }
 
         val leave = ArrayList<BackupLeavePeriod>(document.leavePeriods.size)
+        val seenLeaveIds = HashSet<String>()
         for (period in document.leavePeriods) {
             if (period.id.isBlank()) {
                 return BackupParseResult.Failure("Leave period without an id.")
+            }
+            if (!seenLeaveIds.add(period.id)) {
+                return BackupParseResult.Failure("Leave period appears twice: ${period.id}")
             }
             val start = parseDate(period.startDate)
             val end = parseDate(period.endDate)
