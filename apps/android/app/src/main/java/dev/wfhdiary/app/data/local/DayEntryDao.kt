@@ -28,6 +28,9 @@ interface DayEntryDao {
     @Query("SELECT * FROM day_entries ORDER BY date")
     suspend fun getAll(): List<DayEntryEntity>
 
+    @Query("SELECT COUNT(*) FROM day_entries")
+    suspend fun count(): Int
+
     @Query("DELETE FROM day_entries WHERE date = :date")
     suspend fun delete(date: String)
 

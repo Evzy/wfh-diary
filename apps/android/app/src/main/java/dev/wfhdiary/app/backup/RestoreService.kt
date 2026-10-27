@@ -3,12 +3,10 @@ package dev.wfhdiary.app.backup
 import dev.wfhdiary.app.data.remote.UserSettingsDto
 import dev.wfhdiary.app.data.store.DiaryStore
 import kotlinx.coroutines.CancellationException
-import java.io.File
 
 class RestoreService(
     private val store: DiaryStore,
     private val backupService: BackupService,
-    private val safetyFallbackDir: File,
     private val onRestored: suspend (UserSettingsDto) -> Unit,
 ) {
     fun preview(text: String): BackupParseResult = BackupCodec.decode(text)
@@ -20,12 +18,14 @@ class RestoreService(
                 is BackupParseResult.Success -> result.document
             }
         val safety =
-            try {
-                backupService.writeSafetyBackup(safetyFallbackDir)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                return RestoreOutcome.Failed("Could not save a safety backup first, so nothing was changed: ${e.message}")
+            when (val outcome = backupService.writeSafetyBackup()) {
+                is BackupOutcome.Success -> outcome.fileName
+                BackupOutcome.NoFolder ->
+                    return RestoreOutcome.Failed("Choose a backup folder first so a safety backup can be saved. Nothing was changed.")
+                is BackupOutcome.Failed ->
+                    return RestoreOutcome.Failed(
+                        "Could not save a safety backup to your backup folder, so nothing was changed: ${outcome.message}",
+                    )
             }
         try {
             store.replaceAll(valid)
@@ -34,7 +34,13 @@ class RestoreService(
         } catch (e: Exception) {
             return RestoreOutcome.Failed("Restore failed and your data was not changed: ${e.message}")
         }
-        runCatching { onRestored(valid.settings) }
+        try {
+            onRestored(valid.settings)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // The data is already committed; a rescheduling failure must not report the restore as failed.
+        }
         return RestoreOutcome.Success(safety, valid.days.size, valid.leavePeriods.size)
     }
 }

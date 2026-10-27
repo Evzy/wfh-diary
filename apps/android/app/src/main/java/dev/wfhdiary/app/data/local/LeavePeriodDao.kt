@@ -19,6 +19,9 @@ interface LeavePeriodDao {
     @Query("SELECT * FROM leave_periods ORDER BY startDate, endDate")
     suspend fun getAll(): List<LeavePeriodEntity>
 
+    @Query("SELECT COUNT(*) FROM leave_periods")
+    suspend fun count(): Int
+
     @Query("DELETE FROM leave_periods WHERE id = :id")
     suspend fun delete(id: String)
 

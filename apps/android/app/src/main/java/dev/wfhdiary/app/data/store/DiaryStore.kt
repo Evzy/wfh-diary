@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -149,9 +150,13 @@ class DiaryStore(
                 settings = getSettings(),
                 days = dayDao.getAll().map { it.toBackupDay() },
                 leavePeriods = leaveDao.getAll().map { BackupLeavePeriod(it.id, it.startDate, it.endDate, it.note) },
-                legacy = settingsDao.get()?.legacyJson?.let { json.parseToJsonElement(it).jsonObject },
+                legacy =
+                    settingsDao.get()?.legacyJson?.let { json.parseToJsonElement(it).jsonObject }
+                        ?: JsonObject(emptyMap()),
             )
         }
+
+    suspend fun localCounts(): LocalCounts = LocalCounts(dayDao.count(), leaveDao.count())
 
     /** Replaces every table with [document] in one transaction. Callers validate first. */
     suspend fun replaceAll(document: BackupDocument) {
@@ -167,7 +172,7 @@ class DiaryStore(
             settingsDao.upsert(
                 SettingsEntity(
                     settingsJson = json.encodeToString(UserSettingsDto.serializer(), document.settings),
-                    legacyJson = document.legacy?.toString(),
+                    legacyJson = document.legacy.takeIf { it.isNotEmpty() }?.toString(),
                 ),
             )
         }

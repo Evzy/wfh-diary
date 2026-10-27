@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.util.Locale
 import java.util.zip.ZipInputStream
 
 class XlsxWriterTest {
@@ -116,6 +117,21 @@ class XlsxWriterTest {
         assertTrue(sheet.contains("<pane ySplit=\"5\" topLeftCell=\"A6\" activePane=\"bottomLeft\" state=\"frozen\"/>"))
         assertTrue(sheet.contains("<col min=\"7\" max=\"7\" width=\"36\" customWidth=\"1\"/>"))
         assertTrue(sheet.contains("<autoFilter ref=\"A5:H370\"/>"))
+    }
+
+    @Test
+    fun output_does_not_depend_on_default_locale() {
+        val original = Locale.getDefault()
+        val expected = sheet
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+            val localized = unzip(XlsxWriter.write(2025, "Jane <Doe>", days))["xl/worksheets/sheet1.xml"]!!
+            assertEquals(expected, localized)
+            assertTrue(localized.contains("2025/26 Working from Home Diary"))
+            assertTrue(localized.contains("Tuesday"))
+        } finally {
+            Locale.setDefault(original)
+        }
     }
 
     @Test

@@ -168,6 +168,39 @@ class DiaryStoreTest {
     }
 
     @Test
+    fun replace_all_rolls_back_when_a_step_fails() = runBlocking {
+        store.upsertDay(2025, "2025-08-01", homeDay)
+        store.createLeave(2025, CreateLeaveRequest("2025-12-22", "2025-12-23", "Old"))
+        store.updateSettings(UpdateUserSettingsRequest(displayName = "Before"))
+        db.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER fail_leave_insert BEFORE INSERT ON leave_periods BEGIN SELECT RAISE(ABORT, 'boom'); END",
+        )
+        val doc =
+            BackupDocument(
+                exportedAt = "2026-10-27T09:00:00Z",
+                appVersion = "test",
+                settings = DiaryRules.defaultSettings().copy(displayName = "After"),
+                days = listOf(BackupDay("2025-07-01", location = "Home")),
+                leavePeriods = listOf(BackupLeavePeriod("new", "2026-01-05", "2026-01-06", null)),
+            )
+
+        val failure = runCatching { store.replaceAll(doc) }.exceptionOrNull()
+
+        assertTrue("replace should fail", failure != null)
+        assertEquals(listOf("2025-08-01", "2025-12-22", "2025-12-23"), store.getDays(2025, null, null).map { it.date })
+        assertEquals("Old", store.getLeavePeriods().single().note)
+        assertEquals("Before", store.getSettings().displayName)
+    }
+
+    @Test
+    fun local_counts_reports_days_and_leave_periods() = runBlocking {
+        assertEquals(LocalCounts(0, 0), store.localCounts())
+        store.upsertDay(2025, "2025-08-01", homeDay)
+        store.createLeave(2025, CreateLeaveRequest("2025-12-22", "2025-12-23"))
+        assertEquals(LocalCounts(3, 1), store.localCounts())
+    }
+
+    @Test
     fun writes_emit_change_events() = runBlocking {
         val first = async(start = CoroutineStart.UNDISPATCHED) { withTimeout(5_000) { store.changes.first() } }
         store.upsertDay(2025, "2025-07-01", homeDay)

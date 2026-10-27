@@ -23,6 +23,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,7 +81,7 @@ class WfhDiaryApplication : Application() {
     }
 
     val restoreService: RestoreService by lazy {
-        RestoreService(diaryStore, backupService, cacheDir) { settings ->
+        RestoreService(diaryStore, backupService) { settings ->
             NotificationScheduler.scheduleNext(this, settings.notificationTime, settings.notificationWorkingDaysMask)
         }
     }
@@ -125,7 +126,15 @@ class WfhDiaryApplication : Application() {
         NotificationChannels.create(this)
         BackupScheduler.ensureDaily(this)
         authSyncScope.launch {
-            diaryStore.changes.collect { BackupScheduler.scheduleAfterChange(this@WfhDiaryApplication) }
+            diaryStore.changes.collect {
+                try {
+                    BackupScheduler.scheduleAfterChange(this@WfhDiaryApplication)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Keep collecting; the daily job still runs if one schedule attempt fails.
+                }
+            }
         }
         authSyncScope.launch {
             runCatching {

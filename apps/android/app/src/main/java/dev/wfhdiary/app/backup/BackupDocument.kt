@@ -13,7 +13,7 @@ data class BackupDocument(
     val settings: UserSettingsDto,
     val days: List<BackupDay> = emptyList(),
     val leavePeriods: List<BackupLeavePeriod> = emptyList(),
-    val legacy: JsonObject? = null,
+    val legacy: JsonObject = JsonObject(emptyMap()),
 ) {
     companion object {
         const val FORMAT = "wfh-diary-backup"

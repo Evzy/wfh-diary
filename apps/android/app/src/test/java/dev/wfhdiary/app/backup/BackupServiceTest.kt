@@ -16,7 +16,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -82,18 +81,34 @@ class BackupServiceTest {
     }
 
     @Test
-    fun safety_backup_goes_to_folder_or_fallback() = runBlocking {
+    fun prune_failure_after_write_is_still_success() = runBlocking {
         prefs.folderUri = "content://tree"
-        val name = service.writeSafetyBackup(File("unused"))
-        assertTrue(name.startsWith("wfh-diary-pre-restore-"))
-        assertTrue(name in folder.files)
-
-        prefs.folderUri = null
-        val dir = createTempDirectory()
-        val path = service.writeSafetyBackup(dir)
-        assertTrue(File(path).exists())
+        repeat(30) { i -> folder.files["wfh-diary-backup-2026-09-%02d.json".format(i + 1)] = "{}" }
+        folder.failDeletes = true
+        val outcome = service.backupToFolder()
+        assertEquals(BackupOutcome.Success("wfh-diary-backup-2026-10-27.json"), outcome)
+        assertEquals(clock.millis(), prefs.lastSuccessMillis)
+        assertNull(prefs.lastError)
     }
 
-    private fun createTempDirectory(): File =
-        kotlin.io.path.createTempDirectory("wfh-backup").toFile()
+    @Test
+    fun safety_backup_goes_to_folder() = runBlocking {
+        prefs.folderUri = "content://tree"
+        val outcome = service.writeSafetyBackup()
+        assertTrue(outcome is BackupOutcome.Success)
+        val name = (outcome as BackupOutcome.Success).fileName
+        assertTrue(name.startsWith("wfh-diary-pre-restore-"))
+        assertTrue(name in folder.files)
+    }
+
+    @Test
+    fun safety_backup_needs_folder_and_reports_write_failure() = runBlocking {
+        prefs.folderUri = null
+        assertEquals(BackupOutcome.NoFolder, service.writeSafetyBackup())
+
+        prefs.folderUri = "content://tree"
+        folder.failWrites = true
+        assertEquals(BackupOutcome.Failed("disk full"), service.writeSafetyBackup())
+        assertNull("safety failure is not a scheduled-backup failure", prefs.lastError)
+    }
 }

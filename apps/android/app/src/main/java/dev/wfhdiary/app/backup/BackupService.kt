@@ -31,12 +31,14 @@ class BackupService(
             try {
                 val text = BackupCodec.encode(buildDocument())
                 val name = BackupRetention.fileNameFor(LocalDate.now(clock))
-                withContext(Dispatchers.IO) {
-                    val folder = openFolder(uri)
-                    folder.write(name, text)
-                    BackupRetention.filesToDelete(folder.listNames()).forEach(folder::delete)
-                }
+                val folder =
+                    withContext(Dispatchers.IO) {
+                        openFolder(uri).also { it.write(name, text) }
+                    }
                 prefs.recordSuccess(clock.millis())
+                withContext(Dispatchers.IO) {
+                    runCatching { BackupRetention.filesToDelete(folder.listNames()).forEach(folder::delete) }
+                }
                 BackupOutcome.Success(name)
             } catch (e: CancellationException) {
                 throw e
@@ -47,23 +49,19 @@ class BackupService(
             }
         }
 
-    /**
-     * Writes a backup of the current data before a restore. Uses the backup folder when possible,
-     * otherwise [fallbackDir]/backups. Returns the file name or path written. Throws if both fail.
-     */
-    suspend fun writeSafetyBackup(fallbackDir: File): String {
-        val text = BackupCodec.encode(buildDocument())
+    /** Writes a backup of the current data into the backup folder before a restore. */
+    suspend fun writeSafetyBackup(): BackupOutcome {
+        val uri = prefs.folderUri ?: return BackupOutcome.NoFolder
         val stamp = LocalDateTime.now(clock).format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
         val name = "wfh-diary-pre-restore-$stamp.json"
-        return withContext(Dispatchers.IO) {
-            val uri = prefs.folderUri
-            val wroteToFolder = uri != null && runCatching { openFolder(uri).write(name, text) }.isSuccess
-            if (wroteToFolder) {
-                name
-            } else {
-                val dir = File(fallbackDir, "backups").apply { mkdirs() }
-                File(dir, name).apply { writeText(text) }.absolutePath
-            }
+        return try {
+            val text = BackupCodec.encode(buildDocument())
+            withContext(Dispatchers.IO) { openFolder(uri).write(name, text) }
+            BackupOutcome.Success(name)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            BackupOutcome.Failed(e.message ?: e.javaClass.simpleName)
         }
     }
 

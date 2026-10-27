@@ -81,12 +81,15 @@ fun BackupSection(
         }
         OutlinedButton(
             onClick = { restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*")) },
-            enabled = !state.busy,
+            enabled = !state.busy && state.folderChosen,
         ) {
             Text(stringResource(R.string.restore_from_file))
         }
-        OutlinedButton(onClick = { confirmImport = true }, enabled = !state.busy) {
+        OutlinedButton(onClick = { confirmImport = true }, enabled = !state.busy && state.folderChosen) {
             Text(stringResource(R.string.import_from_server))
+        }
+        if (!state.folderChosen) {
+            Text(stringResource(R.string.restore_needs_folder_hint), style = MaterialTheme.typography.bodySmall)
         }
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
     }
@@ -119,6 +122,8 @@ fun BackupSection(
                         pending.document.exportedAt,
                         pending.document.days.size,
                         pending.document.leavePeriods.size,
+                        pending.currentDays,
+                        pending.currentLeavePeriods,
                     ),
                 )
             },

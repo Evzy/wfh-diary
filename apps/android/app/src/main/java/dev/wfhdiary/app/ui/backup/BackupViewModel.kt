@@ -14,6 +14,7 @@ import dev.wfhdiary.app.BuildConfig
 import dev.wfhdiary.app.R
 import dev.wfhdiary.app.WfhDiaryApplication
 import dev.wfhdiary.app.backup.BackupCodec
+import dev.wfhdiary.app.backup.BackupDocument
 import dev.wfhdiary.app.backup.BackupHealth
 import dev.wfhdiary.app.backup.BackupOutcome
 import dev.wfhdiary.app.backup.BackupParseResult
@@ -91,6 +92,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     fun onRestoreFileChosen(uri: Uri?) {
         if (uri == null) return
         runBusy {
+            if (prefs.folderUri == null) return@runBusy app.getString(R.string.restore_needs_folder)
             val text =
                 withContext(Dispatchers.IO) {
                     app.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
@@ -98,7 +100,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             when (val result = BackupCodec.decode(text)) {
                 is BackupParseResult.Failure -> result.message
                 is BackupParseResult.Success -> {
-                    _uiState.update { it.copy(pendingRestore = PendingRestore(result.document, RestoreSource.FILE)) }
+                    showConfirmation(result.document, RestoreSource.FILE)
                     null
                 }
             }
@@ -107,6 +109,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
 
     fun importFromServer() =
         runBusy {
+            if (prefs.folderUri == null) return@runBusy app.getString(R.string.restore_needs_folder)
             val document =
                 try {
                     if (BuildConfig.GOOGLE_SERVICES_CONFIGURED) {
@@ -122,11 +125,18 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             when (val result = BackupCodec.validate(document)) {
                 is BackupParseResult.Failure -> app.getString(R.string.import_failed, result.message)
                 is BackupParseResult.Success -> {
-                    _uiState.update { it.copy(pendingRestore = PendingRestore(result.document, RestoreSource.SERVER)) }
+                    showConfirmation(result.document, RestoreSource.SERVER)
                     null
                 }
             }
         }
+
+    private suspend fun showConfirmation(document: BackupDocument, source: RestoreSource) {
+        val counts = app.diaryStore.localCounts()
+        _uiState.update {
+            it.copy(pendingRestore = PendingRestore(document, source, counts.days, counts.leavePeriods))
+        }
+    }
 
     fun cancelRestore() {
         _uiState.update { it.copy(pendingRestore = null) }
@@ -136,12 +146,19 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
         val pending = _uiState.value.pendingRestore ?: return
         _uiState.update { it.copy(pendingRestore = null) }
         runBusy {
+            if (prefs.folderUri == null) return@runBusy app.getString(R.string.restore_needs_folder)
             when (val outcome = app.restoreService.restore(pending.document)) {
                 is RestoreOutcome.Failed -> outcome.message
                 is RestoreOutcome.Success -> {
-                    if (pending.source == RestoreSource.SERVER) app.backupService.backupToFolder()
                     _uiState.update { it.copy(restoreGeneration = it.restoreGeneration + 1) }
-                    app.getString(R.string.restore_done, outcome.days, outcome.leavePeriods)
+                    val restored = app.getString(R.string.restore_done, outcome.days, outcome.leavePeriods)
+                    val backup =
+                        when (val result = app.backupService.backupToFolder()) {
+                            is BackupOutcome.Success -> app.getString(R.string.restore_backup_written, result.fileName)
+                            is BackupOutcome.Failed -> app.getString(R.string.restore_backup_failed, result.message)
+                            BackupOutcome.NoFolder -> app.getString(R.string.restore_backup_failed, app.getString(R.string.backup_no_folder))
+                        }
+                    "$restored $backup"
                 }
             }
         }

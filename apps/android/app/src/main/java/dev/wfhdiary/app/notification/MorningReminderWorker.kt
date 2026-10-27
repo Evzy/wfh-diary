@@ -63,7 +63,6 @@ class MorningReminderWorker(
                 ) {
                     val applyResult =
                         runCatching {
-                            FirebaseTokenHelper.ensureToken(app)
                             GeolocationNotificationHelper.applyPlace(app, todayStr, settings, place)
                         }
                     if (applyResult.isSuccess) {

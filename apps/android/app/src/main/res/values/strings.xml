@@ -230,9 +230,13 @@
     <string name="restore_from_file">Restore from file…</string>
     <string name="restore_unreadable">Could not read that file.</string>
     <string name="restore_confirm_title">Replace all data?</string>
-    <string name="restore_confirm_body">This backup (%1$s) has %2$d days and %3$d leave periods. Everything currently in the app will be replaced. A safety backup of the current data is saved first.</string>
+    <string name="restore_confirm_body">This backup (%1$s) has %2$d days and %3$d leave periods. It replaces %4$d days and %5$d leave periods currently on this phone. A safety backup of the current data is saved to your backup folder first.</string>
     <string name="restore_confirm_action">Replace</string>
     <string name="restore_done">Restored %1$d days and %2$d leave periods.</string>
+    <string name="restore_backup_written">Backup written to %1$s.</string>
+    <string name="restore_backup_failed">But the follow-up backup failed: %1$s</string>
+    <string name="restore_needs_folder">Choose a backup folder before restoring or importing, so a safety backup can be saved.</string>
+    <string name="restore_needs_folder_hint">Choose a backup folder to enable restore and import.</string>
     <string name="import_from_server">Import from old server</string>
     <string name="import_confirm_title">Import from the old server?</string>
     <string name="import_confirm_body">This downloads everything from the old server and then replaces the data on this phone. You must be signed in.</string>

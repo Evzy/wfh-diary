@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -65,7 +66,7 @@ object XlsxWriter {
     ): String {
         val byDate = days.associateBy { it.date }
         val rows = StringBuilder()
-        val fyLabel = "$fyYear/${"%02d".format((fyYear + 1) % 100)}"
+        val fyLabel = "$fyYear/${"%02d".format(Locale.ROOT, (fyYear + 1) % 100)}"
 
         rows.row(1) { text("A", "$fyLabel Working from Home Diary", S_TITLE) }
         rows.row(2) {

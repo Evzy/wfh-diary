@@ -26,7 +26,7 @@ class LegacyServerImporter(
         val templates = remote.getWorkTemplates()
         val currentFy = FinancialYearHelper.currentFyYear(LocalDate.now(clock))
         val days =
-            (firstFyYear..currentFy)
+            (firstFyYear..currentFy + 1)
                 .flatMap { fy -> remote.getDays(fy, null, null) }
                 .map { BackupDay(it.date, it.startTime, it.finishTime, it.breakHours, it.description, it.location) }
                 .filterNot(DiaryRules::isEmpty)

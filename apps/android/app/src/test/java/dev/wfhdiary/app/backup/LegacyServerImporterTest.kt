@@ -79,9 +79,12 @@ class LegacyServerImporterTest {
         assertEquals("Me", doc.settings.displayName)
         assertEquals(listOf("2024-07-01", "2026-07-01"), doc.days.map { it.date })
         assertEquals("L1", doc.leavePeriods.single().id)
-        assertEquals(1, doc.legacy!!["workTemplates"]!!.jsonArray.size)
+        assertEquals(1, doc.legacy["workTemplates"]!!.jsonArray.size)
         assertTrue("/v1/diaries/2020/days" in requested)
         assertTrue("/v1/diaries/2026/days" in requested)
+        assertTrue("next FY is requested", "/v1/diaries/2027/days" in requested)
+        assertTrue("/v1/diaries/2019/days" !in requested)
+        assertTrue("/v1/diaries/2028/days" !in requested)
         assertTrue(BackupCodec.validate(doc) is BackupParseResult.Success)
     }
 

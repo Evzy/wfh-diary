@@ -24,7 +24,7 @@ class BackupCodecTest {
     private fun document(
         days: List<BackupDay> = listOf(BackupDay("2025-07-01", "08:00", "17:00", 1.0, null, "Home")),
         leave: List<BackupLeavePeriod> = listOf(BackupLeavePeriod("a", "2025-12-22", "2026-01-02", "Xmas")),
-        legacy: JsonObject? = null,
+        legacy: JsonObject = JsonObject(emptyMap()),
     ) = BackupDocument(
         exportedAt = "2026-10-27T09:00:00+11:00",
         appVersion = "1.0.0",
@@ -57,6 +57,19 @@ class BackupCodecTest {
         val text = BackupCodec.encode(document())
         assertTrue(text.contains("\"format\": \"wfh-diary-backup\""))
         assertTrue(text.contains("\"version\": 1"))
+    }
+
+    @Test
+    fun encode_always_includes_legacy() {
+        val text = BackupCodec.encode(document())
+        assertTrue(text, text.contains("\"legacy\": {"))
+    }
+
+    @Test
+    fun missing_legacy_decodes_as_empty() {
+        val text = BackupCodec.encode(document()).replace(Regex(""",\s*"legacy": \{\s*}"""), "")
+        assertTrue(!text.contains("legacy"))
+        assertEquals(JsonObject(emptyMap()), decodeOk(text).legacy)
     }
 
     @Test

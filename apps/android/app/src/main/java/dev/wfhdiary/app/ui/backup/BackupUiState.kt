@@ -8,6 +8,8 @@ enum class RestoreSource { FILE, SERVER }
 data class PendingRestore(
     val document: BackupDocument,
     val source: RestoreSource,
+    val currentDays: Int,
+    val currentLeavePeriods: Int,
 )
 
 data class BackupUiState(
