@@ -125,6 +125,7 @@ Removing leave from the day edit sheet deletes the entire leave period covering 
 
 - **Cross-FY leave is only partly marked (suspected bug).** Creation only marks days inside the `fyYear` in the URL, and Android always passes the FY currently on screen, so a period spanning 30 June / 1 July leaves the other FY's days unmarked. Deletion, by contrast, clears days in all of the user's diaries.
 - **Creating leave destroys existing day data.** Covered days are overwritten with no warning, and deleting the leave clears them to empty rather than restoring what was there before.
+- **Date format not enforced.** `DateOnly.TryParse` in `DiaryService.CreateLeaveAsync` is culture-sensitive, so `yyyy-MM-dd` is requested but other formats the server culture accepts (e.g. `1/7/2025`) also succeed, and may be read differently on servers with other cultures.
 - **No validation of range against the FY.** A period entirely outside `fyYear` is still stored (and listed) while marking no days.
 - **Overlapping and duplicate periods are allowed;** there is no update endpoint, so changing a period means delete and re-create.
 - **Delete clears manual `LEAVE` text.** Any covered day whose description is `LEAVE` is cleared, even if the user typed it by hand.

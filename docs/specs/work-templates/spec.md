@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Reusable work-day presets. Today this means two things: the per-user **work templates** API (`/v1/work-templates`: label, times, break, location, description, default flag and optional geofence), and the built-in **Home** and **Office** presets shown in Settings, which are stored as default-schedule fields on user settings (see [settings](../settings/spec.md)). Out of scope: editing the Home/Office defaults (SET-012), geofence capture and matching (see `geolocation` spec), and applying presets from notifications (see `notifications` spec). The Android app currently has no UI that reads or writes `/v1/work-templates` (see Known gaps).
+Reusable work-day presets via the per-user **work templates** API (`/v1/work-templates`: label, times, break, location, description, default flag and optional geofence). Out of scope: the built-in Home and Office presets, which are default-schedule fields on user settings (see [settings](../settings/spec.md)), geofence capture and matching (see `geolocation` spec), and applying presets from notifications (see `notifications` spec). The Android app currently has no UI that reads or writes `/v1/work-templates` (see Known gaps).
 
 ## Requirements
 
@@ -72,22 +72,14 @@ The `work-template.json` contract fixture deserializes into both the API and And
 - **When** it is deserialized as `WorkTemplateDto` on the API and on Android
 - **Then** both succeed
 
-### TPL-009 — Home & office presets section in Settings
-
-The Settings screen shows a **Home & office presets** section with the built-in Home and Office presets and a **Customize** action for each.
-
-- **Given** loaded user settings
-- **When** the Settings screen is shown
-- **Then** the section lists Home and Office with start–finish, break hours (non-numeric shown as `0`) and the description when non-blank; **Customize** opens the schedule sheet described in SET-012
-
 ## Interfaces
 
 | Kind | Location |
 | --- | --- |
 | API | `GET/POST /v1/work-templates`, `PUT/DELETE /v1/work-templates/{id}` — `services/api/WfhDiary.Api/Endpoints/WorkTemplateEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| Data | `services/api/WfhDiary.Api/Data/WorkTemplateEntity.cs` (table `work_templates`); Home/Office preset descriptions on `user_settings` added by `services/api/WfhDiary.Api/Migrations/20260625151406_AddDefaultPresetDescriptions.cs` |
+| Data | `services/api/WfhDiary.Api/Data/WorkTemplateEntity.cs` (table `work_templates`) |
 | DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/WorkTemplateDto.cs`, `packages/shared/WfhDiary.Shared/Dtos/CreateWorkTemplateRequest.cs`, `packages/shared/WfhDiary.Shared/Dtos/UpdateWorkTemplateRequest.cs`, `packages/shared/contracts/work-template.json` |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/settings/WorkPresetsSection.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/WorkTemplateDto.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/CreateWorkTemplateRequest.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/DiaryRepository.kt` |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/WorkTemplateDto.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/CreateWorkTemplateRequest.kt`, `apps/android/app/src/main/java/dev/wfhdiary/app/data/remote/DiaryRepository.kt` |
 
 ## Test coverage
 
@@ -101,11 +93,9 @@ The Settings screen shows a **Home & office presets** section with the built-in 
 | TPL-006 | untested |
 | TPL-007 | `WorkTemplateFlowTests.Create_list_and_delete_work_template` (`404` path untested) |
 | TPL-008 | `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.workTemplate_fixture_deserializes` |
-| TPL-009 | untested |
-
 ## Known gaps
 
-- **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the `work_templates_*` strings (e.g. "Manage templates") are not used by any screen. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 describe Settings → **Manage templates** and missed-notification geofence → apply template as shipped; neither was found in the current code.
+- **Android does not use the work-templates API (docs drift).** `DiaryRepository` has `getWorkTemplates`, `createWorkTemplate` and `deleteWorkTemplate` but nothing calls them, there is no update call, and the template-management strings (e.g. `work_templates_manage`, `work_templates_add`) are unused. [TODO § C](../../TODO.md#c-work-scenario-templates--partial) and milestone 7 describe Settings → **Manage templates** and missed-notification geofence → apply template as shipped; neither was found in the current code.
 - Backlog from [TODO § C](../../TODO.md#c-work-scenario-templates--partial):
   1. Day edit sheet — "Apply template…" dropdown/chips.
   2. Morning notification — optional template quick actions.

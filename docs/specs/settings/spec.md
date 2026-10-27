@@ -4,7 +4,7 @@
 
 ## Purpose & scope
 
-Per-user preferences stored by the API and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see `geolocation` spec), the work-template API and the Home & office presets summary (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see `notifications` spec), XLSX export and OTA updates, which share the Settings screen but have their own specs.
+Per-user preferences stored by the API and edited on the Android Settings screen: display name, morning reminder time and working days, missed-reminder response mode and apply-at time, and the default Home and Office schedules (start, finish, break, description) used by quick actions, shown in the **Home & office presets** section. Out of scope: the geolocation settings sheet, map picker and geofence capture UI (see `geolocation` spec), the work-template API (see [work-templates](../work-templates/spec.md)), notification scheduling and delivery (see `notifications` spec), XLSX export and OTA updates, which share the Settings screen but have their own specs.
 
 ## Requirements
 
@@ -64,13 +64,15 @@ The settings response exposes every property of the shared `user-settings.json` 
 - **When** they call `GET /v1/settings`
 - **Then** the JSON includes every contract property, and the fixture deserializes into both the API and Android DTOs
 
+The live-response test checks a hard-coded property list in `ApiContractTests`, not the fixture file itself, so a property added to the fixture is not automatically checked.
+
 ### SET-008 — Android auto-save
 
 Edits on the Settings screen are saved automatically 500 ms after the last change.
 
 - **Given** the Settings screen has loaded the user's settings
 - **When** the user changes a field and pauses for 500 ms (or taps **Close**, which flushes pending changes)
-- **Then** the form is sent with `PUT /v1/settings` unless it equals the last saved form; on success the form is replaced by the server response and `Settings saved` shows for 2 seconds; on failure the error message stays visible
+- **Then** the form is sent with `PUT /v1/settings` unless it equals the last saved form; on success `Settings saved` shows for 2 seconds and the form is replaced by the server response, unless the user edited it while the save was in flight, in which case another auto-save is scheduled instead; on failure the error message stays visible
 
 ### SET-009 — Saving reschedules the morning reminder
 
@@ -104,14 +106,22 @@ Each default schedule is edited in a bottom sheet that saves immediately on **Sa
 - **When** the user taps **Customize** for Home or Office, edits start, finish, break or description, and taps **Save**
 - **Then** the sheet closes and the settings are saved straight away (bypassing the 500 ms delay); **Cancel** or dismissing discards the draft
 
+### SET-013 — Home & office presets section
+
+The Settings screen shows a **Home & office presets** section summarising the Home and Office default schedules, each with a **Customize** action.
+
+- **Given** loaded user settings
+- **When** the Settings screen is shown
+- **Then** the section lists Home and Office with start–finish, break hours (non-numeric shown as `0`) and the description when non-blank; **Customize** opens the sheet described in SET-012
+
 ## Interfaces
 
 | Kind | Location |
 | --- | --- |
 | API | `GET /v1/settings`, `PUT /v1/settings` — `services/api/WfhDiary.Api/Endpoints/SettingsEndpoints.cs`, `services/api/WfhDiary.Api/Services/DiaryService.cs` |
-| Data | `services/api/WfhDiary.Api/Data/UserSettingsEntity.cs` |
+| Data | `services/api/WfhDiary.Api/Data/UserSettingsEntity.cs`; Home/Office description columns added by `services/api/WfhDiary.Api/Migrations/20260625151406_AddDefaultPresetDescriptions.cs` |
 | DTO / contract | `packages/shared/WfhDiary.Shared/Dtos/UserSettingsDto.cs`, `packages/shared/WfhDiary.Shared/Dtos/UpdateUserSettingsRequest.cs`, `packages/shared/contracts/user-settings.json` |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/settings/` — `SettingsScreen.kt`, `SettingsViewModel.kt`, `SettingsFormState.kt`, `WorkScheduleCustomizeSheet.kt`, `WorkScheduleSummaryRow.kt`, `WorkingDaysSelector.kt`, `MissedNotificationDefaultSelector.kt`, `SettingsInfoIcon.kt`, `SettingsSectionTitleRow.kt` |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/ui/settings/` — `SettingsScreen.kt`, `SettingsViewModel.kt`, `SettingsFormState.kt`, `WorkPresetsSection.kt`, `WorkScheduleCustomizeSheet.kt`, `WorkScheduleSummaryRow.kt`, `WorkingDaysSelector.kt`, `MissedNotificationDefaultSelector.kt`, `SettingsInfoIcon.kt`, `SettingsSectionTitleRow.kt` |
 
 ## Test coverage
 
@@ -123,12 +133,13 @@ Each default schedule is edited in a bottom sheet that saves immediately on **Sa
 | SET-004 | `SettingsFlowTests.Settings_invalid_missed_notification_default_falls_back_to_none` (away-default fallback untested) |
 | SET-005 | untested |
 | SET-006 | `SettingsFlowTests.Settings_home_geofence_set_and_clear` (partial-set and office cases untested) |
-| SET-007 | `ApiContractTests.Live_settings_response_matches_contract_properties`, `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.userSettings_fixture_deserializes` |
+| SET-007 | `ApiContractTests.Live_settings_response_matches_contract_properties` (hard-coded property list, not the fixture), `ApiContractTests.Fixture_deserializes_to_shared_dto`, `ContractDeserializationTest.userSettings_fixture_deserializes` |
 | SET-008 | untested |
 | SET-009 | untested |
 | SET-010 | untested |
 | SET-011 | untested |
 | SET-012 | untested |
+| SET-013 | untested |
 
 ## Known gaps
 
