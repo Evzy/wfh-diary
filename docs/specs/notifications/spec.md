@@ -1,6 +1,6 @@
 # Notifications
 
-**Prefix:** `NOTIF` · **Last updated:** 2026-10-27
+**Prefix:** `NOTIF` · **Last updated:** 2026-10-28
 
 ## Purpose & scope
 
@@ -18,11 +18,11 @@ The app registers two notification channels at startup: one for the morning remi
 
 ### NOTIF-002 — Morning reminder scheduling
 
-The morning reminder is scheduled for the next future occurrence of `notificationTime` that falls on a day enabled in `notificationWorkingDaysMask`.
+The morning reminder is scheduled with an exact alarm for the next future occurrence of `notificationTime` that falls on a day enabled in `notificationWorkingDaysMask`.
 
 - **Given** settings with a notification time and a working-days mask (if the time can't be parsed, 08:00 is used; if settings can't be loaded inside the worker, 08:00 and the Mon–Fri default mask are used)
-- **When** the app starts, settings are saved, or the reminder worker finishes a run
-- **Then** a single unique WorkManager job (`wfh_morning_reminder`) replaces any earlier one, delayed until that next time on the next enabled day
+- **When** the app starts, settings are saved, a backup is restored, the reminder worker finishes a run, the device boots, the app is updated, or the time or time zone changes
+- **Then** a single exact, allow-while-idle alarm replaces any earlier one for that next time on the next enabled day. When it fires, the reminder worker is enqueued as expedited unique work `wfh_morning_reminder_run` (kept if one is already queued or running). If exact alarms aren't permitted, an inexact allow-while-idle alarm is used instead
 
 ### NOTIF-003 — No reminder on non-working or leave days
 
@@ -96,20 +96,28 @@ Settings can show the morning reminder immediately so the user can check that no
 - **When** the user sends a test notification
 - **Then** if notifications are allowed, the morning reminder for today is shown and a "sent" message appears; otherwise a permission-denied message appears and the user can request the permission or open the system notification settings
 
+### NOTIF-013 — Missed reminder catch-up
+
+If today's reminder hasn't run by the time the app reschedules it, it runs now instead of waiting for the next day.
+
+- **Given** today is enabled in the working-days mask, the current time is at or after today's `notificationTime`, and the reminder worker has not completed a run for today's date (a device-local record, not backed up)
+- **When** any NOTIF-002 trigger other than the reminder's own alarm or run reschedules the reminder
+- **Then** the reminder worker is enqueued to run immediately as a catch-up run (applying NOTIF-003, GEO-008/009 and NOTIF-006 as usual) and the alarm is set for the next occurrence after today. A catch-up run shows no reminder and schedules no missed default if today already has an entry (as defined in NOTIF-007). The worker records today's date as run when it finishes, whatever the outcome
+
 ## Interfaces
 
 | Kind | Location |
 | --- | --- |
 | Data | `apps/android/app/src/main/java/dev/wfhdiary/app/data/store/DiaryStore.kt` (settings, leave periods and day writes, reached via `WfhDiaryApplication.diaryStore`) |
 | Model | `apps/android/app/src/main/java/dev/wfhdiary/app/data/model/UserSettings.kt` (`notificationTime`, `notificationWorkingDaysMask`, `missedNotificationDefault`, `missedNotificationApplyAt`) |
-| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogNotificationUpdater`, `NotificationPermissions`) |
+| Android | `apps/android/app/src/main/java/dev/wfhdiary/app/notification/` (`NotificationChannels`, `NotificationScheduler`, `ReminderAlarmScheduler`, `ReminderAlarmReceiver`, `ReminderRescheduleReceiver`, `ReminderRunState`, `MorningReminderWorker`, `MorningReminderNotifier`, `MissedNotificationScheduler`, `MissedNotificationWorker`, `MissedNotificationDefault`, `NotificationActionReceiver`, `NotificationActionWorker`, `NotificationDayActions`, `DayLogWorkEnqueuer`, `DayLogNotificationUpdater`, `NotificationPermissions`) |
 
 ## Test coverage
 
 | Requirement | Tests |
 | --- | --- |
 | NOTIF-001 | `untested` |
-| NOTIF-002 | `untested` |
+| NOTIF-002 | `NotificationSchedulerTest.nextReminderAt_*` (4 tests), `ReminderAlarmSchedulerTest.set_uses_exact_allow_while_idle_alarm_when_permitted`, `ReminderAlarmSchedulerTest.set_falls_back_to_inexact_when_exact_not_permitted`, `ReminderAlarmSchedulerTest.set_replaces_previous_alarm` (receivers and worker enqueue untested) |
 | NOTIF-003 | `untested` |
 | NOTIF-004 | `untested` |
 | NOTIF-005 | `DayLogNotificationUpdaterTest.showFailure_posts_open_app_only_in_reminder_slot` (failure notification only; worker untested) |
@@ -120,6 +128,7 @@ Settings can show the morning reminder immediately so the user can check that no
 | NOTIF-010 | `removed` |
 | NOTIF-011 | `untested` |
 | NOTIF-012 | `untested` |
+| NOTIF-013 | `NotificationSchedulerTest.catchUpDue_*` (5 tests) (due rule only; worker's already-logged skip untested) |
 
 ## Known gaps
 
@@ -140,3 +149,4 @@ Settings can show the morning reminder immediately so the user can check that no
 - 2026-10-27: Workers no longer fetch a Firebase ID token before local writes, so notification actions work offline; `FirebaseTokenHelper` removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: On-device-only phase 2 — NOTIF-005/008 failures post a "Couldn't save entry" notification with Open app only (no pending state); NOTIF-009/010 removed with `ApiErrorClassifier` and `DayLogRetryPolicy` ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: Internal model classes renamed (`UserSettingsDto` → `UserSettings`; `WfhDiaryApplication.diaryRepository` → `diaryStore`), no behaviour change.
+- 2026-10-28: Reliable morning reminder — NOTIF-002 now uses an exact alarm (plus boot, app-update and clock-change triggers) instead of a delayed WorkManager job; NOTIF-013 added for same-day catch-up ([change](../../changes/2026-10-28-reliable-morning-reminder/design.md)).

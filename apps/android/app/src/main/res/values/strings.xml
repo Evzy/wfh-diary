@@ -104,6 +104,7 @@
     <string name="notification_auto_log_time_on_hour">%1$d %2$s</string>
     <string name="notification_morning_title">WFH Diary</string>
     <string name="notification_morning_text">Where are you working today?</string>
+    <string name="notification_reminder_checking">Checking today\'s entry…</string>
     <string name="notification_action_home">Home</string>
     <string name="notification_action_office">Office</string>
     <string name="notification_action_leave">Leave</string>

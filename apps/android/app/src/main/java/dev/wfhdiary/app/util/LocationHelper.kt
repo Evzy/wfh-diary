@@ -10,18 +10,45 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 
 object LocationHelper {
+    private const val CURRENT_LOCATION_TIMEOUT_MS = 30_000L
+
     suspend fun getCurrentLocation(context: Context): Location? {
         if (!hasLocationPermission(context)) return null
-        return runCatching {
-            val fused = LocationServices.getFusedLocationProviderClient(context)
-            fused.getCurrentLocation(
-                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                CancellationTokenSource().token,
-            ).await()
-        }.getOrNull() ?: getLastKnownLocation(context)
+        val cancellation = CancellationTokenSource()
+        return try {
+            currentOrFallback(
+                CURRENT_LOCATION_TIMEOUT_MS,
+                current = {
+                    LocationServices.getFusedLocationProviderClient(context)
+                        .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellation.token)
+                        .await()
+                },
+                fallback = { getLastKnownLocation(context) },
+            )
+        } finally {
+            cancellation.cancel()
+        }
+    }
+
+    internal suspend fun <T : Any> currentOrFallback(
+        timeoutMs: Long,
+        current: suspend () -> T?,
+        fallback: () -> T?,
+    ): T? {
+        val fix =
+            try {
+                withTimeoutOrNull(timeoutMs) { current() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+        return fix ?: fallback()
     }
 
     @SuppressLint("MissingPermission")

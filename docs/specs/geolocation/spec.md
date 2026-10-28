@@ -1,6 +1,6 @@
 # Geolocation
 
-**Prefix:** `GEO` · **Last updated:** 2026-10-27
+**Prefix:** `GEO` · **Last updated:** 2026-10-28
 
 ## Purpose & scope
 
@@ -30,7 +30,7 @@ The current location comes from the fused location provider, with a fallback to 
 
 - **Given** fine or coarse location permission is granted
 - **When** a location is needed (place matching, Use current location, or the map picker)
-- **Then** a balanced-power current location is requested; if that fails or returns nothing, the newest last-known fix from the GPS or network provider is used. Without permission or without any fix, no location is returned
+- **Then** a balanced-power current location is requested with a 30-second timeout; if that fails, times out or returns nothing, the newest last-known fix from the GPS or network provider is used. Without permission or without any fix, no location is returned
 
 ### GEO-004 — Set geofence from current location
 
@@ -102,7 +102,7 @@ The geolocation sheet asks for foreground location first, then background locati
 | --- | --- |
 | GEO-001 | `GeofenceHelperTest.isWithinRadius_samePoint_isTrue`, `GeofenceHelperTest.isWithinRadius_farPoint_isFalse` |
 | GEO-002 | `GeofenceHelperTest.matchingPlace_prefersOfficeWhenBothMatch`, `GeofenceHelperTest.matchingPlace_returnsHomeWhenOnlyHomeConfigured` |
-| GEO-003 | `untested` |
+| GEO-003 | `LocationHelperTest.currentOrFallback_*` (4 tests) (timeout and fallback order; fused provider and permission check untested) |
 | GEO-004 | `untested` |
 | GEO-005 | `untested` |
 | GEO-006 | `DiaryRulesTest.settings_geofence_requires_all_fields_and_clear_wins` (store rule only; the Clear button flow is untested) |
@@ -128,3 +128,4 @@ The geolocation sheet asks for foreground location first, then background locati
 - 2026-10-27: GEO-009 coverage test moved to DayLogNotificationUpdaterTest (on-device-only phase 2).
 - 2026-10-27: On-device-only phase 2 — GEO-007 reworded for the local save; GEO-008/009 failures post "Couldn't save entry" with Open app only (no Retry); template geofence references removed ([change](../../changes/2026-10-27-on-device-only/design.md)).
 - 2026-10-27: Internal model classes renamed (`UserSettingsDto` → `UserSettings`, `UpdateUserSettingsRequest` → `UserSettingsUpdate`), no behaviour change.
+- 2026-10-28: GEO-003 current location request now times out after 30 seconds before falling back ([change](../../changes/2026-10-28-reliable-morning-reminder/design.md)).
